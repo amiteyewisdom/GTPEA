@@ -1,3 +1,3 @@
-export default function Test() {
-  return <h1>ROOT PAGE IS WORKING</h1>
+export default function RootPage() {
+  return null;
 }
