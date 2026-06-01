@@ -1,0 +1,8 @@
+npm verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+npm info using npm@11.12.1
+npm info using node@v24.15.0
+npm verbose title npm install
+npm verbose argv "install" "--no-fund" "--no-audit" "--loglevel" "verbose"
+npm verbose logfile logs-max:10 dir:C:\Users\hp\AppData\Local\npm-cache\_logs\2026-05-17T23_40_38_684Z-
+npm verbose logfile C:\Users\hp\AppData\Local\npm-cache\_logs\2026-05-17T23_40_38_684Z-debug-0.log
+^CTerminate batch job (Y/N)? 

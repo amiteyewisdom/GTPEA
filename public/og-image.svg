@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" rx="42" fill="#030712"/>
+  <circle cx="220" cy="180" r="160" fill="#a855f7" fill-opacity="0.18"/>
+  <circle cx="980" cy="470" r="200" fill="#22d3ee" fill-opacity="0.14"/>
+  <rect x="80" y="80" width="1040" height="470" rx="32" stroke="url(#g)" stroke-width="2" fill="rgba(255,255,255,0.02)"/>
+  <text x="110" y="205" fill="white" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="800">Team Suffix</text>
+  <text x="110" y="285" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="500">We Build Scalable Digital Experiences.</text>
+  <text x="110" y="370" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="24">Next.js • React • TypeScript • AI • Backend Systems</text>
+  <rect x="110" y="430" width="250" height="56" rx="18" fill="url(#b)"/>
+  <text x="144" y="467" fill="white" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Premium Software Team</text>
+  <defs>
+    <linearGradient id="g" x1="80" y1="80" x2="1120" y2="550" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a855f7"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <linearGradient id="b" x1="110" y1="430" x2="360" y2="486" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9333ea"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+</svg>
