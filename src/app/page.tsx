@@ -13,16 +13,18 @@ export default async function RootPage() {
     .eq("id", user.id)
     .single();
 
-  if (error || !profile?.role) redirect("/login");
+  // DEBUG: Show role on screen instead of redirect
+  if (error) return <div>Supabase Error: {error.message}</div>;
+  if (!profile) return <div>No profile found for user ID: {user.id}</div>;
+  
+  return <div>Your role is: "{profile.role}". Click <a href="/dashboard">here</a> to continue</div>;
 
-  const role = profile.role;
-
-  // Map roles to your existing dashboard subfolders
-  if (role === "super_admin" || role === "administrator") redirect("/dashboard");
-  if (role === "chairperson") redirect("/dashboard/approvals");
-  if (role === "union_rep") redirect("/dashboard/employees");
-  if (role === "fund_manager") redirect("/dashboard/ledger");
-  if (role === "employee") redirect("/dashboard/profile");
-
-  redirect("/dashboard"); // fallback
+  // Delete the code above after we confirm the role
+  // const role = profile.role;
+  // if (role === "super_admin" || role === "administrator") redirect("/dashboard");
+  // if (role === "chairperson") redirect("/dashboard/approvals");
+  // if (role === "union_rep") redirect("/dashboard/employees");
+  // if (role === "fund_manager") redirect("/dashboard/ledger");
+  // if (role === "employee") redirect("/dashboard/profile");
+  // redirect("/dashboard");
 }
