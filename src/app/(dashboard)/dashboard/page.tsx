@@ -4,16 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 export default async function RootPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } =
+    await supabase.auth.getUser();
 
-  // Not logged in
   if (!user) {
     redirect("/login");
   }
 
-  // Get profile role
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
@@ -22,7 +19,6 @@ export default async function RootPage() {
 
   const role = profile?.role;
 
-  // Redirect by role
   if (
     role === "super_admin" ||
     role === "administrator"
@@ -46,6 +42,5 @@ export default async function RootPage() {
     redirect("/dashboard/profile");
   }
 
-  // Fallback
   redirect("/dashboard");
 }
