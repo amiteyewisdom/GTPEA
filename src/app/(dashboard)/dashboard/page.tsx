@@ -3,12 +3,17 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function RootPage() {
   const supabase = await createClient();
-const {
-  data: { user },
-} = await supabase.auth.getUser();
-  
-  if (!user) redirect("/login");
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Not logged in
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Get profile role
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
@@ -17,12 +22,30 @@ const {
 
   const role = profile?.role;
 
-  // Map roles to your existing dashboard subfolders
-  if (role === "super_admin" || role === "administrator") redirect("/dashboard");
-  if (role === "chairperson") redirect("/dashboard/approvals");
-  if (role === "union_rep") redirect("/dashboard/employees");
-  if (role === "fund_manager") redirect("/dashboard/ledger");
-  if (role === "employee") redirect("/dashboard/profile");
+  // Redirect by role
+  if (
+    role === "super_admin" ||
+    role === "administrator"
+  ) {
+    redirect("/dashboard");
+  }
 
-  redirect("/dashboard"); // fallback
+  if (role === "chairperson") {
+    redirect("/dashboard/approvals");
+  }
+
+  if (role === "union_rep") {
+    redirect("/dashboard/employees");
+  }
+
+  if (role === "fund_manager") {
+    redirect("/dashboard/ledger");
+  }
+
+  if (role === "employee") {
+    redirect("/dashboard/profile");
+  }
+
+  // Fallback
+  redirect("/dashboard");
 }
