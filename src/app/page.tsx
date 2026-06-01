@@ -24,11 +24,11 @@ export default async function RootPage() {
   const role = profile.role;
 
   // Map your Supabase roles to routes
-  if (role === 'super_admin' || role === 'administrator') redirect("/admin");
-  if (role === 'chairperson') redirect("/chair");
-  if (role === 'union_rep') redirect("/union");
-  if (role === 'fund_manager') redirect("/fund");
-  if (role === 'employee') redirect("/employee");
+  if (role === 'super_admin' || role === 'administrator) redirect("/dashboard");
+  if (role === 'chairperson') redirect("dashboard/approvals");
+  if (role === 'union_rep') redirect("dashboard/employees");
+  if (role === 'fund_manager') redirect("/dashobard/ledger");
+  if (role === 'employee') redirect("dashboard/profile");
 
   redirect("/dashboard");
     }
