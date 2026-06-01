@@ -1,30 +1,29 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function RootPage() {
   const supabase = await createClient();
   const { data: { user } = await supabase.auth.getUser();
   
-  if (!user) redirect("/login");
+  if (!user) return <div>Not logged in. <a href="/login">Login</a></div>;
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, full_name")
     .eq("id", user.id)
     .single();
 
-  // DEBUG: Show role on screen instead of redirect
-  if (error) return <div>Supabase Error: {error.message}</div>;
+  if (error) return <div>Supabase Error: {error.message} <br/> User ID: {user.id}</div>;
   if (!profile) return <div>No profile found for user ID: {user.id}</div>;
   
-  return <div>Your role is: "{profile.role}". Click <a href="/dashboard">here</a> to continue</div>;
-
-  // Delete the code above after we confirm the role
-  // const role = profile.role;
-  // if (role === "super_admin" || role === "administrator") redirect("/dashboard");
-  // if (role === "chairperson") redirect("/dashboard/approvals");
-  // if (role === "union_rep") redirect("/dashboard/employees");
-  // if (role === "fund_manager") redirect("/dashboard/ledger");
-  // if (role === "employee") redirect("/dashboard/profile");
-  // redirect("/dashboard");
+  return (
+    <div style={{padding: 40, fontSize: 18}}>
+      <h1>Debug Info</h1>
+      <p><b>Name:</b> {profile.full_name}</p>
+      <p><b>User ID:</b> {user.id}</p>
+      <p><b>Role from DB:</b> "{profile.role}"</p>
+      <p><b>Role length:</b> {profile.role.length} characters</p>
+      <br/>
+      <a href="/dashboard">Continue to Dashboard</a>
+    </div>
+  );
 }
