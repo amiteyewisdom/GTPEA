@@ -35,7 +35,6 @@ export async function middleware(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  // Not logged in + not public page → send to login
   if (!user && !isPublicRoute) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
@@ -43,35 +42,4 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Logged in + on login page → send to correct dashboard
-  if (user && pathname === "/login") {
-    return NextResponse.redirect(request.nextUrl.clone());
-  }
-
-  // Logged in + on root "/" → send to role-specific dashboard
-  if (user && pathname === "/") {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    const role = profile?.role;
-    const url = request.nextUrl.clone();
-
-    if (role === "super_admin" || role === "administrator") url.pathname = "/dashboard";
-    else if (role === "chairperson") url.pathname = "/dashboard/approvals";
-    else if (role === "union_rep") url.pathname = "/dashboard/employees";
-    else if (role === "fund_manager") url.pathname = "/dashboard/ledger";
-    else if (role === "employee") url.pathname = "/dashboard/profile";
-    else url.pathname = "/dashboard"; // fallback
-
-    return NextResponse.redirect(url);
-  }
-
-  return supabaseResponse;
-}
-
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|public/).*)"],
-};
+  if (user
