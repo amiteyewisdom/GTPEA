@@ -7,12 +7,14 @@ export default async function AdminDashboard() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // We add 'as any' here so TypeScript stops complaining about 'never'
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("user_id", user.id)
-    .single();
+    .single() as any;
 
+  // Now TypeScript will allow .role
   if (profile?.role !== "administrator" && profile?.role !== "super_admin") {
     redirect("/dashboard");
   }
@@ -33,6 +35,10 @@ export default async function AdminDashboard() {
           <h3 className="text-sm font-medium text-slate-500">System Status</h3>
           <p className="text-2xl font-bold text-emerald-600">Online</p>
         </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-400">
+        Admin features load here.
       </div>
     </div>
   );
