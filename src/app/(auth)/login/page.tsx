@@ -30,50 +30,50 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-screen w-full flex items-center justify-center p-4 font-sans antialiased overflow-hidden">
-      {/* Background Image - Scale up slightly for a better look */}
+      {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image 
           src="/images/growth-plant.jpeg" 
           alt="BG" 
           fill 
-          className="object-cover scale-105" 
+          className="object-cover scale-110" 
           priority 
         />
-        {/* Very light tint just to help white text stand out */}
-        <div className="absolute inset-0 bg-black/30 sm:bg-black/20" />
+        {/* Darker tint to make the white text "pop" */}
+        <div className="absolute inset-0 bg-black/50 sm:bg-black/20" />
       </div>
 
-      <div className="relative z-10 w-full max-w-[440px]">
-        {/* THE CRYSTAL GLASS CARD */}
-        <div className="bg-white/5 backdrop-blur-[8px] border border-white/20 shadow-2xl rounded-[2.5rem] p-8 sm:p-12 sm:bg-white sm:backdrop-blur-none sm:border-transparent">
+      <div className="relative z-10 w-full max-w-[420px]">
+        {/* THE CARD: bg-transparent on mobile, solid on desktop */}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[2.5rem] p-8 sm:p-12 sm:bg-white sm:backdrop-blur-none sm:border-transparent sm:shadow-2xl">
           
           {/* LOGO: Changed from "C" to "GTPEA" */}
           <div className="flex justify-center mb-8">
-            <div className="px-5 py-2 bg-white/10 border border-white/30 rounded-xl flex items-center justify-center backdrop-blur-md sm:bg-white sm:border-gray-100 shadow-sm">
-              <span className="text-xl font-bold tracking-tighter text-white sm:text-[#b59a6d]">
+            <div className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl backdrop-blur-md sm:bg-gray-50 sm:border-gray-100">
+              <span className="text-lg font-black tracking-tighter text-white sm:text-[#b59a6d]">
                 GTPEA
               </span>
             </div>
           </div>
 
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-black text-white sm:text-[#0a1629] mb-2 drop-shadow-md">
+            <h2 className="text-3xl font-black text-white sm:text-[#0a1629] mb-1">
               Welcome
             </h2>
-            <p className="text-sm text-gray-200 sm:text-gray-500 font-medium">
-              Sign in to your enterprise account
+            <p className="text-sm text-white/70 sm:text-gray-500">
+              Sign in to your finance dashboard
             </p>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
-              <div className="p-3 bg-red-500/30 backdrop-blur-md text-white text-xs rounded-xl border border-red-500/40 text-center">
+              <div className="p-3 bg-red-500/20 backdrop-blur-md text-white text-xs rounded-xl border border-red-500/30 text-center">
                 {error}
               </div>
             )}
             
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-white/70 sm:text-gray-700 ml-1">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-white/80 sm:text-gray-700 mb-2 ml-1">
                 Email Address
               </label>
               <div className="relative">
@@ -89,8 +89,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-white/70 sm:text-gray-700 ml-1">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-white/80 sm:text-gray-700 mb-2 ml-1">
                 Password
               </label>
               <div className="relative">
@@ -109,7 +109,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between px-1">
+            <div className="flex items-center justify-end px-1">
                 <a href="/forgot-password" size="sm" className="text-xs text-white/80 sm:text-blue-700 font-bold hover:underline">
                   Forgot password?
                 </a>
@@ -127,11 +127,11 @@ export default function LoginPage() {
           <div className="mt-10 pt-6 border-t border-white/10 sm:border-gray-100 flex items-center justify-center gap-2">
             <LockKeyhole className="w-3 h-3 text-white/40 sm:text-gray-400" />
             <span className="text-[9px] text-white/40 sm:text-gray-400 font-bold uppercase tracking-[0.25em]">
-              Encrypted Session
+              Secure Session
             </span>
           </div>
         </div>
       </div>
     </main>
   );
-        }
+}
