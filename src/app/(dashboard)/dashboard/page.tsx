@@ -7,14 +7,16 @@ export default async function DashboardRouter() {
 
   if (!user) redirect("/login");
 
+  // Add 'as any' here to bypass the TypeScript 'never' error
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("user_id", user.id)
-    .single();
+    .single() as any;
 
   const role = profile?.role;
 
+  // This maps roles to your existing folder structure
   const routes: Record<string, string> = {
     "super_admin": "/dashboard/Admin",
     "administrator": "/dashboard/Admin",
@@ -24,5 +26,6 @@ export default async function DashboardRouter() {
     "employee": "/profile",
   };
 
-  redirect(routes[role || ""] || "/profile");
+  const destination = routes[role || ""] || "/profile";
+  redirect(destination);
 }
