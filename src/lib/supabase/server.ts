@@ -11,15 +11,14 @@ export async function createClient() {
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) => {
+        setAll: (cookiesToSet: any) => {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
+            cookiesToSet.forEach(({ name, value, options }: any) =>
               cookieStore.set(name, value, options)
             );
           } catch {
             // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // This can be ignored in Next.js App Router.
           }
         },
       },
@@ -27,5 +26,4 @@ export async function createClient() {
   );
 }
 
-// Alias for files still using the old name
 export const createServerSupabaseClient = createClient;
