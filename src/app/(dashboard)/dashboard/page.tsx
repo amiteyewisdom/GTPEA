@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export default async function DashboardRouter() {
-  const supabase = await createClient();
+  const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
@@ -15,16 +15,16 @@ export default async function DashboardRouter() {
 
   const role = profile?.role;
 
-  // This logic ensures users go to THEIR page, not the Admin page
+  // This is the direct mapping of role to folder
   const routes: Record<string, string> = {
-    "super_admin": "/dashboard/admin",
-    "administrator": "/dashboard/admin",
-    "chairperson": "/dashboard/approvals",
-    "union_rep": "/dashboard/employees",
-    "fund_manager": "/dashboard/ledger",
-    "employee": "/dashboard/profile",
+    "super_admin": "/dashboard/Admin",
+    "administrator": "/dashboard/Admin",
+    "chairperson": "/chair",
+    "union_rep": "/union",
+    "fund_manager": "/fund",
+    "employee": "/employee",
   };
 
-  const destination = routes[role || ""] || "/login";
+  const destination = routes[role || ""] || "/employee";
   redirect(destination);
 }
