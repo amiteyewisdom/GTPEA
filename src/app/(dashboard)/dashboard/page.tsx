@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export default async function RootPage() {
   const supabase = await createClient();
 
-  const { data: { user } } =
+  const { data: { user } =
     await supabase.auth.getUser();
 
   if (!user) {
@@ -17,7 +17,7 @@ export default async function RootPage() {
     .eq("id", user.id)
     .single();
 
-  const role = profile?.role;
+  const role = (profile as any)?.role;
 
   if (
     role === "super_admin" ||
