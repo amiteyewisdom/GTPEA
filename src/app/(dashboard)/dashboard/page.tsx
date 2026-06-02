@@ -15,10 +15,14 @@ export default async function RootPage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("user_id", user.id) // FIXED
     .single();
 
   const role = profile?.role;
+
+  if (!role) {
+    redirect("/login");
+  }
 
   if (role === "super_admin" || role === "administrator") {
     redirect("/dashboard");
@@ -40,6 +44,5 @@ export default async function RootPage() {
     redirect("/dashboard/profile");
   }
 
-  // IMPORTANT: never send unknown users to admin
   redirect("/login");
 }
