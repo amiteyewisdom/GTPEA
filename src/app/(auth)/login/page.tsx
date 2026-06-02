@@ -31,22 +31,22 @@ export default function LoginPage() {
   return (
     <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden">
       
-      {/* Background Image - Exactly as positioned in your image */}
-      <div className="absolute inset-0 z-0">
+      {/* BACKGROUND IMAGE: Positioned to be fully visible (Head to Toe) */}
+      <div className="absolute inset-0 z-0 bg-black">
         <Image 
           src="/images/growth-plant.jpeg" 
           alt="Growth" 
           fill 
-          className="object-cover object-center" 
+          className="object-cover object-center opacity-90" 
           priority 
         />
-        {/* Very subtle tint to ensure text readability while keeping background clear */}
-        <div className="absolute inset-0 bg-black/30 lg:bg-black/20 backdrop-blur-[1px]" />
+        {/* Soft overlay to help the white text pop on the left side */}
+        <div className="absolute inset-0 bg-black/30 lg:bg-gradient-to-r lg:from-black/60 lg:to-transparent" />
       </div>
 
-      <div className="relative z-10 w-full max-w-6xl px-6 lg:px-12 flex flex-col lg:flex-row items-center justify-between gap-12">
+      <div className="relative z-10 w-full max-w-7xl px-6 lg:px-16 flex flex-col lg:flex-row items-center justify-between gap-12">
         
-        {/* LEFT SIDE: Desktop Branding */}
+        {/* LEFT SIDE: Restored Desktop Branding (From your image) */}
         <div className="hidden lg:flex flex-col text-white max-w-md">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 border-[3px] border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold text-2xl">
@@ -68,11 +68,11 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* RIGHT SIDE: The Glassy Card */}
-        <div className="w-full max-w-[460px]">
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[2.5rem] p-8 lg:p-14 transition-all duration-500">
+        {/* RIGHT SIDE: The Ultra-Glassy Card (See-through everywhere) */}
+        <div className="w-full max-w-[480px]">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[2.5rem] p-8 lg:p-14 transition-all">
             
-            {/* Logo box */}
+            {/* Logo inside card - Displays "GTPEA" as requested */}
             <div className="flex justify-center mb-8">
               <div className="px-6 py-2 bg-white/10 border border-white/20 rounded-2xl">
                 <span className="text-xl font-black tracking-widest text-white">
@@ -83,20 +83,20 @@ export default function LoginPage() {
 
             <div className="text-center mb-10">
               <h2 className="text-3xl font-bold text-white mb-2">Welcome back</h2>
-              <p className="text-sm text-gray-200 font-medium leading-relaxed">
-                Sign in to access your enterprise finance dashboard securely.
+              <p className="text-sm text-gray-200 font-medium">
+                Sign in to your enterprise account.
               </p>
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               {error && (
-                <div className="p-3 bg-red-500/20 border border-red-500/30 text-white text-xs rounded-xl text-center">
+                <div className="p-3 bg-red-500/30 backdrop-blur-md text-white text-xs rounded-xl border border-red-500/40 text-center">
                   {error}
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-white/70 ml-1">Email address</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/70 ml-1">Email address</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <input
@@ -105,13 +105,13 @@ export default function LoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="kay@gtpea.com"
                     required
-                    className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/20 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2D7A4D]/50 outline-none transition-all"
+                    className="w-full pl-11 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2D7A4D] outline-none"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-white/70 ml-1">Password</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/70 ml-1">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <input
@@ -120,7 +120,7 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full pl-11 pr-11 py-4 bg-white/5 border border-white/20 rounded-xl text-sm text-white outline-none"
+                    className="w-full pl-11 pr-11 py-4 bg-white/10 border border-white/20 rounded-xl text-sm text-white outline-none"
                   />
                   <button
                     type="button"
@@ -132,13 +132,13 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* The Green Button from your Image */}
+              {/* FOREST GREEN BUTTON (Matched to your image) */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#2D7A4D] hover:bg-[#23633b] text-white font-bold py-4 rounded-xl transition-all shadow-lg text-base mt-2 active:scale-95 disabled:opacity-50"
+                className="w-full bg-[#2D7A4D] hover:bg-[#23633b] text-white font-bold py-4 rounded-xl shadow-lg text-base mt-2 active:scale-95 transition-all"
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? 'Verifying...' : 'Sign in'}
               </button>
             </form>
 
@@ -153,4 +153,4 @@ export default function LoginPage() {
       </div>
     </main>
   );
-          }
+}
