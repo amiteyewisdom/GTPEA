@@ -31,22 +31,22 @@ export default function LoginPage() {
   return (
     <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden">
       
-      {/* Background Image - Fits all screens */}
+      {/* Background Image - Exactly as positioned in your image */}
       <div className="absolute inset-0 z-0">
         <Image 
           src="/images/growth-plant.jpeg" 
           alt="Growth" 
           fill 
-          className="object-cover" 
+          className="object-cover object-center" 
           priority 
         />
-        {/* Soft overlay: Darker on mobile to see white text, Lighter on desktop */}
-        <div className="absolute inset-0 bg-black/40 lg:bg-black/10 backdrop-blur-[1px]" />
+        {/* Very subtle tint to ensure text readability while keeping background clear */}
+        <div className="absolute inset-0 bg-black/30 lg:bg-black/20 backdrop-blur-[1px]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-6xl px-6 flex flex-col lg:flex-row items-center justify-between gap-12">
+      <div className="relative z-10 w-full max-w-6xl px-6 lg:px-12 flex flex-col lg:flex-row items-center justify-between gap-12">
         
-        {/* LEFT SIDE: Branding (Restored for Desktop) */}
+        {/* LEFT SIDE: Desktop Branding */}
         <div className="hidden lg:flex flex-col text-white max-w-md">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 border-[3px] border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold text-2xl">
@@ -68,88 +68,83 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* RIGHT SIDE: The Card (Glassy on Mobile, White on Desktop) */}
+        {/* RIGHT SIDE: The Glassy Card */}
         <div className="w-full max-w-[460px]">
-          <div className="
-            /* Mobile Style: Transparent Glass */
-            bg-white/5 backdrop-blur-md border border-white/20 
-            /* Desktop Style: Solid White (Restored) */
-            lg:bg-white/95 lg:backdrop-blur-xl lg:border-transparent lg:shadow-[0_20px_50px_rgba(0,0,0,0.2)]
-            rounded-[2.5rem] p-8 lg:p-14 transition-all duration-500
-          ">
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[2.5rem] p-8 lg:p-14 transition-all duration-500">
             
-            {/* Logo inside card */}
+            {/* Logo box */}
             <div className="flex justify-center mb-8">
-              <div className="px-6 py-2 bg-white/10 lg:bg-white border border-white/20 lg:border-gray-100 rounded-2xl shadow-sm">
-                <span className="text-xl font-black tracking-widest text-white lg:text-[#b59a6d]">
+              <div className="px-6 py-2 bg-white/10 border border-white/20 rounded-2xl">
+                <span className="text-xl font-black tracking-widest text-white">
                   GTPEA
                 </span>
               </div>
             </div>
 
             <div className="text-center mb-10">
-              <h2 className="text-2xl lg:text-[28px] font-bold text-white lg:text-[#0a1629] mb-3">Welcome back</h2>
-              <p className="text-sm lg:text-[15px] text-gray-200 lg:text-gray-500 leading-relaxed">
-                Sign in to your enterprise finance dashboard securely.
+              <h2 className="text-3xl font-bold text-white mb-2">Welcome back</h2>
+              <p className="text-sm text-gray-200 font-medium leading-relaxed">
+                Sign in to access your enterprise finance dashboard securely.
               </p>
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               {error && (
-                <div className="rounded-xl bg-red-500/20 lg:bg-red-50 border border-red-500/30 lg:border-red-200 p-4 text-sm text-white lg:text-red-700 text-center">
+                <div className="p-3 bg-red-500/20 border border-red-500/30 text-white text-xs rounded-xl text-center">
                   {error}
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-white/70 lg:text-gray-700 ml-1">Email address</label>
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-white/70 ml-1">Email address</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 lg:text-gray-400" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="kay@tsg.com"
                     required
-                    className="w-full pl-12 pr-4 py-4 bg-white/5 lg:bg-[#f8fafc] border border-white/20 lg:border-gray-200 rounded-xl text-sm text-white lg:text-black focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/20 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2D7A4D]/50 outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-white/70 lg:text-gray-700 ml-1">Password</label>
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-white/70 ml-1">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 lg:text-gray-400" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full pl-12 pr-12 py-4 bg-white/5 lg:bg-[#f8fafc] border border-white/20 lg:border-gray-200 rounded-xl text-sm text-white lg:text-black outline-none"
+                    className="w-full pl-11 pr-11 py-4 bg-white/5 border border-white/20 rounded-xl text-sm text-white outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 lg:text-gray-400"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40"
                   >
                     {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
 
+              {/* The Green Button from your Image */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-white text-black lg:bg-[#051128] lg:text-white font-bold py-4.5 rounded-xl transition-all shadow-lg text-base mt-2 active:scale-95 disabled:opacity-50"
+                className="w-full bg-[#2D7A4D] hover:bg-[#23633b] text-white font-bold py-4 rounded-xl transition-all shadow-lg text-base mt-2 active:scale-95 disabled:opacity-50"
               >
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </form>
 
-            <div className="mt-12 pt-8 border-t border-white/10 lg:border-gray-100 flex items-center justify-center gap-2">
-              <LockKeyhole className="w-3.5 h-3.5 text-white/30 lg:text-gray-400" />
-              <span className="text-[10px] uppercase tracking-widest text-white/30 lg:text-gray-400 font-bold">
+            <div className="mt-12 pt-8 border-t border-white/10 flex items-center justify-center gap-2">
+              <LockKeyhole className="w-3.5 h-3.5 text-white/30" />
+              <span className="text-[10px] uppercase tracking-widest text-white/30 font-bold">
                 Enterprise Grade Security
               </span>
             </div>
@@ -158,4 +153,4 @@ export default function LoginPage() {
       </div>
     </main>
   );
-        }
+          }
