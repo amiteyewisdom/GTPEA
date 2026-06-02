@@ -30,7 +30,7 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-screen w-full flex items-center justify-center p-4 font-sans antialiased">
-      {/* Background Image */}
+      {/* Background Image - Absolute Bottom Layer */}
       <div className="absolute inset-0 z-0">
         <Image 
           src="/images/growth-plant.jpeg" 
@@ -39,20 +39,18 @@ export default function LoginPage() {
           className="object-cover" 
           priority 
         />
-        <div className="absolute inset-0 bg-black/50" />
+        {/* Dark overlay to make text readable */}
+        <div className="absolute inset-0 bg-black/40" />
       </div>
 
       <div className="relative z-10 w-full max-w-[400px]">
-        {/* THE CARD - Forced transparency with inline style */}
-        <div 
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
-          className="border border-white/20 shadow-2xl rounded-[2.5rem] p-8 sm:p-12 sm:bg-white sm:backdrop-blur-none"
-        >
+        {/* THE CARD - 100% See through with just a blur */}
+        <div className="backdrop-blur-xl bg-white/5 border border-white/20 shadow-2xl rounded-[2.5rem] p-8 sm:p-12 sm:bg-white sm:backdrop-blur-none">
           
-          {/* LOGO: HARDCODED TO GTPEA */}
-          <div className="flex justify-center mb-8">
-            <div className="px-6 py-2 bg-white/10 border border-white/20 rounded-xl">
-              <span className="text-xl font-black tracking-widest text-white">
+          {/* LOGO: Explicitly GTPEA */}
+          <div className="flex justify-center mb-10">
+            <div className="bg-white/10 border border-white/20 px-6 py-2 rounded-xl">
+              <span className="text-xl font-black tracking-[0.3em] text-white">
                 GTPEA
               </span>
             </div>
@@ -60,14 +58,12 @@ export default function LoginPage() {
 
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-white mb-1">Welcome</h2>
-            <p className="text-sm text-white/60">Enterprise Finance Login</p>
+            <p className="text-sm text-white/50">Financial Operations Portal</p>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
-              <div className="p-3 bg-red-500/20 text-white text-xs rounded-xl border border-red-500/30 text-center">
-                {error}
-              </div>
+              <div className="p-3 bg-red-500/20 text-white text-xs rounded-xl border border-red-500/30 text-center">{error}</div>
             )}
             
             <div className="space-y-1">
@@ -78,9 +74,9 @@ export default function LoginPage() {
                   type="email" 
                   value={email} 
                   onChange={(e) => setEmail(e.target.value)} 
-                  placeholder="kay@tsg.com" 
+                  placeholder="admin@gtpea.org" 
                   required 
-                  className="w-full pl-11 pr-4 py-4 bg-white/10 border border-white/10 rounded-2xl text-sm text-white outline-none focus:ring-1 focus:ring-white/40" 
+                  className="w-full pl-11 pr-4 py-4 bg-white/10 border border-white/10 rounded-2xl text-sm text-white placeholder-white/20 outline-none focus:bg-white/20 transition-all" 
                 />
               </div>
             </div>
@@ -95,7 +91,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)} 
                   placeholder="••••••••" 
                   required 
-                  className="w-full pl-11 pr-11 py-4 bg-white/10 border border-white/10 rounded-2xl text-sm text-white outline-none" 
+                  className="w-full pl-11 pr-11 py-4 bg-white/10 border border-white/10 rounded-2xl text-sm text-white outline-none focus:bg-white/20 transition-all" 
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">
                   {showPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -106,18 +102,18 @@ export default function LoginPage() {
             <button 
               type="submit" 
               disabled={loading} 
-              className="w-full bg-white text-black font-black py-4 rounded-2xl shadow-xl text-sm mt-4 hover:bg-gray-100 active:scale-95 transition-all"
+              className="w-full bg-white text-black font-black py-4 rounded-2xl shadow-xl text-sm mt-4 active:scale-95 transition-all"
             >
-              {loading ? 'AUTHENTICATING...' : 'SIGN IN'}
+              {loading ? 'VERIFYING...' : 'SIGN IN'}
             </button>
           </form>
 
           <div className="mt-10 pt-6 border-t border-white/10 flex items-center justify-center gap-2">
-            <LockKeyhole className="w-3 h-3 text-white/30" />
-            <span className="text-[9px] text-white/30 font-bold uppercase tracking-widest">Secure Portal</span>
+            <LockKeyhole className="w-3 h-3 text-white/20" />
+            <span className="text-[9px] text-white/20 font-bold uppercase tracking-[0.2em]">Secure Access</span>
           </div>
         </div>
       </div>
     </main>
   );
-          }
+              }
