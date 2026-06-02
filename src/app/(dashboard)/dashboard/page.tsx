@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 export default async function RootPage() {
   const supabase = await createClient();
 
-  const { data: { user } =
-    await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/login");
@@ -17,12 +18,9 @@ export default async function RootPage() {
     .eq("id", user.id)
     .single();
 
-  const role = (profile as any)?.role;
+  const role = profile?.role;
 
-  if (
-    role === "super_admin" ||
-    role === "administrator"
-  ) {
+  if (role === "super_admin" || role === "administrator") {
     redirect("/dashboard");
   }
 
@@ -42,5 +40,6 @@ export default async function RootPage() {
     redirect("/dashboard/profile");
   }
 
-  redirect("/dashboard");
+  // IMPORTANT: never send unknown users to admin
+  redirect("/login");
 }
