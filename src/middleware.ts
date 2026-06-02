@@ -1,22 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const role = request.cookies.get("role")?.value;
   const path = request.nextUrl.pathname;
 
-  if (path.startsWith("/dashboard/approvals") && role !== "chairperson") {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+  const session = request.cookies.get("sb-access-token");
 
-  if (path.startsWith("/dashboard/employees") && role !== "union_rep") {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  if (path.startsWith("/dashboard/ledger") && role !== "fund_manager") {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  if (path.startsWith("/dashboard/profile") && role !== "employee") {
+  if (path.startsWith("/dashboard") && !session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
