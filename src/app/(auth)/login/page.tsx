@@ -29,24 +29,28 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden">
+    <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden bg-[#0a0a0a]">
       
-      {/* BACKGROUND IMAGE: Positioned to be fully visible (Head to Toe) */}
-      <div className="absolute inset-0 z-0 bg-black">
-        <Image 
-          src="/images/growth-plant.jpeg" 
-          alt="Growth" 
-          fill 
-          className="object-cover object-center opacity-90" 
-          priority 
-        />
-        {/* Soft overlay to help the white text pop on the left side */}
-        <div className="absolute inset-0 bg-black/30 lg:bg-gradient-to-r lg:from-black/60 lg:to-transparent" />
+      {/* BACKGROUND IMAGE - Fixed positioning to match mockup */}
+      <div className="absolute inset-0 z-0 flex items-center justify-start pointer-events-none">
+        <div className="relative w-full h-full lg:w-3/4">
+          <Image 
+            src="/images/growth-plant.jpeg" 
+            alt="Growth" 
+            fill 
+            // 'contain' ensures the image is never cropped (head-to-toe)
+            // 'object-left' keeps it on the side like the mockup
+            className="object-contain object-left opacity-90" 
+            priority 
+          />
+        </div>
+        {/* Soft vignette to help the card pop */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/60" />
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl px-6 lg:px-16 flex flex-col lg:flex-row items-center justify-between gap-12">
+      <div className="relative z-10 w-full max-w-7xl px-6 lg:px-20 flex flex-col lg:flex-row items-center justify-between gap-12">
         
-        {/* LEFT SIDE: Restored Desktop Branding (From your image) */}
+        {/* LEFT SIDE: Branding (Matches Mockup) */}
         <div className="hidden lg:flex flex-col text-white max-w-md">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 border-[3px] border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold text-2xl">
@@ -59,20 +63,22 @@ export default function LoginPage() {
           <p className="text-lg font-medium opacity-90 leading-tight mb-6">
             Enterprise financial operations <br /> and lending platform
           </p>
-          <div className="h-[2px] w-12 bg-[#b59a6d] mb-12" />
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="text-[#b59a6d] w-6 h-6 mt-0.5" />
+          <div className="h-[2.5px] w-12 bg-[#b59a6d] mb-12" />
+          <div className="flex items-start gap-4">
+            <div className="w-6 h-6 rounded-full border border-[#b59a6d] flex items-center justify-center flex-shrink-0 mt-0.5">
+               <ShieldCheck className="text-[#b59a6d] w-3.5 h-3.5" />
+            </div>
             <p className="text-[15px] font-medium leading-snug opacity-90">
               Secure access with enterprise <br /> grade encryption
             </p>
           </div>
         </div>
 
-        {/* RIGHT SIDE: The Ultra-Glassy Card (See-through everywhere) */}
-        <div className="w-full max-w-[480px]">
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[2.5rem] p-8 lg:p-14 transition-all">
+        {/* RIGHT SIDE: The Crystal Glass Card */}
+        <div className="w-full max-w-[460px]">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[2.5rem] p-8 lg:p-14 transition-all duration-300">
             
-            {/* Logo inside card - Displays "GTPEA" as requested */}
+            {/* LOGO: Displays "GTPEA" inside the card */}
             <div className="flex justify-center mb-8">
               <div className="px-6 py-2 bg-white/10 border border-white/20 rounded-2xl">
                 <span className="text-xl font-black tracking-widest text-white">
@@ -82,36 +88,36 @@ export default function LoginPage() {
             </div>
 
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-white mb-2">Welcome back</h2>
-              <p className="text-sm text-gray-200 font-medium">
+              <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Welcome back</h2>
+              <p className="text-sm text-gray-300 font-medium">
                 Sign in to your enterprise account.
               </p>
             </div>
 
-            <form className="space-y-5" onSubmit={handleSubmit}>
+            <form className="space-y-6" onSubmit={handleSubmit}>
               {error && (
-                <div className="p-3 bg-red-500/30 backdrop-blur-md text-white text-xs rounded-xl border border-red-500/40 text-center">
+                <div className="p-3 bg-red-500/20 border border-red-500/30 text-white text-xs rounded-xl text-center">
                   {error}
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/70 ml-1">Email address</label>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-white/60 ml-1">Email address</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="kay@gtpea.com"
+                    placeholder="kay@tsg.com"
                     required
-                    className="w-full pl-11 pr-4 py-4 bg-white/10 border border-white/20 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2D7A4D] outline-none"
+                    className="w-full pl-11 pr-4 py-4 bg-white/10 border border-white/10 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2D7A4D] outline-none transition-all"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/70 ml-1">Password</label>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-white/60 ml-1">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <input
@@ -120,7 +126,7 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full pl-11 pr-11 py-4 bg-white/10 border border-white/20 rounded-xl text-sm text-white outline-none"
+                    className="w-full pl-11 pr-11 py-4 bg-white/10 border border-white/10 rounded-xl text-sm text-white outline-none"
                   />
                   <button
                     type="button"
@@ -132,13 +138,19 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* FOREST GREEN BUTTON (Matched to your image) */}
+              <div className="flex items-center justify-end">
+                <a href="/forgot-password" size="sm" className="text-xs text-white/70 hover:text-white font-bold transition-colors">
+                  Forgot password?
+                </a>
+              </div>
+
+              {/* FOREST GREEN BUTTON (Restored from Mockup) */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#2D7A4D] hover:bg-[#23633b] text-white font-bold py-4 rounded-xl shadow-lg text-base mt-2 active:scale-95 transition-all"
+                className="w-full bg-[#2D7A4D] hover:bg-[#23633b] text-white font-bold py-4 rounded-xl shadow-lg text-base mt-2 active:scale-[0.98] transition-all"
               >
-                {loading ? 'Verifying...' : 'Sign in'}
+                {loading ? 'Processing...' : 'Sign in'}
               </button>
             </form>
 
