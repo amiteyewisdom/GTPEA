@@ -18,122 +18,154 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setError('');
-
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
     if (signInError) {
       setError(signInError.message || 'Unable to sign in.');
       setLoading(false);
       return;
     }
-
     router.push('/dashboard');
   };
 
   return (
-    <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden bg-gray-900">
+    <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden bg-[#0d121f]">
       
-      {/* Background Image - Positioned exactly like the photo */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/images/growth-plant.jpeg"
-          alt="Financial Growth"
-          fill
-          className="object-cover object-center"
-          priority
-        />
-        {/* Soft vignette overlay to ensure text is readable */}
-        <div className="absolute inset-0 bg-black/20" />
+      {/* BACKGROUND IMAGE - Fixed to show head-to-toe without cropping */}
+      <div className="absolute inset-0 z-0 flex justify-start items-center">
+        <div className="relative w-full h-full lg:w-[60%]">
+          <Image 
+            src="/images/growth-plant.jpeg" 
+            alt="Growth" 
+            fill 
+            className="object-contain object-left opacity-80" 
+            priority 
+          />
+        </div>
+        {/* Shadow to make the right side blend into the card area */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0d121f]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-6xl px-6 lg:px-12 flex flex-col lg:flex-row items-center justify-between gap-12">
+      <div className="relative z-10 w-full max-w-7xl px-6 lg:px-16 flex flex-col lg:flex-row items-center justify-between">
         
-        {/* Left Side: Desktop Branding (Exactly like the image) */}
+        {/* LEFT SIDE: Branding (Desktop) */}
         <div className="hidden lg:flex flex-col text-white max-w-md">
-          <div className="flex items-center gap-3 mb-6">
-            {/* Custom Logo Icon */}
-            <div className="w-12 h-12 border-[3px] border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold text-2xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 border-[2px] border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold text-xl">
               C
             </div>
-            <h1 className="text-4xl font-bold tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               GTPEA <span className="text-[#b59a6d]">Finance</span>
             </h1>
           </div>
-
-          <p className="text-lg font-medium opacity-90 leading-tight mb-6">
+          <p className="text-base font-medium opacity-80 leading-tight mb-4">
             Enterprise financial operations <br /> and lending platform
           </p>
-
-          <div className="h-[1.5px] w-10 bg-[#b59a6d] mb-12" />
-
+          <div className="h-[1.5px] w-10 bg-[#b59a6d] mb-8" />
           <div className="flex items-start gap-3">
-            <ShieldCheck className="text-[#b59a6d] w-6 h-6 mt-0.5" />
-            <p className="text-[15px] font-medium leading-snug opacity-90">
+            <ShieldCheck className="text-[#b59a6d] w-5 h-5 mt-0.5" />
+            <p className="text-[14px] font-medium leading-snug opacity-80">
               Secure access with enterprise <br /> grade encryption
             </p>
           </div>
         </div>
 
-        {/* Right Side: The Login Card */}
-        <div className="w-full max-w-[480px]">
-          <div className="bg-white rounded-[2rem] p-8 lg:p-14 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
+        {/* RIGHT SIDE: The Shorter Card */}
+        <div className="w-full max-w-[440px]">
+          <div className="bg-white rounded-[1.5rem] p-6 lg:p-10 shadow-2xl">
             
-            {/* Card Logo */}
-            <div className="flex justify-center mb-8">
-              <div className="w-16 h-16 bg-white border border-gray-100 rounded-2xl flex items-center justify-center text-[#b59a6d] shadow-sm">
-                <span className="text-3xl font-serif font-bold">C</span>
+            {/* LOGO: GTPEA on Mobile, "C" Icon on Desktop */}
+            <div className="flex justify-center mb-4">
+              {/* Mobile View: Text Only */}
+              <div className="lg:hidden">
+                <span className="text-2xl font-black tracking-tighter text-[#1e5a36]">GTPEA</span>
+              </div>
+              {/* Desktop View: "C" Icon */}
+              <div className="hidden lg:flex w-14 h-14 bg-white border border-gray-100 rounded-xl items-center justify-center text-[#b59a6d] shadow-sm">
+                <span className="text-2xl font-serif font-bold">C</span>
               </div>
             </div>
 
-            {/* Welcome Text */}
-            <div className="text-center mb-10">
-              <h2 className="text-[28px] font-bold text-[#1e5a36] mb-3">Welcome back</h2>
-              <p className="text-[15px] text-gray-500 leading-relaxed">
-                Sign in to access your enterprise <br /> finance dashboard securely.
+            <div className="text-center mb-6">
+              <h2 className="text-[24px] font-bold text-[#1e5a36] mb-1">Welcome back</h2>
+              <p className="text-[13px] text-gray-500">
+                Sign in to your enterprise account.
               </p>
             </div>
 
-            {/* Form */}
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
               {error && (
-                <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+                <div className="rounded-lg bg-red-50 border border-red-100 p-3 text-xs text-red-700 text-center">
                   {error}
                 </div>
               )}
 
-              <div className="space-y-2">
-                <label className="block text-[13px] font-bold text-gray-700 ml-1">Email address</label>
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-gray-700 ml-1">Email address</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2D7A4D] stroke-[1.5]" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#2D7A4D]/60" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="kay@gtpea.com"
                     required
-                    className="w-full pl-12 pr-4 py-4 bg-white border border-[#2D7A4D]/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D7A4D]/10 focus:border-[#2D7A4D] transition-all text-sm"
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D7A4D]/10 focus:border-[#2D7A4D] transition-all text-sm"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-[13px] font-bold text-gray-700 ml-1">Password</label>
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-gray-700 ml-1">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 stroke-[1.5]" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
                     required
-                    className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#2D7A4D] transition-all text-sm"
+                    className="w-full pl-11 pr-11 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#2D7A4D] transition-all text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
                   >
+                    {showPassword ? <Eye className="w-4.5 h-4.5" /> : <EyeOff className="w-4.5 h-4.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[12px]">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-[#2D7A4D]" />
+                  <span className="text-gray-600 font-medium">Remember me</span>
+                </label>
+                <a href="/forgot-password" min-width="fit-content" className="text-[#2D7A4D] font-bold hover:underline">Forgot?</a>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#2D7A4D] hover:bg-[#23633b] text-white font-bold py-3 rounded-xl transition-all shadow-lg text-sm"
+              >
+                {loading ? 'Logging in...' : 'Sign in'}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-5 border-t border-gray-100 flex items-center justify-center gap-2">
+              <LockKeyhole className="w-3 h-3 text-gray-400" />
+              <span className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">
+                Secure Access
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+                  }                  >
                     {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                   </button>
                 </div>
