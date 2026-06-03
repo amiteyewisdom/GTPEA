@@ -18,140 +18,162 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setError('');
+
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
     if (signInError) {
-      setError(signInError.message);
+      setError(signInError.message || 'Unable to sign in.');
       setLoading(false);
       return;
     }
+
     router.push('/dashboard');
   };
 
   return (
-    <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden">
+    <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden bg-gray-900">
       
-      {/* BACKGROUND IMAGE - Anchored to show head-to-toe plant */}
+      {/* Background Image - Positioned exactly like the photo */}
       <div className="absolute inset-0 z-0">
-        <Image 
-          src="/images/growth-plant.jpeg" 
-          alt="Growth" 
-          fill 
-          // 'object-left-top' ensures the leaves and the cup base are always visible
-          className="object-cover object-left-top sm:object-center" 
-          priority 
+        <Image
+          src="/images/growth-plant.jpeg"
+          alt="Financial Growth"
+          fill
+          className="object-cover object-center"
+          priority
         />
-        {/* Soft blur overlay to blend the image into the UI */}
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+        {/* Soft vignette overlay to ensure text is readable */}
+        <div className="absolute inset-0 bg-black/20" />
       </div>
 
-      <div className="relative z-10 w-full max-w-7xl px-6 lg:px-16 flex flex-col lg:flex-row items-center justify-between gap-12">
+      <div className="relative z-10 w-full max-w-6xl px-6 lg:px-12 flex flex-col lg:flex-row items-center justify-between gap-12">
         
-        {/* LEFT SIDE: Branding */}
-        <div className="hidden lg:flex flex-col text-white max-w-md drop-shadow-lg">
+        {/* Left Side: Desktop Branding (Exactly like the image) */}
+        <div className="hidden lg:flex flex-col text-white max-w-md">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 border-[3px] border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold text-2xl bg-black/10 backdrop-blur-sm">
-              G
+            {/* Custom Logo Icon */}
+            <div className="w-12 h-12 border-[3px] border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold text-2xl">
+              C
             </div>
             <h1 className="text-4xl font-bold tracking-tight">
               GTPEA <span className="text-[#b59a6d]">Finance</span>
             </h1>
           </div>
-          <p className="text-lg font-medium opacity-95 leading-tight mb-6">
+
+          <p className="text-lg font-medium opacity-90 leading-tight mb-6">
             Enterprise financial operations <br /> and lending platform
           </p>
-          <div className="h-[2px] w-12 bg-[#b59a6d] mb-12" />
+
+          <div className="h-[1.5px] w-10 bg-[#b59a6d] mb-12" />
+
           <div className="flex items-start gap-3">
             <ShieldCheck className="text-[#b59a6d] w-6 h-6 mt-0.5" />
-            <p className="text-[15px] font-medium leading-snug opacity-95">
+            <p className="text-[15px] font-medium leading-snug opacity-90">
               Secure access with enterprise <br /> grade encryption
             </p>
           </div>
         </div>
 
-        {/* RIGHT SIDE: The Ultra-Glass Card */}
-        <div className="w-full max-w-[460px]">
-          <div className="bg-white/5 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[2.5rem] p-8 lg:p-14">
+        {/* Right Side: The Login Card */}
+        <div className="w-full max-w-[480px]">
+          <div className="bg-white rounded-[2rem] p-8 lg:p-14 shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
             
-            {/* LOGO: Correct Branding */}
+            {/* Card Logo */}
             <div className="flex justify-center mb-8">
-              <div className="px-6 py-2 bg-white/10 border border-white/20 rounded-2xl backdrop-blur-md">
-                <span className="text-xl font-black tracking-widest text-white">
-                  GTPEA
-                </span>
+              <div className="w-16 h-16 bg-white border border-gray-100 rounded-2xl flex items-center justify-center text-[#b59a6d] shadow-sm">
+                <span className="text-3xl font-serif font-bold">C</span>
               </div>
             </div>
 
+            {/* Welcome Text */}
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Welcome back</h2>
-              <p className="text-sm text-gray-200 font-medium">
-                Sign in to your enterprise account.
+              <h2 className="text-[28px] font-bold text-[#1e5a36] mb-3">Welcome back</h2>
+              <p className="text-[15px] text-gray-500 leading-relaxed">
+                Sign in to access your enterprise <br /> finance dashboard securely.
               </p>
             </div>
 
+            {/* Form */}
             <form className="space-y-6" onSubmit={handleSubmit}>
               {error && (
-                <div className="p-3 bg-red-500/20 border border-red-500/30 text-white text-xs rounded-xl text-center">
+                <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
                   {error}
                 </div>
               )}
 
               <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/60 ml-1">Email address</label>
+                <label className="block text-[13px] font-bold text-gray-700 ml-1">Email address</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2D7A4D] stroke-[1.5]" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="kay@gtpea.com"
                     required
-                    className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2D7A4D] outline-none transition-all placeholder-white/20"
+                    className="w-full pl-12 pr-4 py-4 bg-white border border-[#2D7A4D]/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2D7A4D]/10 focus:border-[#2D7A4D] transition-all text-sm"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/60 ml-1">Password</label>
+                <label className="block text-[13px] font-bold text-gray-700 ml-1">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 stroke-[1.5]" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="••••••••••••"
                     required
-                    className="w-full pl-11 pr-11 py-4 bg-white/5 border border-white/10 rounded-xl text-sm text-white outline-none transition-all"
+                    className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#2D7A4D] transition-all text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
 
-              {/* The Green Button */}
+              <div className="flex items-center justify-between text-[14px]">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-[#2D7A4D] text-[#2D7A4D] focus:ring-[#2D7A4D]"
+                  />
+                  <span className="text-gray-600 font-medium">Remember me</span>
+                </label>
+                <a href="/forgot-password" className="text-[#2D7A4D] font-semibold hover:underline">Forgot password?</a>
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#2D7A4D] hover:bg-[#23633b] text-white font-bold py-4 rounded-xl shadow-lg text-base mt-2 active:scale-95 transition-all"
+                className="w-full bg-[#2D7A4D] hover:bg-[#23633b] text-white font-bold py-4 rounded-xl transition-all shadow-lg text-base mt-2"
               >
-                {loading ? 'Processing...' : 'Sign in'}
+                {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </form>
 
-            <div className="mt-12 pt-8 border-t border-white/10 flex items-center justify-center gap-2">
-              <LockKeyhole className="w-3.5 h-3.5 text-white/30" />
-              <span className="text-[10px] uppercase tracking-widest text-white/30 font-bold">
-                Enterprise Grade Security
-              </span>
+            {/* Footer */}
+            <div className="mt-12 pt-8 border-t border-gray-100 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4">
+                <span className="text-[10px] uppercase tracking-[0.15em] text-gray-400 font-bold whitespace-nowrap">
+                  Enterprise grade security
+                </span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-500 font-medium">
+                <LockKeyhole className="w-3.5 h-3.5" />
+                <span>Your data is encrypted in transit and at rest</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </main>
   );
-              }
+}
