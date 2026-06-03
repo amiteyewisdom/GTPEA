@@ -29,56 +29,53 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden bg-black">
+    <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden">
       
-      {/* BACKGROUND IMAGE - Fixed to show "Head to Toe" like the mockup */}
-      <div className="absolute inset-0 z-0 flex justify-start items-center">
-        <div className="relative w-full h-full lg:w-[65%]">
-          <Image 
-            src="/images/growth-plant.jpeg" 
-            alt="Growth" 
-            fill 
-            // 'contain' prevents cropping (shows the whole cup/leaves)
-            // 'object-left' keeps it on the left side
-            className="object-contain object-left opacity-90" 
-            priority 
-          />
-        </div>
-        {/* Soft shadow to help the card be readable on the right */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/80" />
+      {/* BACKGROUND IMAGE - Anchored to show head-to-toe plant */}
+      <div className="absolute inset-0 z-0">
+        <Image 
+          src="/images/growth-plant.jpeg" 
+          alt="Growth" 
+          fill 
+          // 'object-left-top' ensures the leaves and the cup base are always visible
+          className="object-cover object-left-top sm:object-center" 
+          priority 
+        />
+        {/* Soft blur overlay to blend the image into the UI */}
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-[1400px] px-6 lg:px-24 flex flex-col lg:flex-row items-center justify-between gap-12">
+      <div className="relative z-10 w-full max-w-7xl px-6 lg:px-16 flex flex-col lg:flex-row items-center justify-between gap-12">
         
-        {/* LEFT SIDE: Restored Desktop Branding */}
-        <div className="hidden lg:flex flex-col text-white max-w-md">
+        {/* LEFT SIDE: Branding */}
+        <div className="hidden lg:flex flex-col text-white max-w-md drop-shadow-lg">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 border-[3px] border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold text-2xl">
+            <div className="w-12 h-12 border-[3px] border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold text-2xl bg-black/10 backdrop-blur-sm">
               G
             </div>
             <h1 className="text-4xl font-bold tracking-tight">
               GTPEA <span className="text-[#b59a6d]">Finance</span>
             </h1>
           </div>
-          <p className="text-lg font-medium opacity-90 leading-tight mb-6">
+          <p className="text-lg font-medium opacity-95 leading-tight mb-6">
             Enterprise financial operations <br /> and lending platform
           </p>
-          <div className="h-[2.5px] w-12 bg-[#b59a6d] mb-12" />
-          <div className="flex items-start gap-4">
+          <div className="h-[2px] w-12 bg-[#b59a6d] mb-12" />
+          <div className="flex items-start gap-3">
             <ShieldCheck className="text-[#b59a6d] w-6 h-6 mt-0.5" />
-            <p className="text-[15px] font-medium leading-snug opacity-90">
+            <p className="text-[15px] font-medium leading-snug opacity-95">
               Secure access with enterprise <br /> grade encryption
             </p>
           </div>
         </div>
 
-        {/* RIGHT SIDE: The Crystal Glass Card */}
+        {/* RIGHT SIDE: The Ultra-Glass Card */}
         <div className="w-full max-w-[460px]">
           <div className="bg-white/5 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[2.5rem] p-8 lg:p-14">
             
             {/* LOGO: Correct Branding */}
             <div className="flex justify-center mb-8">
-              <div className="px-6 py-2 bg-white/10 border border-white/20 rounded-2xl">
+              <div className="px-6 py-2 bg-white/10 border border-white/20 rounded-2xl backdrop-blur-md">
                 <span className="text-xl font-black tracking-widest text-white">
                   GTPEA
                 </span>
@@ -86,8 +83,8 @@ export default function LoginPage() {
             </div>
 
             <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-white mb-2">Welcome back</h2>
-              <p className="text-sm text-gray-300 font-medium">
+              <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Welcome back</h2>
+              <p className="text-sm text-gray-200 font-medium">
                 Sign in to your enterprise account.
               </p>
             </div>
@@ -107,9 +104,9 @@ export default function LoginPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="kay@tsg.com"
+                    placeholder="kay@gtpea.com"
                     required
-                    className="w-full pl-11 pr-4 py-4 bg-white/10 border border-white/10 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2D7A4D] outline-none"
+                    className="w-full pl-11 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:ring-2 focus:ring-[#2D7A4D] outline-none transition-all placeholder-white/20"
                   />
                 </div>
               </div>
@@ -124,7 +121,7 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full pl-11 pr-11 py-4 bg-white/10 border border-white/10 rounded-xl text-sm text-white outline-none"
+                    className="w-full pl-11 pr-11 py-4 bg-white/5 border border-white/10 rounded-xl text-sm text-white outline-none transition-all"
                   />
                   <button
                     type="button"
@@ -136,13 +133,13 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* FOREST GREEN BUTTON */}
+              {/* The Green Button */}
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-[#2D7A4D] hover:bg-[#23633b] text-white font-bold py-4 rounded-xl shadow-lg text-base mt-2 active:scale-95 transition-all"
               >
-                {loading ? 'Verifying...' : 'Sign in'}
+                {loading ? 'Processing...' : 'Sign in'}
               </button>
             </form>
 
