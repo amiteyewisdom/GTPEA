@@ -7,8 +7,6 @@ import {
   BarChartRounded,
   ShieldRounded,
   SupportRounded,
-  TrendingUpRounded,
-  TrendingDownRounded,
   InsertChartRounded,
   EmojiEventsRounded,
 } from "@mui/icons-material";

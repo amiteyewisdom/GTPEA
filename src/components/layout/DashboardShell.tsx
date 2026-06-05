@@ -65,8 +65,10 @@ export function DashboardShell({ children, user, pendingApprovals }: DashboardSh
           display: { xs: "block", md: "none" },
           "& .MuiDrawer-paper": {
             width: SIDEBAR_WIDTH,
-            bgcolor: "#FAFAF8",
-            border: "1px solid rgba(0, 0, 0, 0.06)",
+            bgcolor: "rgba(6, 18, 38, 0.95)",
+            border: "1px solid rgba(148, 163, 184, 0.12)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
           },
         }}
       >
