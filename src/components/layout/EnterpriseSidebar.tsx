@@ -66,21 +66,21 @@ export default function EnterpriseSidebar({
     <>
       {/* Mobile/Tablet Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
           onClick={onClose}
         />
       )}
 
-      {/* Hamburger Drawer Sidebar */}
+      {/* Hamburger Dropdown Sidebar - drops from top */}
       <aside
         className={`
-          fixed left-0 top-0 h-full bg-brand-sidebar z-50
+          fixed left-0 right-0 top-0 bg-white z-50 border-b border-brand-card-border
           transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          md:translate-x-0 md:static
+          ${isOpen ? 'translate-y-0' : '-translate-y-full'}
+          md:translate-y-0 md:static md:border-b-0
         `}
-        style={{ width: sidebarWidth }}
+        style={{ height: isOpen ? 'auto' : sidebarWidth, width: isCollapsed ? '90px' : '280px' }}
       >
         <div className="h-full flex flex-col">
           {/* Logo Section */}
@@ -91,7 +91,7 @@ export default function EnterpriseSidebar({
               </div>
               {!isCollapsed && (
                 <div className="flex flex-col">
-                  <h1 className="text-white font-bold text-lg leading-tight">
+                  <h1 className="text-brand-text font-bold text-lg leading-tight">
                     GTPEA <span className="text-brand-accent">Finance</span>
                   </h1>
                   <span className="text-brand-text-secondary text-xs mt-0.5">
@@ -104,7 +104,7 @@ export default function EnterpriseSidebar({
             {/* Mobile Close Button */}
             <button
               onClick={onClose}
-              className="md:hidden p-2 rounded-lg bg-brand-card-bg border border-brand-card-border text-brand-text-secondary hover:text-white transition-all"
+              className="md:hidden p-2 rounded-lg bg-brand-hover border border-brand-card-border text-brand-text-secondary hover:text-brand-text transition-all"
             >
               <X className="w-5 h-5" />
             </button>
@@ -115,7 +115,7 @@ export default function EnterpriseSidebar({
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.path || pathname.startsWith(item.path + '/');
-              
+
               return (
                 <button
                   key={item.id}
@@ -123,19 +123,19 @@ export default function EnterpriseSidebar({
                   className={`
                     w-full flex items-center gap-3 px-4 py-3 rounded-brand
                     transition-all duration-200 group relative
-                    ${isActive 
-                      ? 'bg-brand-accent/20 text-brand-accent' 
-                      : 'text-brand-text-secondary hover:bg-brand-hover hover:text-white'
+                    ${isActive
+                      ? 'bg-brand-green/10 text-brand-green'
+                      : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text'
                     }
                   `}
                 >
                   {/* Active Indicator */}
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-brand-accent rounded-r-full" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-brand-green rounded-r-full" />
                   )}
-                  
+
                   <Icon className="w-5 h-5 flex-shrink-0" />
-                  
+
                   {!isCollapsed && (
                     <span className="font-medium text-sm whitespace-nowrap">
                       {item.label}
@@ -143,7 +143,7 @@ export default function EnterpriseSidebar({
                   )}
 
                   {!isCollapsed && isActive && (
-                    <ChevronRight className="w-4 h-4 ml-auto text-brand-accent" />
+                    <ChevronRight className="w-4 h-4 ml-auto text-brand-green" />
                   )}
                 </button>
               );
@@ -155,11 +155,11 @@ export default function EnterpriseSidebar({
             {!isCollapsed ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3 px-2">
-                  <div className="w-10 h-10 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold">
+                  <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green font-bold">
                     {userName.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium text-sm truncate">
+                    <p className="text-brand-text font-medium text-sm truncate">
                       {userName}
                     </p>
                     <p className="text-brand-text-secondary text-xs truncate">
@@ -167,11 +167,11 @@ export default function EnterpriseSidebar({
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <button
                     onClick={() => router.push('/dashboard/profile')}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-brand bg-brand-card-bg border border-brand-card-border text-brand-text-secondary hover:bg-brand-hover hover:text-white transition-all text-xs font-medium"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-brand bg-brand-hover border border-brand-card-border text-brand-text-secondary hover:bg-brand-card-border hover:text-brand-text transition-all text-xs font-medium"
                   >
                     <User className="w-4 h-4" />
                     {!isCollapsed && <span>Profile</span>}
@@ -187,7 +187,7 @@ export default function EnterpriseSidebar({
               </div>
             ) : (
               <div className="flex flex-col gap-2 items-center">
-                <div className="w-10 h-10 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold">
+                <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green font-bold">
                   {userName.charAt(0).toUpperCase()}
                 </div>
                 <button
@@ -205,13 +205,13 @@ export default function EnterpriseSidebar({
       {/* Collapse Toggle (Desktop) */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="hidden md:flex fixed left-0 bottom-6 z-50 items-center justify-center w-8 h-8 bg-brand-accent rounded-r-lg shadow-lg hover:bg-brand-accent/80 transition-all"
+        className="hidden md:flex fixed left-0 bottom-6 z-50 items-center justify-center w-8 h-8 bg-brand-green rounded-r-lg shadow-lg hover:bg-brand-green-dark transition-all"
         style={{ left: sidebarWidth }}
       >
         {isCollapsed ? (
-          <ChevronRight className="w-4 h-4 text-brand-primary" />
+          <ChevronRight className="w-4 h-4 text-white" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-brand-primary rotate-180" />
+          <ChevronRight className="w-4 h-4 text-white rotate-180" />
         )}
       </button>
     </>

@@ -19,7 +19,7 @@ export default function EmployeeDashboard() {
       {/* Hero Section */}
       <div className="relative overflow-hidden rounded-brand-lg bg-gradient-to-r from-brand-sidebar to-brand-primary border border-brand-card-border p-8 lg:p-12">
         <div className="relative z-10">
-          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-3">
+          <h1 className="text-4xl lg:text-5xl font-bold text-brand-text mb-3">
             Welcome Back, John
           </h1>
           <p className="text-brand-text-secondary text-lg mb-6">
@@ -30,7 +30,7 @@ export default function EmployeeDashboard() {
               <DollarSign className="w-5 h-5" />
               Apply for Loan
             </button>
-            <button className="flex items-center gap-2 px-6 py-3 bg-brand-card-bg border border-brand-card-border text-white font-semibold rounded-lg hover:bg-brand-hover transition-all">
+            <button className="flex items-center gap-2 px-6 py-3 bg-brand-card-bg border border-brand-card-border text-brand-text font-semibold rounded-lg hover:bg-brand-hover transition-all">
               <PiggyBank className="w-5 h-5" />
               View Savings
             </button>
@@ -101,7 +101,7 @@ export default function EmployeeDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Active Loans</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Active Loans</h3>
             <p className="text-brand-text-secondary text-sm">Your current loan portfolio</p>
           </div>
           <button className="flex items-center gap-2 text-brand-accent text-sm font-medium hover:text-brand-accent/80 transition-all">
@@ -133,7 +133,7 @@ export default function EmployeeDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Recent Activity</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Recent Activity</h3>
             <p className="text-brand-text-secondary text-sm">Your latest transactions</p>
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function EmployeeDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Loan Application Status</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Loan Application Status</h3>
             <p className="text-brand-text-secondary text-sm">Track your pending applications</p>
           </div>
         </div>
@@ -206,7 +206,7 @@ function BalanceCard({ title, value, change, trend, icon: Icon, color }: any) {
         )}
       </div>
       <p className="text-brand-text-secondary text-sm mb-2">{title}</p>
-      <p className="text-white text-3xl font-bold">{value}</p>
+      <p className="text-brand-text text-3xl font-bold">{value}</p>
     </GlassCard>
   );
 }
@@ -217,7 +217,7 @@ function QuickActionCard({ title, description, icon: Icon, color }: any) {
       <div className={`p-3 rounded-lg ${color} mb-4 group-hover:scale-110 transition-transform`}>
         <Icon className="w-6 h-6" />
       </div>
-      <h4 className="text-white font-semibold mb-1">{title}</h4>
+      <h4 className="text-brand-text font-semibold mb-1">{title}</h4>
       <p className="text-brand-text-secondary text-sm">{description}</p>
     </GlassCard>
   );
@@ -238,26 +238,26 @@ function LoanCard({ loanId, amount, remainingBalance, monthlyPayment, nextDueDat
             <Briefcase className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-white font-medium">{loanId}</p>
+            <p className="text-brand-text font-medium">{loanId}</p>
             <p className={`text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </p>
           </div>
         </div>
-        <span className="text-white font-bold text-lg">{amount}</span>
+        <span className="text-brand-text font-bold text-lg">{amount}</span>
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div>
           <p className="text-brand-text-secondary text-xs mb-1">Remaining</p>
-          <p className="text-white font-medium">{remainingBalance}</p>
+          <p className="text-brand-text font-medium">{remainingBalance}</p>
         </div>
         <div>
           <p className="text-brand-text-secondary text-xs mb-1">Monthly</p>
-          <p className="text-white font-medium">{monthlyPayment}</p>
+          <p className="text-brand-text font-medium">{monthlyPayment}</p>
         </div>
         <div>
           <p className="text-brand-text-secondary text-xs mb-1">Next Due</p>
-          <p className="text-white font-medium">{nextDueDate}</p>
+          <p className="text-brand-text font-medium">{nextDueDate}</p>
         </div>
       </div>
     </div>
@@ -294,12 +294,12 @@ function ActivityRow({ type, description, amount, date, status }: any) {
           <TypeIcon className="w-5 h-5" />
         </div>
         <div>
-          <p className="text-white font-medium">{description}</p>
+          <p className="text-brand-text font-medium">{description}</p>
           <p className="text-brand-text-secondary text-xs">{date}</p>
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <span className={`text-white font-bold ${type === 'withdrawal' ? 'text-brand-danger' : ''}`}>
+        <span className={`text-brand-text font-bold ${type === 'withdrawal' ? 'text-brand-danger' : ''}`}>
           {type === 'withdrawal' ? '-' : '+'}{amount}
         </span>
         <StatusIcon className={`w-5 h-5 ${statusColors[status as keyof typeof statusColors]}`} />
@@ -323,7 +323,7 @@ function ApplicationStatusCard({ applicationId, amount, purpose, submittedDate, 
     <div className="p-5 rounded-lg bg-brand-card-bg border border-brand-card-border">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-white font-semibold">{applicationId}</p>
+          <p className="text-brand-text font-semibold">{applicationId}</p>
           <p className="text-brand-text-secondary text-sm">{purpose} • {amount}</p>
         </div>
         <span className="text-brand-text-secondary text-xs">{submittedDate}</span>

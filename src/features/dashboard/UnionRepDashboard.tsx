@@ -20,7 +20,7 @@ export default function UnionRepDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Union Representative Dashboard</h1>
+        <h1 className="text-3xl font-bold text-brand-text mb-2">Union Representative Dashboard</h1>
         <p className="text-brand-text-secondary">Review and recommend loan applications</p>
       </div>
 
@@ -56,7 +56,7 @@ export default function UnionRepDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Employee Eligibility Queue</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Employee Eligibility Queue</h3>
             <p className="text-brand-text-secondary text-sm">Review loan eligibility for each employee</p>
           </div>
           <UserCheck className="w-5 h-5 text-brand-accent" />
@@ -141,7 +141,7 @@ export default function UnionRepDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Recent Recommendations</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Recent Recommendations</h3>
             <p className="text-brand-text-secondary text-sm">Your latest recommendations</p>
           </div>
           <Star className="w-5 h-5 text-brand-accent" />
@@ -194,7 +194,7 @@ function StatCard({ title, value, change, trend, icon: Icon, color }: any) {
         </div>
       </div>
       <p className="text-brand-text-secondary text-sm mb-1">{title}</p>
-      <p className="text-white text-2xl font-bold">{value}</p>
+      <p className="text-brand-text text-2xl font-bold">{value}</p>
     </GlassCard>
   );
 }
@@ -247,7 +247,7 @@ function EmployeeEligibilityCard({
             {name.charAt(0)}
           </div>
           <div>
-            <h4 className="text-white font-semibold">{name}</h4>
+            <h4 className="text-brand-text font-semibold">{name}</h4>
             <p className="text-brand-text-secondary text-xs">{employeeId}</p>
           </div>
         </div>
@@ -267,7 +267,7 @@ function EmployeeEligibilityCard({
       {/* Loan History */}
       <div className="mb-4 p-3 rounded-lg bg-brand-card-bg border border-brand-card-border">
         <p className="text-brand-text-secondary text-xs mb-1">Loan History</p>
-        <p className="text-white text-sm">{loanHistory}</p>
+        <p className="text-brand-text text-sm">{loanHistory}</p>
       </div>
 
       {/* Actions */}
@@ -295,7 +295,7 @@ function MetricItem({ icon: Icon, label, value, highlight }: any) {
       <Icon className={`w-4 h-4 ${highlight ? 'text-brand-accent' : 'text-brand-text-secondary'}`} />
       <div>
         <p className="text-brand-text-secondary text-xs">{label}</p>
-        <p className={`text-sm font-medium ${highlight ? 'text-brand-accent' : 'text-white'}`}>{value}</p>
+        <p className={`text-sm font-medium ${highlight ? 'text-brand-accent' : 'text-brand-text'}`}>{value}</p>
       </div>
     </div>
   );
@@ -315,7 +315,7 @@ function RecommendationRow({ employee, action, amount, date, status }: any) {
           {employee.charAt(0)}
         </div>
         <div>
-          <p className="text-white font-medium">{employee}</p>
+          <p className="text-brand-text font-medium">{employee}</p>
           <p className="text-brand-text-secondary text-xs">{action} • {amount}</p>
         </div>
       </div>

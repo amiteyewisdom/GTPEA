@@ -9,24 +9,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Brand Colors
-        'brand-primary': '#041633',
-        'brand-sidebar': '#081C3C',
-        'brand-accent': '#D4AF37',
-        'brand-success': '#34D16F',
+        // Brand Colors - Updated to match login page (white, gold, green)
+        'brand-primary': '#FFFFFF',
+        'brand-sidebar': '#FFFFFF',
+        'brand-accent': '#b59a6d',
+        'brand-success': '#2D7A4D',
         'brand-warning': '#F59E0B',
         'brand-danger': '#DC2626',
-        'brand-text': '#FFFFFF',
-        'brand-text-secondary': 'rgba(255,255,255,0.70)',
-        'brand-card-bg': 'rgba(255,255,255,0.08)',
-        'brand-card-border': 'rgba(212,175,55,0.15)',
-        'brand-hover': 'rgba(212,175,55,0.12)',
+        'brand-text': '#1e5a36',
+        'brand-text-secondary': '#64748B',
+        'brand-card-bg': '#FFFFFF',
+        'brand-card-border': '#E2E8F0',
+        'brand-hover': '#F1F5F9',
+        'brand-green': '#2D7A4D',
+        'brand-green-dark': '#1e5a36',
+        'brand-green-light': '#23633b',
+        'brand-background': '#F8FAFC',
         
         // Legacy colors for compatibility
         'gtpea-navy': '#041633',
-        'gtpea-gold': '#D4AF37',
+        'gtpea-gold': '#b59a6d',
         'gtpea-green': '#2D7A4D',
-        'gtpea-dark-green': '#1E5A36',
+        'gtpea-dark-green': '#1e5a36',
       },
       borderRadius: {
         'brand': '18px',

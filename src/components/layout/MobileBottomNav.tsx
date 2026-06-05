@@ -25,7 +25,7 @@ export default function MobileBottomNav({ currentRole }: MobileBottomNavProps) {
   const bottomNavItems = menuItems.slice(0, 5);
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-brand-sidebar border-t border-brand-card-border z-50">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-brand-card-border z-50">
       <div className="flex items-center justify-around h-16 px-2">
         {bottomNavItems.map((item) => {
           const Icon = item.icon;
@@ -37,9 +37,9 @@ export default function MobileBottomNav({ currentRole }: MobileBottomNavProps) {
               onClick={() => router.push(item.path)}
               className={`
                 flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all
-                ${isActive 
-                  ? 'text-brand-accent' 
-                  : 'text-brand-text-secondary hover:text-white'
+                ${isActive
+                  ? 'text-brand-green'
+                  : 'text-brand-text-secondary hover:text-brand-text'
                 }
               `}
             >
@@ -48,10 +48,10 @@ export default function MobileBottomNav({ currentRole }: MobileBottomNavProps) {
             </button>
           );
         })}
-        
+
         {/* More button for additional menu items */}
         {menuItems.length > 5 && (
-          <button className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-brand-text-secondary hover:text-white transition-all">
+          <button className="flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg text-brand-text-secondary hover:text-brand-text transition-all">
             <Settings className="w-5 h-5" />
             <span className="text-[10px] font-medium">More</span>
           </button>

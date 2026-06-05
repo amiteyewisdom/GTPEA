@@ -12,11 +12,10 @@ export default function GlassCard({ children, className = '', hover = false, onC
     <div
       onClick={onClick}
       className={`
-        bg-brand-card-bg
+        bg-white
         border border-brand-card-border
-        backdrop-blur-glass
         rounded-brand
-        shadow-lg
+        shadow-sm
         ${hover ? 'hover:bg-brand-hover transition-all duration-300 cursor-pointer' : ''}
         ${onClick ? 'cursor-pointer' : ''}
         ${className}

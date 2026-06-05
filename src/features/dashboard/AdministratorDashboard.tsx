@@ -23,7 +23,7 @@ export default function AdministratorDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Operations Dashboard</h1>
+        <h1 className="text-3xl font-bold text-brand-text mb-2">Operations Dashboard</h1>
         <p className="text-brand-text-secondary">Manage daily operations and data</p>
       </div>
 
@@ -124,7 +124,7 @@ export default function AdministratorDashboard() {
 
           {/* Recent Activity */}
           <GlassCard className="p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Recent Operations</h3>
+            <h3 className="text-lg font-semibold text-brand-text mb-4">Recent Operations</h3>
             <div className="space-y-3">
               <ActivityRow
                 action="Employee Import"
@@ -215,7 +215,7 @@ function TabButton({ active, onClick, children }: any) {
       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
         active
           ? 'bg-brand-accent/20 text-brand-accent border border-brand-accent/30'
-          : 'text-brand-text-secondary hover:bg-brand-hover hover:text-white'
+          : 'text-brand-text-secondary hover:bg-brand-hover hover:text-brand-text'
       }`}
     >
       {children}
@@ -236,7 +236,7 @@ function KPICard({ title, value, change, trend, icon: Icon, color }: any) {
         </div>
       </div>
       <p className="text-brand-text-secondary text-sm mb-1">{title}</p>
-      <p className="text-white text-2xl font-bold">{value}</p>
+      <p className="text-brand-text text-2xl font-bold">{value}</p>
     </GlassCard>
   );
 }
@@ -250,7 +250,7 @@ function QuickActionCard({ title, description, icon: Icon, onClick }: any) {
       <div className="p-3 rounded-lg bg-brand-accent/20 text-brand-accent mb-4 group-hover:bg-brand-accent group-hover:text-brand-primary transition-all">
         <Icon className="w-6 h-6" />
       </div>
-      <h4 className="text-white font-semibold mb-1">{title}</h4>
+      <h4 className="text-brand-text font-semibold mb-1">{title}</h4>
       <p className="text-brand-text-secondary text-sm">{description}</p>
     </GlassCard>
   );
@@ -266,7 +266,7 @@ function ActivityRow({ action, description, time, status }: any) {
   return (
     <div className="flex items-center justify-between p-3 rounded-lg bg-brand-card-bg">
       <div className="flex-1">
-        <p className="text-white text-sm font-medium">{action}</p>
+        <p className="text-brand-text text-sm font-medium">{action}</p>
         <p className="text-brand-text-secondary text-xs">{description}</p>
       </div>
       <div className="text-right">
@@ -284,7 +284,7 @@ function ImportSection({ title, description, accept }: any) {
 
   return (
     <GlassCard className="p-6">
-      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+      <h3 className="text-lg font-semibold text-brand-text mb-2">{title}</h3>
       <p className="text-brand-text-secondary text-sm mb-4">{description}</p>
       
       <div
@@ -297,7 +297,7 @@ function ImportSection({ title, description, accept }: any) {
         onDrop={(e) => { e.preventDefault(); setIsDragging(false); }}
       >
         <FileSpreadsheet className="w-12 h-12 text-brand-accent mx-auto mb-4" />
-        <p className="text-white font-medium mb-2">Drag and drop your file here</p>
+        <p className="text-brand-text font-medium mb-2">Drag and drop your file here</p>
         <p className="text-brand-text-secondary text-sm mb-4">or</p>
         <label className="inline-block px-6 py-2.5 bg-brand-accent text-brand-primary font-medium rounded-lg cursor-pointer hover:bg-brand-accent/80 transition-all">
           Browse Files
@@ -314,12 +314,12 @@ function ImportSection({ title, description, accept }: any) {
 function ExportSection({ title, description, sheets }: any) {
   return (
     <GlassCard className="p-6">
-      <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+      <h3 className="text-lg font-semibold text-brand-text mb-2">{title}</h3>
       <p className="text-brand-text-secondary text-sm mb-4">{description}</p>
       
       <div className="flex flex-wrap gap-2 mb-4">
         {sheets.map((sheet: string) => (
-          <span key={sheet} className="px-3 py-1 bg-brand-card-bg border border-brand-card-border rounded-full text-sm text-white">
+          <span key={sheet} className="px-3 py-1 bg-brand-card-bg border border-brand-card-border rounded-full text-sm text-brand-text">
             {sheet}
           </span>
         ))}

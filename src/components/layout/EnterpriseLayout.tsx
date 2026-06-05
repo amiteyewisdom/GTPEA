@@ -23,30 +23,30 @@ export default function EnterpriseLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-brand-primary">
-      <EnterpriseSidebar 
-        currentRole={currentRole} 
+    <div className="min-h-screen bg-brand-background">
+      <EnterpriseSidebar
+        currentRole={currentRole}
         userName={userName}
         userAvatar={userAvatar}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
-      <EnterpriseTopbar 
+      <EnterpriseTopbar
         userName={userName}
         userRole={currentRole.replace('_', ' ')}
         onMenuClick={() => setIsSidebarOpen(true)}
       />
-      
+
       {/* Hamburger Button (Mobile/Tablet) */}
       <button
         onClick={() => setIsSidebarOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-lg bg-brand-card-bg border border-brand-card-border backdrop-blur-glass text-white hover:bg-brand-hover transition-all"
+        className="md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-lg bg-white border border-brand-card-border backdrop-blur-glass text-brand-text hover:bg-brand-hover transition-all shadow-lg"
       >
         <Menu className="w-6 h-6" />
       </button>
-      
+
       {/* Main Content Area */}
-      <main className="pt-16 md:pl-[280px] pb-16 md:pb-0 min-h-screen">
+      <main className="pt-0 md:pt-16 md:pl-[280px] pb-16 md:pb-0 min-h-screen">
         <div className="p-4 md:p-6 lg:p-8">
           {children}
         </div>

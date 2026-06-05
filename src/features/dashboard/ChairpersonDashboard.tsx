@@ -2,23 +2,55 @@
 
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
-import { 
-  PiggyBank, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  PiggyBank,
+  DollarSign,
+  TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
   Users,
   Calendar,
   TrendingDown
 } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar
+} from 'recharts';
+
+// Sample data for charts
+const savingsTrendData = [
+  { month: 'Jul', savings: 2100000 },
+  { month: 'Aug', savings: 2180000 },
+  { month: 'Sep', savings: 2250000 },
+  { month: 'Oct', savings: 2320000 },
+  { month: 'Nov', savings: 2390000 },
+  { month: 'Dec', savings: 2456789 },
+];
+
+const loanTrendData = [
+  { month: 'Jul', disbursements: 1800000, repayments: 1200000 },
+  { month: 'Aug', disbursements: 1950000, repayments: 1350000 },
+  { month: 'Sep', disbursements: 2100000, repayments: 1450000 },
+  { month: 'Oct', disbursements: 2250000, repayments: 1550000 },
+  { month: 'Nov', disbursements: 2350000, repayments: 1650000 },
+  { month: 'Dec', disbursements: 2450000, repayments: 1750000 },
+];
 
 export default function ChairpersonDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Executive Dashboard</h1>
+        <h1 className="text-3xl font-bold text-brand-text mb-2">Executive Dashboard</h1>
         <p className="text-brand-text-secondary">High-level financial oversight and strategic insights</p>
       </div>
 
@@ -64,17 +96,34 @@ export default function ChairpersonDashboard() {
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-semibold text-white">Savings Trend</h3>
+              <h3 className="text-xl font-semibold text-brand-text">Savings Trend</h3>
               <p className="text-brand-text-secondary text-sm">12-month overview</p>
             </div>
-            <select className="bg-brand-card-bg border border-brand-card-border rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-brand-accent">
+            <select className="bg-brand-card-bg border border-brand-card-border rounded-lg px-3 py-1.5 text-sm text-brand-text focus:outline-none focus:border-brand-accent">
               <option>Last 12 months</option>
               <option>Last 6 months</option>
               <option>YTD</option>
             </select>
           </div>
-          <div className="h-80 flex items-center justify-center border border-dashed border-brand-card-border rounded-lg">
-            <p className="text-brand-text-secondary text-sm">Large Savings Chart Placeholder</p>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={savingsTrendData}>
+                <defs>
+                  <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#2D7A4D" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#2D7A4D" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
+                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
+                <Tooltip
+                  formatter={(value) => `$${(value as number).toLocaleString()}`}
+                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
+                />
+                <Area type="monotone" dataKey="savings" stroke="#2D7A4D" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </GlassCard>
 
@@ -82,17 +131,29 @@ export default function ChairpersonDashboard() {
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-semibold text-white">Loan Trend</h3>
+              <h3 className="text-xl font-semibold text-brand-text">Loan Trend</h3>
               <p className="text-brand-text-secondary text-sm">Disbursement and repayment analysis</p>
             </div>
-            <select className="bg-brand-card-bg border border-brand-card-border rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-brand-accent">
+            <select className="bg-brand-card-bg border border-brand-card-border rounded-lg px-3 py-1.5 text-sm text-brand-text focus:outline-none focus:border-brand-accent">
               <option>Last 12 months</option>
               <option>Last 6 months</option>
               <option>YTD</option>
             </select>
           </div>
-          <div className="h-80 flex items-center justify-center border border-dashed border-brand-card-border rounded-lg">
-            <p className="text-brand-text-secondary text-sm">Large Loan Chart Placeholder</p>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={loanTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
+                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
+                <Tooltip
+                  formatter={(value) => `$${(value as number).toLocaleString()}`}
+                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
+                />
+                <Bar dataKey="disbursements" fill="#b59a6d" name="Disbursements" />
+                <Bar dataKey="repayments" fill="#2D7A4D" name="Repayments" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </GlassCard>
       </div>
@@ -101,30 +162,30 @@ export default function ChairpersonDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Fund Health</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Fund Health</h3>
             <p className="text-brand-text-secondary text-sm">Overall financial position</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-success flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-white">75%</span>
+              <span className="text-3xl font-bold text-brand-text">75%</span>
             </div>
-            <p className="text-white font-semibold text-lg">Solvency Ratio</p>
+            <p className="text-brand-text font-semibold text-lg">Solvency Ratio</p>
             <p className="text-brand-success text-sm mt-1">Excellent</p>
           </div>
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-accent flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-white">68%</span>
+              <span className="text-3xl font-bold text-brand-text">68%</span>
             </div>
-            <p className="text-white font-semibold text-lg">Loan-to-Savings</p>
+            <p className="text-brand-text font-semibold text-lg">Loan-to-Savings</p>
             <p className="text-brand-accent text-sm mt-1">Healthy</p>
           </div>
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-warning flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-white">82%</span>
+              <span className="text-3xl font-bold text-brand-text">82%</span>
             </div>
-            <p className="text-white font-semibold text-lg">Recovery Rate</p>
+            <p className="text-brand-text font-semibold text-lg">Recovery Rate</p>
             <p className="text-brand-warning text-sm mt-1">Good</p>
           </div>
         </div>
@@ -134,7 +195,7 @@ export default function ChairpersonDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Employee Summary</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Employee Summary</h3>
             <p className="text-brand-text-secondary text-sm">Member financial overview</p>
           </div>
           <div className="flex items-center gap-3">
@@ -142,7 +203,7 @@ export default function ChairpersonDashboard() {
               <input
                 type="text"
                 placeholder="Search employees..."
-                className="pl-10 pr-4 py-2 bg-brand-card-bg border border-brand-card-border rounded-lg text-white placeholder-brand-text-secondary focus:outline-none focus:border-brand-accent text-sm"
+                className="pl-10 pr-4 py-2 bg-brand-card-bg border border-brand-card-border rounded-lg text-brand-text placeholder-brand-text-secondary focus:outline-none focus:border-brand-accent text-sm"
               />
               <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-secondary" />
             </div>
@@ -210,7 +271,7 @@ export default function ChairpersonDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Upcoming Meetings</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Upcoming Meetings</h3>
             <p className="text-brand-text-secondary text-sm">Scheduled board and committee meetings</p>
           </div>
           <Calendar className="w-5 h-5 text-brand-accent" />
@@ -256,7 +317,7 @@ function ExecutiveKPICard({ title, value, change, trend, icon: Icon, color }: an
         </div>
       </div>
       <p className="text-brand-text-secondary text-sm mb-2">{title}</p>
-      <p className="text-white text-3xl font-bold">{value}</p>
+      <p className="text-brand-text text-3xl font-bold">{value}</p>
     </GlassCard>
   );
 }
@@ -269,14 +330,14 @@ function EmployeeRow({ name, savings, loans, balance, dividends, withdrawals }: 
           <div className="w-10 h-10 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold">
             {name.charAt(0)}
           </div>
-          <span className="text-white font-medium">{name}</span>
+          <span className="text-brand-text font-medium">{name}</span>
         </div>
       </td>
-      <td className="py-4 px-4 text-white font-medium">{savings}</td>
-      <td className="py-4 px-4 text-white font-medium">{loans}</td>
+      <td className="py-4 px-4 text-brand-text font-medium">{savings}</td>
+      <td className="py-4 px-4 text-brand-text font-medium">{loans}</td>
       <td className="py-4 px-4 text-brand-warning font-medium">{balance}</td>
       <td className="py-4 px-4 text-brand-success font-medium">{dividends}</td>
-      <td className="py-4 px-4 text-white font-medium">{withdrawals}</td>
+      <td className="py-4 px-4 text-brand-text font-medium">{withdrawals}</td>
     </tr>
   );
 }
@@ -286,7 +347,7 @@ function MeetingCard({ title, date, time, location, agenda }: any) {
     <div className="p-4 rounded-lg bg-brand-card-bg border border-brand-card-border hover:bg-brand-hover transition-all">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h4 className="text-white font-semibold text-lg">{title}</h4>
+          <h4 className="text-brand-text font-semibold text-lg">{title}</h4>
           <div className="flex items-center gap-4 mt-1">
             <span className="text-brand-accent text-sm font-medium">{date}</span>
             <span className="text-brand-text-secondary text-sm">{time}</span>
@@ -295,10 +356,10 @@ function MeetingCard({ title, date, time, location, agenda }: any) {
         <Calendar className="w-5 h-5 text-brand-accent flex-shrink-0" />
       </div>
       <p className="text-brand-text-secondary text-sm mb-2">
-        <span className="text-white font-medium">Location:</span> {location}
+        <span className="text-brand-text font-medium">Location:</span> {location}
       </p>
       <p className="text-brand-text-secondary text-sm">
-        <span className="text-white font-medium">Agenda:</span> {agenda}
+        <span className="text-brand-text font-medium">Agenda:</span> {agenda}
       </p>
     </div>
   );

@@ -2,10 +2,10 @@
 
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
-import { 
-  Wallet, 
-  DollarSign, 
-  CreditCard, 
+import {
+  Wallet,
+  DollarSign,
+  CreditCard,
   TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
@@ -15,13 +15,34 @@ import {
   XCircle,
   Clock
 } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
+
+// Sample data for charts
+const fundPerformanceData = [
+  { month: 'Jan', returns: 4.2 },
+  { month: 'Feb', returns: 3.8 },
+  { month: 'Mar', returns: 5.1 },
+  { month: 'Apr', returns: 4.5 },
+  { month: 'May', returns: 5.8 },
+  { month: 'Jun', returns: 6.2 },
+];
 
 export default function FundManagerDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Fund Management Dashboard</h1>
+        <h1 className="text-3xl font-bold text-brand-text mb-2">Fund Management Dashboard</h1>
         <p className="text-brand-text-secondary">Monitor and manage financial operations</p>
       </div>
 
@@ -65,7 +86,7 @@ export default function FundManagerDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Repayment Calendar</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Repayment Calendar</h3>
             <p className="text-brand-text-secondary text-sm">Upcoming loan repayments</p>
           </div>
           <Calendar className="w-5 h-5 text-brand-accent" />
@@ -115,20 +136,37 @@ export default function FundManagerDashboard() {
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-semibold text-white">Fund Performance</h3>
+              <h3 className="text-xl font-semibold text-brand-text">Fund Performance</h3>
               <p className="text-brand-text-secondary text-sm">Monthly returns analysis</p>
             </div>
             <BarChart3 className="w-5 h-5 text-brand-accent" />
           </div>
-          <div className="h-64 flex items-center justify-center border border-dashed border-brand-card-border rounded-lg">
-            <p className="text-brand-text-secondary text-sm">Fund Performance Chart Placeholder</p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={fundPerformanceData}>
+                <defs>
+                  <linearGradient id="colorReturns" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#b59a6d" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#b59a6d" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
+                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `${value}%`} />
+                <Tooltip
+                  formatter={(value) => `${value}%`}
+                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
+                />
+                <Area type="monotone" dataKey="returns" stroke="#b59a6d" fillOpacity={1} fill="url(#colorReturns)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </GlassCard>
 
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-semibold text-white">Collection Forecast</h3>
+              <h3 className="text-xl font-semibold text-brand-text">Collection Forecast</h3>
               <p className="text-brand-text-secondary text-sm">Projected collections for next quarter</p>
             </div>
             <TrendingUp className="w-5 h-5 text-brand-success" />
@@ -141,7 +179,7 @@ export default function FundManagerDashboard() {
           <div className="mt-6 p-4 bg-brand-card-bg rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-brand-text-secondary text-sm">Total Forecast</span>
-              <span className="text-white text-xl font-bold">$402,000</span>
+              <span className="text-brand-text text-xl font-bold">$402,000</span>
             </div>
           </div>
         </GlassCard>
@@ -151,7 +189,7 @@ export default function FundManagerDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Loan Reviews</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Loan Reviews</h3>
             <p className="text-brand-text-secondary text-sm">Applications awaiting your review</p>
           </div>
           <div className="flex items-center gap-2">
@@ -210,7 +248,7 @@ export default function FundManagerDashboard() {
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-white">Recent Disbursements</h3>
+            <h3 className="text-xl font-semibold text-brand-text">Recent Disbursements</h3>
             <p className="text-brand-text-secondary text-sm">Latest loan payouts</p>
           </div>
           <CreditCard className="w-5 h-5 text-brand-accent" />
@@ -263,7 +301,7 @@ function KPICard({ title, value, change, trend, icon: Icon, color }: any) {
         </div>
       </div>
       <p className="text-brand-text-secondary text-sm mb-1">{title}</p>
-      <p className="text-white text-2xl font-bold">{value}</p>
+      <p className="text-brand-text text-2xl font-bold">{value}</p>
     </GlassCard>
   );
 }
@@ -283,14 +321,14 @@ function RepaymentCard({ borrower, amount, dueDate, status }: any) {
             {borrower.charAt(0)}
           </div>
           <div>
-            <p className="text-white font-medium">{borrower}</p>
+            <p className="text-brand-text font-medium">{borrower}</p>
             <p className="text-brand-text-secondary text-xs">{dueDate}</p>
           </div>
         </div>
         <Clock className={`w-4 h-4 ${statusColors[status as keyof typeof statusColors]}`} />
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-white text-lg font-bold">{amount}</span>
+        <span className="text-brand-text text-lg font-bold">{amount}</span>
         <span className={`text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
@@ -303,7 +341,7 @@ function ForecastMonth({ month, amount, percentage }: any) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-white font-medium">{month}</span>
+        <span className="text-brand-text font-medium">{month}</span>
         <span className="text-brand-accent font-bold">{amount}</span>
       </div>
       <div className="h-2 bg-brand-card-bg rounded-full overflow-hidden">
@@ -327,12 +365,12 @@ function LoanReviewRow({ applicant, amount, duration, purpose, riskScore }: any)
           <div className="w-8 h-8 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold text-sm">
             {applicant.charAt(0)}
           </div>
-          <span className="text-white text-sm">{applicant}</span>
+          <span className="text-brand-text text-sm">{applicant}</span>
         </div>
       </td>
-      <td className="py-3 px-4 text-white font-medium text-sm">{amount}</td>
+      <td className="py-3 px-4 text-brand-text font-medium text-sm">{amount}</td>
       <td className="py-3 px-4 text-brand-text-secondary text-sm">{duration}</td>
-      <td className="py-3 px-4 text-white text-sm">{purpose}</td>
+      <td className="py-3 px-4 text-brand-text text-sm">{purpose}</td>
       <td className="py-3 px-4">
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${riskColors[riskScore as keyof typeof riskColors]}`}>
           {riskScore}
@@ -366,12 +404,12 @@ function DisbursementRow({ recipient, amount, loanId, date, status }: any) {
           {recipient.charAt(0)}
         </div>
         <div>
-          <p className="text-white font-medium">{recipient}</p>
+          <p className="text-brand-text font-medium">{recipient}</p>
           <p className="text-brand-text-secondary text-xs">{loanId} • {date}</p>
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <span className="text-white font-bold">{amount}</span>
+        <span className="text-brand-text font-bold">{amount}</span>
         <span className={`text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
           {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
