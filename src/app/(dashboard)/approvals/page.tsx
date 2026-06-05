@@ -10,7 +10,7 @@ export default async function ApprovalsPage() {
   const { data: approvals, count } = await supabase
     .from("approvals")
     .select(
-      `*, profiles!approvals_submitted_by_fkey (full_name), reviewer:profiles!approvals_reviewed_by_fkey (full_name)`,
+      `*, profiles!approvals_submitted_by_fkey (full_name), approval_actions (stage, required_role, action, notes, actioned_at)`,
       { count: "exact" }
     )
     .order("submitted_at", { ascending: false });

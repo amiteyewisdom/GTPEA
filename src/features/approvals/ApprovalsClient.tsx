@@ -17,6 +17,14 @@ import { KPICard } from "@/components/ui/KPICard";
 import { formatDate, formatRelativeTime } from "@/utils/formatters";
 import { createClient } from "@/lib/supabase/client";
 
+interface ApprovalAction {
+  stage: number;
+  required_role: string;
+  action: string;
+  notes: string | null;
+  actioned_at: string;
+}
+
 interface ApprovalRow {
   id: string;
   entity_type: string;
@@ -26,8 +34,11 @@ interface ApprovalRow {
   review_notes: string | null;
   submitted_at: string;
   reviewed_at: string | null;
+  current_stage?: number;
+  total_stages?: number;
+  completed_at?: string | null;
   profiles?: { full_name: string } | null;
-  reviewer?: { full_name: string } | null;
+  approval_actions?: ApprovalAction[];
 }
 
 interface ApprovalsClientProps {
@@ -41,8 +52,10 @@ export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selected, setSelected] = useState<ApprovalRow | null>(null);
+  const [notes, setNotes] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const pending = approvals.filter((a) => a.status === "pending").length;
   const approved = approvals.filter((a) => a.status === "approved").length;
@@ -62,17 +75,24 @@ export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
   const handleAction = async (approvalId: string, action: "approved" | "rejected") => {
     setActionLoading(true);
     setActionError(null);
-    const supabase = createClient() as any;
-    const { error } = await supabase
-      .from("approvals")
-      .update({ status: action, reviewed_at: new Date().toISOString() })
-      .eq("id", approvalId);
+    try {
+      const response = await fetch("/api/approvals/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approval_id: approvalId, action, notes }),
+      });
 
-    if (error) {
-      setActionError(error.message);
-    } else {
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Unable to process approval action.");
+      }
+
+      setSuccessMessage("Approval updated successfully.");
       setSelected(null);
+      setNotes("");
       router.refresh();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Unexpected error.");
     }
     setActionLoading(false);
   };
@@ -104,6 +124,12 @@ export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
         />
       </Box>
 
+      {successMessage && (
+        <Alert severity="success" onClose={() => setSuccessMessage(null)}>
+          {successMessage}
+        </Alert>
+      )}
+
       {/* Table */}
       <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
         <Table size="small" sx={{ minWidth: 640 }}>
@@ -111,10 +137,9 @@ export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
             <TableRow>
               <TableCell sx={{ whiteSpace: 'nowrap' }}>Type</TableCell>
               <TableCell sx={{ whiteSpace: 'nowrap' }}>Submitted By</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap' }}>Stage</TableCell>
               <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', md: 'table-cell' } }}>Submitted</TableCell>
-              <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', lg: 'table-cell' } }}>Reviewed By</TableCell>
-              <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', lg: 'table-cell' } }}>Reviewed</TableCell>
-              <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
+              <TableCell sx={{ whiteSpace: 'nowrap', display: { xs: 'none', lg: 'table-cell' } }}>Status</TableCell>
               <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -146,18 +171,17 @@ export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
                   <TableCell sx={{ fontSize: "0.875rem", fontWeight: 500 }}>
                     {approval.profiles?.full_name ?? "—"}
                   </TableCell>
+                  <TableCell sx={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>
+                    {approval.current_stage ?? 1}/{approval.total_stages ?? 3}
+                  </TableCell>
                   <TableCell sx={{ fontSize: "0.875rem", color: "text.secondary", display: { xs: 'none', md: 'table-cell' } }}>
                     <Tooltip title={formatDate(approval.submitted_at, "dd MMM yyyy HH:mm")}>
                       <span>{formatRelativeTime(approval.submitted_at)}</span>
                     </Tooltip>
                   </TableCell>
                   <TableCell sx={{ fontSize: "0.875rem", color: "text.secondary", display: { xs: 'none', lg: 'table-cell' } }}>
-                    {approval.reviewer?.full_name ?? "—"}
+                    <StatusChip status={approval.status} />
                   </TableCell>
-                  <TableCell sx={{ fontSize: "0.875rem", color: "text.secondary", display: { xs: 'none', lg: 'table-cell' } }}>
-                    {approval.reviewed_at ? formatRelativeTime(approval.reviewed_at) : "—"}
-                  </TableCell>
-                  <TableCell><StatusChip status={approval.status} /></TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: "flex", gap: 0.5, justifyContent: "flex-end" }}>
                       {approval.status === "pending" && (
@@ -211,21 +235,63 @@ export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
         <DialogTitle>Approval Details</DialogTitle>
         <DialogContent>
           {selected && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {actionError && <Alert severity="error">{actionError}</Alert>}
-              {[
-                { label: "Type", value: selected.entity_type.replace("_", " ") },
-                { label: "Reference ID", value: selected.entity_id },
-                { label: "Submitted By", value: selected.profiles?.full_name ?? "—" },
-                { label: "Submitted At", value: formatDate(selected.submitted_at, "dd MMM yyyy, HH:mm") },
-                { label: "Status", value: <StatusChip status={selected.status} /> },
-                ...(selected.review_notes ? [{ label: "Review Notes", value: selected.review_notes }] : []),
-              ].map(({ label, value }) => (
-                <Box key={label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.75, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                  <Typography sx={{ fontSize: "0.8125rem", color: "text.secondary", fontWeight: 500 }}>{label}</Typography>
-                  <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{value}</Typography>
+              <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: "1fr 1fr" }}>
+                {[
+                  { label: "Type", value: selected.entity_type.replace("_", " ") },
+                  { label: "Reference ID", value: selected.entity_id },
+                  { label: "Submitted By", value: selected.profiles?.full_name ?? "—" },
+                  { label: "Submitted At", value: formatDate(selected.submitted_at, "dd MMM yyyy, HH:mm") },
+                  { label: "Stage", value: `${selected.current_stage ?? 1}/${selected.total_stages ?? 3}` },
+                  { label: "Status", value: <StatusChip status={selected.status} /> },
+                ].map(({ label, value }) => (
+                  <Box key={label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.75, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <Typography sx={{ fontSize: "0.8125rem", color: "text.secondary", fontWeight: 500 }}>{label}</Typography>
+                    <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{value}</Typography>
+                  </Box>
+                ))}
+              </Box>
+
+              {selected.review_notes && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                  <Typography sx={{ fontSize: "0.8125rem", color: "text.secondary", fontWeight: 500 }}>Previous Notes</Typography>
+                  <Typography sx={{ fontSize: "0.875rem", color: "text.primary" }}>{selected.review_notes}</Typography>
                 </Box>
-              ))}
+              )}
+
+              {selected.approval_actions?.length ? (
+                <Box>
+                  <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, mb: 1 }}>Approval history</Typography>
+                  <Box sx={{ display: "grid", gap: 1 }}>
+                    {selected.approval_actions.map((action) => (
+                      <Paper key={`${action.stage}-${action.actioned_at}`} sx={{ p: 2, bgcolor: "rgba(248,250,252,0.9)", border: "1px solid rgba(203,213,225,0.5)" }}>
+                        <Typography sx={{ fontSize: "0.82rem", fontWeight: 700 }}>Stage {action.stage}</Typography>
+                        <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>Role: {action.required_role.replace("_", " ")}</Typography>
+                        <Typography sx={{ mt: 1, fontSize: "0.875rem" }}>
+                          <strong>{action.action.toUpperCase()}</strong> – {action.notes || "No note provided."}
+                        </Typography>
+                        <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", mt: 1 }}>{formatDate(action.actioned_at, "dd MMM yyyy, HH:mm")}</Typography>
+                      </Paper>
+                    ))}
+                  </Box>
+                </Box>
+              ) : (
+                <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>
+                  No approval history recorded yet.
+                </Typography>
+              )}
+
+              {selected.status === "pending" && (
+                <TextField
+                  label="Add approval notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  multiline
+                  rows={3}
+                  fullWidth
+                />
+              )}
             </Box>
           )}
         </DialogContent>

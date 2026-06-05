@@ -13,6 +13,7 @@ import {
 import { StatusChip } from "@/components/ui/StatusChip";
 import { KPICard } from "@/components/ui/KPICard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
+import { LoanApplication } from "@/features/loans/LoanApplication";
 
 interface LoanRow {
   id: string;
@@ -30,8 +31,18 @@ interface LoanRow {
   loan_products?: { name: string } | null;
 }
 
+interface LoanProductOption {
+  id: string;
+  name: string;
+  interest_rate: number;
+  min_amount: number;
+  max_amount: number;
+  max_tenure_months: number;
+}
+
 interface LoansClientProps {
   loans: LoanRow[];
+  loanProducts: LoanProductOption[];
   total: number;
   totalDisbursed: number;
   totalOutstanding: number;
@@ -39,7 +50,7 @@ interface LoansClientProps {
 
 const ALL_TABS = ["all", "pending", "approved", "disbursed", "repaying", "completed", "rejected", "defaulted"];
 
-export function LoansClient({ loans, total, totalDisbursed, totalOutstanding }: LoansClientProps) {
+export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalOutstanding }: LoansClientProps) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [page, setPage] = useState(0);
@@ -76,6 +87,8 @@ export function LoansClient({ loans, total, totalDisbursed, totalOutstanding }: 
         <KPICard title="Defaulted" value={defaulted} icon={WarningAmberRounded} accent={defaulted > 0 ? "danger" : "primary"} subtitle={`${((defaulted / Math.max(total, 1)) * 100).toFixed(1)}% default rate`} />
       </Box>
 
+      <LoanApplication loanProducts={loanProducts} />
+
       {/* Controls */}
       <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
         <TextField
@@ -92,7 +105,12 @@ export function LoansClient({ loans, total, totalDisbursed, totalOutstanding }: 
             ),
           }}
         />
-        <Button variant="contained" size="small" startIcon={<AddRounded />}>
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<AddRounded />}
+          onClick={() => document.getElementById("loan-application")?.scrollIntoView({ behavior: "smooth" })}
+        >
           New Loan Application
         </Button>
       </Box>

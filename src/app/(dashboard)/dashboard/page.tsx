@@ -21,9 +21,10 @@ export default async function DashboardRouter() {
     "super_admin": "/dashboard/Admin",
     "administrator": "/dashboard/Admin",
     "chairperson": "/approvals",
-    "union_rep": "/employees",
-    "fund_manager": "/ledger",
-    "employee": "/profile",
+    "chairman": "/approvals",
+    "union_rep": "/approvals",
+    "fund_manager": "/approvals",
+    "employee": "/loans",
   };
 
   const destination = routes[role || ""] || "/profile";
