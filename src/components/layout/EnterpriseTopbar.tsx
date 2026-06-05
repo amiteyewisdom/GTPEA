@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Bell, MessageSquare, User, ChevronDown, Shield, Menu } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { Search, Bell, MessageSquare, User, ChevronDown, Shield, Menu, LogOut } from 'lucide-react';
 
 interface EnterpriseTopbarProps {
   userName?: string;
@@ -11,17 +13,28 @@ interface EnterpriseTopbarProps {
   onMenuClick?: () => void;
 }
 
-export default function EnterpriseTopbar({ 
-  userName = 'John Doe', 
+export default function EnterpriseTopbar({
+  userName = 'John Doe',
   userRole = 'Administrator',
   notificationCount = 3,
   messageCount = 5,
   onMenuClick
 }: EnterpriseTopbarProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <header className="fixed top-0 right-0 left-0 md:left-[280px] h-16 bg-white/80 backdrop-blur-glass border-b border-brand-card-border z-40">
@@ -155,7 +168,11 @@ export default function EnterpriseTopbar({
                     <Shield className="w-4 h-4" />
                     <span>Security</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 px-4 py-2.5 text-brand-danger hover:bg-brand-danger/10 transition-all text-sm">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-brand-danger hover:bg-brand-danger/10 transition-all text-sm"
+                  >
+                    <LogOut className="w-4 h-4" />
                     <span>Logout</span>
                   </button>
                 </div>
