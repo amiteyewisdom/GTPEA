@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/types/database";
 import { redirect } from "next/navigation";
-import { DashboardShell } from "@/components/layout/DashboardShell";
+import EnterpriseLayout from "@/components/layout/EnterpriseLayout";
+import { UserRole } from "@/lib/role-menus";
 
 export default async function DashboardLayout({
   children,
@@ -25,12 +26,6 @@ export default async function DashboardLayout({
     .single();
   const profile = profileRes.data as Profile | null;
 
-  const pendingApprovalsRes = await supabase
-    .from("approvals")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending");
-  const pendingApprovals = pendingApprovalsRes.count;
-
   const userInfo = {
     full_name: profile?.full_name ?? user.email ?? "User",
     role: profile?.role ?? "employee",
@@ -39,8 +34,12 @@ export default async function DashboardLayout({
   };
 
   return (
-    <DashboardShell user={userInfo} pendingApprovals={pendingApprovals ?? 0}>
+    <EnterpriseLayout 
+      currentRole={(profile?.role as UserRole) || 'employee'}
+      userName={userInfo.full_name}
+      userAvatar={userInfo.avatar_url || undefined}
+    >
       {children}
-    </DashboardShell>
+    </EnterpriseLayout>
   );
 }

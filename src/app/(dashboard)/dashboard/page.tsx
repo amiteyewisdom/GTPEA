@@ -1,13 +1,18 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { RoleDashboard } from "@/features/dashboard/RoleDashboard";
+import { UserRole } from "@/lib/role-menus";
+import SuperAdminDashboard from "@/features/dashboard/SuperAdminDashboard";
+import AdministratorDashboard from "@/features/dashboard/AdministratorDashboard";
+import ChairpersonDashboard from "@/features/dashboard/ChairpersonDashboard";
+import FundManagerDashboard from "@/features/dashboard/FundManagerDashboard";
+import UnionRepDashboard from "@/features/dashboard/UnionRepDashboard";
+import EmployeeDashboard from "@/features/dashboard/EmployeeDashboard";
 
 export default async function DashboardRouter() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Fix: use 'as any' to bypass the 'never' type error
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, role, employee_id")
@@ -16,21 +21,22 @@ export default async function DashboardRouter() {
 
   if (!profile) redirect("/login");
 
-  // Fetch Global Metrics for Admin/Chairman/Fund Manager
-  const [empCount, loanData, approvalCount] = await Promise.all([
-    supabase.from("employees").select("id", { count: "exact", head: true }),
-    supabase.from("loans").select("outstanding_balance, amount_requested"),
-    supabase.from("approvals").select("id", { count: "exact", head: true }).eq("status", "pending")
-  ]);
+  const role = profile.role as UserRole;
 
-  const metrics = {
-    totalMembers: empCount.count ?? 0,
-    totalOutstanding: loanData.data?.reduce((s, l) => s + (l.outstanding_balance ?? 0), 0) ?? 0,
-    pendingApprovals: approvalCount.count ?? 0,
-    fundBalance: 42850000,
-    dividends: 154000,
-    withdrawals: 8500
-  };
-
-  return <RoleDashboard user={profile} metrics={metrics} />;
+  // Render the appropriate dashboard based on role
+  switch (role) {
+    case 'super_admin':
+      return <SuperAdminDashboard />;
+    case 'administrator':
+      return <AdministratorDashboard />;
+    case 'chairperson':
+      return <ChairpersonDashboard />;
+    case 'fund_manager':
+      return <FundManagerDashboard />;
+    case 'union_rep':
+      return <UnionRepDashboard />;
+    case 'employee':
+    default:
+      return <EmployeeDashboard />;
+  }
 }
