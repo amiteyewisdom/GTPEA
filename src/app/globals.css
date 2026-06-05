@@ -2,32 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  box-sizing: border-box;
-}
-
-html,
 body {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  font-family: "Inter", sans-serif;
-  background: radial-gradient(circle at top, rgba(56, 189, 248, 0.12), transparent 28%),
-    linear-gradient(180deg, #071620 0%, #020817 100%);
-  color: #E2E8F0;
-}
-
-body {
+  background-color: #041633 !important;
+  color: white;
   min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  color: inherit;
-}
-
-img {
-  max-width: 100%;
-  display: block;
+/* Ensure cards are solid white and professional */
+.MuiPaper-root {
+  background-color: #ffffff !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2) !important;
+  border: none !important;
 }
