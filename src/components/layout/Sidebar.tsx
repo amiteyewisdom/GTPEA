@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Box, List, ListItemButton, ListItemIcon, ListItemText,
-  Typography, Avatar, Divider, Tooltip, CircularProgress,
+  Typography, Avatar, Divider, Tooltip,
 } from "@mui/material";
 import {
   DashboardRounded, PeopleRounded, SavingsRounded,
@@ -15,7 +15,6 @@ import {
 } from "@mui/icons-material";
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
-import { alpha } from "@mui/material/styles";
 
 export const SIDEBAR_WIDTH = 240;
 
@@ -66,51 +65,195 @@ export function Sidebar({ user, pendingApprovals = 0, onNavigate }: SidebarProps
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
 
-  const navGroups: NavGroup[] = [
-    {
-      label: "Overview",
-      items: [
-        { label: "Dashboard", href: "/dashboard", icon: DashboardRounded },
-      ],
-    },
-    {
-      label: "Members",
-      items: [
-        { label: "Employees", href: "/employees", icon: PeopleRounded },
-        { label: "Savings", href: "/savings", icon: SavingsRounded },
-        { label: "Withdrawals", href: "/withdrawals", icon: MoneyOffRounded },
-      ],
-    },
-    {
-      label: "Credit",
-      items: [
-        { label: "Loans", href: "/loans", icon: AccountBalanceRounded },
-        { label: "Loan Products", href: "/loan-products", icon: Inventory2Rounded },
-        { label: "Approvals", href: "/approvals", icon: CheckCircleRounded, badge: pendingApprovals },
-      ],
-    },
-    {
-      label: "Finance",
-      items: [
-        { label: "Dividends", href: "/dividends", icon: VolunteerActivismRounded },
-        { label: "Ledger", href: "/ledger", icon: AccountTreeRounded },
-        { label: "Statements", href: "/statements", icon: RequestPageRounded },
-      ],
-    },
-    {
-      label: "Reports",
-      items: [
-        { label: "Reports", href: "/reports", icon: AssessmentRounded },
-      ],
-    },
-  ];
+  const ROLE_NAV_GROUPS: Record<string, NavGroup[]> = {
+    super_admin: [
+      {
+        label: "Platform",
+        items: [
+          { label: "Dashboard", href: "/dashboard", icon: DashboardRounded },
+        ],
+      },
+      {
+        label: "Membership",
+        items: [
+          { label: "Employees", href: "/employees", icon: PeopleRounded },
+          { label: "Savings", href: "/savings", icon: SavingsRounded },
+          { label: "Withdrawals", href: "/withdrawals", icon: MoneyOffRounded },
+        ],
+      },
+      {
+        label: "Credit",
+        items: [
+          { label: "Loans", href: "/loans", icon: AccountBalanceRounded },
+          { label: "Loan Products", href: "/loan-products", icon: Inventory2Rounded },
+          { label: "Approvals", href: "/approvals", icon: CheckCircleRounded, badge: pendingApprovals },
+        ],
+      },
+      {
+        label: "Finance",
+        items: [
+          { label: "Dividends", href: "/dividends", icon: VolunteerActivismRounded },
+          { label: "Ledger", href: "/ledger", icon: AccountTreeRounded },
+          { label: "Statements", href: "/statements", icon: RequestPageRounded },
+        ],
+      },
+      {
+        label: "Analytics",
+        items: [
+          { label: "Reports", href: "/reports", icon: AssessmentRounded },
+        ],
+      },
+    ],
+    administrator: [
+      {
+        label: "Core",
+        items: [
+          { label: "Dashboard", href: "/dashboard", icon: DashboardRounded },
+        ],
+      },
+      {
+        label: "Member Operations",
+        items: [
+          { label: "Employees", href: "/employees", icon: PeopleRounded },
+          { label: "Savings", href: "/savings", icon: SavingsRounded },
+          { label: "Withdrawals", href: "/withdrawals", icon: MoneyOffRounded },
+        ],
+      },
+      {
+        label: "Credit Control",
+        items: [
+          { label: "Loans", href: "/loans", icon: AccountBalanceRounded },
+          { label: "Loan Products", href: "/loan-products", icon: Inventory2Rounded },
+          { label: "Approvals", href: "/approvals", icon: CheckCircleRounded, badge: pendingApprovals },
+        ],
+      },
+      {
+        label: "Reporting",
+        items: [
+          { label: "Reports", href: "/reports", icon: AssessmentRounded },
+          { label: "Ledger", href: "/ledger", icon: AccountTreeRounded },
+        ],
+      },
+    ],
+    fund_manager: [
+      {
+        label: "Overview",
+        items: [
+          { label: "Dashboard", href: "/dashboard", icon: DashboardRounded },
+        ],
+      },
+      {
+        label: "Credit Flow",
+        items: [
+          { label: "Approvals", href: "/approvals", icon: CheckCircleRounded, badge: pendingApprovals },
+          { label: "Loans", href: "/loans", icon: AccountBalanceRounded },
+          { label: "Loan Products", href: "/loan-products", icon: Inventory2Rounded },
+        ],
+      },
+      {
+        label: "Funds",
+        items: [
+          { label: "Ledger", href: "/ledger", icon: AccountTreeRounded },
+          { label: "Dividends", href: "/dividends", icon: VolunteerActivismRounded },
+          { label: "Reports", href: "/reports", icon: AssessmentRounded },
+        ],
+      },
+    ],
+    union_rep: [
+      {
+        label: "Overview",
+        items: [
+          { label: "Dashboard", href: "/dashboard", icon: DashboardRounded },
+        ],
+      },
+      {
+        label: "Member Support",
+        items: [
+          { label: "Employees", href: "/employees", icon: PeopleRounded },
+          { label: "Savings", href: "/savings", icon: SavingsRounded },
+          { label: "Withdrawals", href: "/withdrawals", icon: MoneyOffRounded },
+        ],
+      },
+      {
+        label: "Approvals",
+        items: [
+          { label: "Approvals", href: "/approvals", icon: CheckCircleRounded, badge: pendingApprovals },
+          { label: "Loans", href: "/loans", icon: AccountBalanceRounded },
+        ],
+      },
+      {
+        label: "Insights",
+        items: [
+          { label: "Reports", href: "/reports", icon: AssessmentRounded },
+        ],
+      },
+    ],
+    chairperson: [
+      {
+        label: "Board",
+        items: [
+          { label: "Dashboard", href: "/dashboard", icon: DashboardRounded },
+        ],
+      },
+      {
+        label: "Governance",
+        items: [
+          { label: "Approvals", href: "/approvals", icon: CheckCircleRounded, badge: pendingApprovals },
+          { label: "Reports", href: "/reports", icon: AssessmentRounded },
+          { label: "Statements", href: "/statements", icon: RequestPageRounded },
+        ],
+      },
+    ],
+    chairman: [
+      {
+        label: "Board",
+        items: [
+          { label: "Dashboard", href: "/dashboard", icon: DashboardRounded },
+        ],
+      },
+      {
+        label: "Governance",
+        items: [
+          { label: "Approvals", href: "/approvals", icon: CheckCircleRounded, badge: pendingApprovals },
+          { label: "Reports", href: "/reports", icon: AssessmentRounded },
+          { label: "Statements", href: "/statements", icon: RequestPageRounded },
+        ],
+      },
+    ],
+    employee: [
+      {
+        label: "Essentials",
+        items: [
+          { label: "Dashboard", href: "/dashboard", icon: DashboardRounded },
+        ],
+      },
+      {
+        label: "My Finances",
+        items: [
+          { label: "Loans", href: "/loans", icon: AccountBalanceRounded },
+          { label: "Savings", href: "/savings", icon: SavingsRounded },
+          { label: "Approvals", href: "/approvals", icon: CheckCircleRounded, badge: pendingApprovals },
+        ],
+      },
+      {
+        label: "Support",
+        items: [
+          { label: "Profile", href: "/profile", icon: PersonRounded },
+          { label: "Settings", href: "/settings", icon: SettingsRounded },
+        ],
+      },
+    ],
+  };
+
+  const roleKey = user?.role ?? "employee";
+  const normalizedRoleKey = roleKey === "admin" ? "administrator" : roleKey;
+  const navGroups = ROLE_NAV_GROUPS[normalizedRoleKey] ?? ROLE_NAV_GROUPS.employee;
 
   const bottomItems = [
     { label: "Profile", href: "/profile", icon: PersonRounded },
     { label: "Settings", href: "/settings", icon: SettingsRounded },
   ];
 
-  const roleKey = user?.role ?? "employee";
   const roleColor = ROLE_COLOR[roleKey] ?? "#94A3B8";
 
   const NavItem = ({ label, href, icon: Icon, badge }: { label: string; href: string; icon: React.ElementType; badge?: number }) => {
@@ -166,16 +309,26 @@ export function Sidebar({ user, pendingApprovals = 0, onNavigate }: SidebarProps
     <Box
       component="aside"
       sx={{
-        width: SIDEBAR_WIDTH, flexShrink: 0,
-        height: "100vh", position: "fixed", top: 0, left: 0,
-        bgcolor: "#FAFAF8",
-        borderRight: "1px solid rgba(0, 0, 0, 0.06)",
-        display: "flex", flexDirection: "column", zIndex: 1200,
-        overflowY: "auto", overflowX: "hidden",
-        "&::-webkit-scrollbar": { width: 4 },
+        width: SIDEBAR_WIDTH,
+        flexShrink: 0,
+        height: "100vh",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        bgcolor: "rgba(6, 18, 38, 0.95)",
+        borderRight: "1px solid rgba(148, 163, 184, 0.12)",
+        display: "flex",
+        flexDirection: "column",
+        zIndex: 1200,
+        overflowY: "auto",
+        overflowX: "hidden",
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
+        boxShadow: "0 24px 80px rgba(0,0,0,0.12)",
+        "&::-webkit-scrollbar": { width: 6 },
         "&::-webkit-scrollbar-track": { background: "transparent" },
-        "&::-webkit-scrollbar-thumb": { background: "rgba(37, 99, 235, 0.2)", borderRadius: 2 },
-        "&::-webkit-scrollbar-thumb:hover": { background: "rgba(37, 99, 235, 0.4)" },
+        "&::-webkit-scrollbar-thumb": { background: "rgba(56,189,248,0.18)", borderRadius: 3 },
+        "&::-webkit-scrollbar-thumb:hover": { background: "rgba(56,189,248,0.32)" },
       }}
     >
       {/* Brand */}

@@ -2,26 +2,25 @@ import { createTheme } from "@mui/material/styles";
 
 const theme = createTheme({
   palette: {
-    mode: "light",
+    mode: "dark",
 
     primary: {
-      main: "#0f172a",
+      main: "#38BDF8",
     },
 
     background: {
-      default: "#edf2f7",
-      paper: "#ffffff",
+      default: "#071620",
+      paper: "#0B192C",
     },
 
     text: {
-      primary: "#0f172a",
-      secondary: "#64748b",
+      primary: "#E2E8F0",
+      secondary: "#94A3B8",
     },
   },
 
   typography: {
-    fontFamily:
-      '"Inter", system-ui, sans-serif',
+    fontFamily: '"Inter", system-ui, sans-serif',
   },
 
   shape: {
@@ -32,8 +31,8 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundColor: "#edf2f7",
-          color: "#0f172a",
+          backgroundColor: "#071620",
+          color: "#E2E8F0",
         },
       },
     },

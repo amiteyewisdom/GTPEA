@@ -51,7 +51,7 @@ export function DashboardShell({ children, user, pendingApprovals }: DashboardSh
   );
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#FBFBF9" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#071620" }}>
       {/* Desktop Sidebar */}
       <Box sx={{ display: { xs: "none", md: "block" } }}>{sidebarContent}</Box>
 
@@ -100,6 +100,7 @@ export function DashboardShell({ children, user, pendingApprovals }: DashboardSh
             mt: { xs: "60px", sm: "64px" },
             p: { xs: 2, sm: 3 },
             maxWidth: "100%",
+            background: "radial-gradient(circle at top left, rgba(56,189,248,0.08), transparent 30%), radial-gradient(circle at bottom right, rgba(59,130,246,0.08), transparent 28%)",
           }}
         >
           {children}

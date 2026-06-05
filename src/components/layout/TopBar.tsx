@@ -11,7 +11,6 @@ import {
   PersonRounded, SettingsRounded, LogoutRounded,
   KeyboardArrowDownRounded,
 } from "@mui/icons-material";
-import { alpha } from "@mui/material/styles";
 import { createClient } from "@/lib/supabase/client";
 import { SIDEBAR_WIDTH } from "./Sidebar";
 
@@ -53,11 +52,11 @@ export function TopBar({ title, breadcrumb, onMobileMenuToggle, pendingApprovals
       sx={{
         left: { md: SIDEBAR_WIDTH },
         width: { md: `calc(100% - ${SIDEBAR_WIDTH}px)` },
-        bgcolor: "#FFFFFF",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(0, 0, 0, 0.06)",
-        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+        bgcolor: "rgba(15, 23, 42, 0.92)",
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
+        borderBottom: "1px solid rgba(148, 163, 184, 0.16)",
+        boxShadow: "0 20px 80px rgba(0, 0, 0, 0.14)",
         zIndex: 1100,
       }}
     >
@@ -94,12 +93,12 @@ export function TopBar({ title, breadcrumb, onMobileMenuToggle, pendingApprovals
             display: { xs: "none", sm: "flex" },
             alignItems: "center",
             gap: 1,
-            bgcolor: searchFocused ? "rgba(37, 99, 235, 0.08)" : "rgba(243, 244, 246, 0.9)",
-            border: searchFocused ? "1px solid rgba(37, 99, 235, 0.2)" : "1px solid rgba(209, 213, 219, 0.9)",
-            borderRadius: "12px",
+            bgcolor: searchFocused ? "rgba(56, 189, 248, 0.12)" : "rgba(15, 23, 42, 0.72)",
+            border: searchFocused ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(148, 163, 184, 0.15)",
+            borderRadius: "16px",
             px: 1.5,
-            py: 0.6,
-            width: 240,
+            py: 0.75,
+            width: 260,
             transition: "all 0.2s ease",
           }}
         >
