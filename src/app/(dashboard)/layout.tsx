@@ -9,37 +9,42 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
+    if (!user) {
+      redirect("/login");
+    }
+
+    const profileRes = await supabase
+      .from("profiles")
+      .select("full_name, role, avatar_url")
+      .eq("user_id", user.id)
+      .single();
+    const profile = profileRes.data as Profile | null;
+
+    const userInfo = {
+      full_name: profile?.full_name ?? user.email ?? "User",
+      role: profile?.role ?? "employee",
+      avatar_url: profile?.avatar_url ?? null,
+      email: user.email ?? "",
+    };
+
+    return (
+      <EnterpriseLayout 
+        currentRole={(profile?.role as UserRole) || 'employee'}
+        userName={userInfo.full_name}
+        userAvatar={userInfo.avatar_url || undefined}
+      >
+        {children}
+      </EnterpriseLayout>
+    );
+  } catch (error) {
+    console.error('Dashboard layout error:', error);
     redirect("/login");
   }
-
-  const profileRes = await supabase
-    .from("profiles")
-    .select("full_name, role, avatar_url")
-    .eq("user_id", user.id)
-    .single();
-  const profile = profileRes.data as Profile | null;
-
-  const userInfo = {
-    full_name: profile?.full_name ?? user.email ?? "User",
-    role: profile?.role ?? "employee",
-    avatar_url: profile?.avatar_url ?? null,
-    email: user.email ?? "",
-  };
-
-  return (
-    <EnterpriseLayout 
-      currentRole={(profile?.role as UserRole) || 'employee'}
-      userName={userInfo.full_name}
-      userAvatar={userInfo.avatar_url || undefined}
-    >
-      {children}
-    </EnterpriseLayout>
-  );
 }
