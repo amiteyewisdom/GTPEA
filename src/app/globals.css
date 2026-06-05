@@ -2,15 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #041633 !important;
-  color: white;
-  min-height: 100vh;
+@layer base {
+  * {
+    @apply border-brand-card-border;
+  }
+  
+  body {
+    @apply bg-brand-primary text-brand-text antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-white font-semibold;
+  }
+  
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-brand-primary;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-brand-card-border rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-brand-accent/50;
+  }
 }
 
-/* Ensure cards are solid white and professional */
+@layer components {
+  /* Glassmorphism Base */
+  .glass {
+    @apply bg-brand-card-bg backdrop-blur-glass border border-brand-card-border;
+  }
+  
+  /* Typography Utilities */
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-accent to-brand-success bg-clip-text text-transparent;
+  }
+  
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
+
+/* MUI Overrides for Brand Consistency */
 .MuiPaper-root {
-  background-color: #ffffff !important;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2) !important;
-  border: none !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(212, 175, 55, 0.15) !important;
+  border-radius: 18px !important;
+}
+
+.MuiTypography-root {
+  color: #ffffff !important;
+}
+
+.MuiButton-root {
+  background-color: #D4AF37 !important;
+  color: #041633 !important;
+  font-weight: 600 !important;
+  border-radius: 18px !important;
+}
+
+.MuiButton-root:hover {
+  background-color: rgba(212, 175, 55, 0.9) !important;
+}
+
+.MuiInputBase-root {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(212, 175, 55, 0.15) !important;
+  border-radius: 18px !important;
+  color: #ffffff !important;
+}
+
+.MuiInputBase-root:hover {
+  border-color: rgba(212, 175, 55, 0.3) !important;
+}
+
+.MuiTable-root {
+  background-color: transparent !important;
+}
+
+.MuiTableCell-root {
+  border-color: rgba(212, 175, 55, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.MuiChip-root {
+  background-color: rgba(212, 175, 55, 0.2) !important;
+  color: #D4AF37 !important;
 }
