@@ -6,6 +6,8 @@ import { ArrowBackRounded, MarkEmailReadOutlined, EmailOutlined } from "@mui/ico
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);

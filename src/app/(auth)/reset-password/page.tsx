@@ -15,6 +15,8 @@ import {
 import { Visibility, VisibilityOff, CheckCircle } from "@mui/icons-material";
 import { createClient } from "@/lib/supabase/client";
 
+export const dynamic = 'force-dynamic';
+
 export default function ResetPasswordPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
