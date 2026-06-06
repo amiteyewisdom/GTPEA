@@ -2,24 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { addMonths, format } from "date-fns";
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  MenuItem,
-  Button,
-  Stack,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  Snackbar,
-} from "@mui/material";
-import { formatCurrency, formatInterestRate, calculateMonthlyRepayment, calculateTotalRepayable } from "@/utils/formatters";
 import { useRouter } from "next/navigation";
+import { DollarSign, Calendar, Percent, AlertCircle, CheckCircle, X } from "lucide-react";
+import GlassCard from "@/components/ui/GlassCard";
+import { formatCurrency, formatInterestRate, calculateMonthlyRepayment, calculateTotalRepayable } from "@/utils/formatters";
 
 interface LoanProduct {
   id: string;
@@ -98,140 +84,181 @@ export function LoanApplication({ loanProducts }: LoanApplicationProps) {
 
   if (loanProducts.length === 0) {
     return (
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-          Loan application unavailable
-        </Typography>
-        <Typography color="text.secondary">
+      <GlassCard className="p-6 mb-6">
+        <h3 className="text-lg font-bold text-brand-text mb-2">Loan application unavailable</h3>
+        <p className="text-brand-text-secondary text-sm">
           There are no active loan products configured. Please contact your administrator.
-        </Typography>
-      </Paper>
+        </p>
+      </GlassCard>
     );
   }
 
   return (
-    <Paper id="loan-application" sx={{ p: 3, mb: 4, bgcolor: "rgba(255,255,255,0.92)" }}>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <Box>
-          <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
-            Apply for a Loan
-          </Typography>
-          <Typography color="text.secondary" sx={{ fontSize: "0.95rem" }}>
-            Submit a new loan request and track progress through Union Rep, Fund Manager, and Chairman review.
-          </Typography>
-        </Box>
+    <GlassCard id="loan-application" className="p-6 mb-6">
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-xl font-bold text-brand-text mb-2">Apply for a Loan</h3>
+          <p className="text-brand-text-secondary text-sm">
+            Submit a new loan request and track progress through Union Rep, Fund Manager, and Chairperson review.
+          </p>
+        </div>
 
-        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-          <TextField
-            select
-            label="Loan product"
-            value={productId}
-            onChange={(event) => setProductId(event.target.value)}
-            sx={{ minWidth: 220 }}
-          >
-            {loanProducts.map((product) => (
-              <MenuItem key={product.id} value={product.id}>
-                {product.name}
-              </MenuItem>
-            ))}
-          </TextField>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-brand-text mb-2">Loan Product</label>
+            <select
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+            >
+              {loanProducts.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <TextField
-            label="Principal Amount"
-            type="number"
-            value={principal}
-            onChange={(event) => setPrincipal(Number(event.target.value))}
-            InputProps={{ inputProps: { min: selectedProduct.min_amount, max: selectedProduct.max_amount } }}
-            fullWidth
+          <div>
+            <label className="block text-sm font-medium text-brand-text mb-2">Principal Amount</label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-text-secondary" />
+              <input
+                type="number"
+                value={principal}
+                onChange={(e) => setPrincipal(Number(e.target.value))}
+                min={selectedProduct.min_amount}
+                max={selectedProduct.max_amount}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-brand-text mb-2">Duration (months)</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-text-secondary" />
+              <input
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+                min={1}
+                max={selectedProduct.max_tenure_months}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-brand-text mb-2">Purpose</label>
+          <textarea
+            value={purpose}
+            onChange={(e) => setPurpose(e.target.value)}
+            rows={2}
+            placeholder="Brief description of the loan purpose"
+            className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent resize-none"
           />
+        </div>
 
-          <TextField
-            label="Duration (months)"
-            type="number"
-            value={duration}
-            onChange={(event) => setDuration(Number(event.target.value))}
-            InputProps={{ inputProps: { min: 1, max: selectedProduct.max_tenure_months } }}
-            sx={{ width: 180 }}
-          />
-        </Stack>
-
-        <TextField
-          label="Purpose"
-          value={purpose}
-          onChange={(event) => setPurpose(event.target.value)}
-          multiline
-          rows={2}
-          fullWidth
-          placeholder="Brief description of the loan purpose"
-        />
-
-        <Paper sx={{ p: 3, bgcolor: "rgba(4, 22, 51, 0.08)", border: "1px solid rgba(255,255,255,0.16)" }}>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
-            Loan Preview
-          </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+        <div className="bg-brand-hover/30 border border-brand-card-border rounded-lg p-4">
+          <h4 className="text-lg font-semibold text-brand-text mb-4">Loan Preview</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Requested Amount", value: formatCurrency(principal) },
-              { label: "Interest Rate", value: formatInterestRate(selectedProduct.interest_rate) },
-              { label: "Interest Amount", value: formatCurrency(interestAmount) },
-              { label: "Total Repayment", value: formatCurrency(totalRepayable) },
-              { label: "Monthly Repayment", value: formatCurrency(monthlyRepayment) },
-              { label: "First Repayment", value: firstRepaymentDate },
-              { label: "Completion Date", value: expectedCompletionDate },
+              { label: "Requested Amount", value: formatCurrency(principal), icon: DollarSign },
+              { label: "Interest Rate", value: formatInterestRate(selectedProduct.interest_rate), icon: Percent },
+              { label: "Interest Amount", value: formatCurrency(interestAmount), icon: DollarSign },
+              { label: "Total Repayment", value: formatCurrency(totalRepayable), icon: DollarSign },
+              { label: "Monthly Repayment", value: formatCurrency(monthlyRepayment), icon: DollarSign },
+              { label: "First Repayment", value: firstRepaymentDate, icon: Calendar },
+              { label: "Completion Date", value: expectedCompletionDate, icon: Calendar },
             ].map((item) => (
-              <Box key={item.label} sx={{ minWidth: 160, flex: 1 }}>
-                <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", mb: 0.5 }}>
-                  {item.label}
-                </Typography>
-                <Typography sx={{ fontSize: "0.95rem", fontWeight: 700 }}>
-                  {item.value}
-                </Typography>
-              </Box>
+              <div key={item.label} className="space-y-1">
+                <p className="text-xs text-brand-text-secondary">{item.label}</p>
+                <p className="text-sm font-bold text-brand-text">{item.value}</p>
+              </div>
             ))}
-          </Stack>
-        </Paper>
+          </div>
+        </div>
 
-        {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
+        {errorMessage && (
+          <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm">{errorMessage}</p>
+          </div>
+        )}
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
-          <Button
-            variant="contained"
+        <div className="flex justify-end">
+          <button
             onClick={() => setConfirmOpen(true)}
             disabled={principal <= 0 || duration <= 0 || !selectedProduct}
+            className="px-6 py-2.5 bg-brand-green text-white font-semibold rounded-lg hover:bg-brand-green/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Review & Submit
-          </Button>
-        </Box>
-      </Box>
+          </button>
+        </div>
+      </div>
 
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <DialogTitle>Confirm Loan Application</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Are you sure you want to apply for this loan? Once confirmed, the request will enter the approval workflow and be reviewed by the Union Representative first.
-          </Typography>
-          <Box sx={{ display: "grid", gap: 1.25 }}>
-            <Typography><strong>Product:</strong> {selectedProduct.name}</Typography>
-            <Typography><strong>Amount:</strong> {formatCurrency(principal)}</Typography>
-            <Typography><strong>Duration:</strong> {duration} months</Typography>
-            <Typography><strong>Monthly Repayment:</strong> {formatCurrency(monthlyRepayment)}</Typography>
-            <Typography><strong>Total Repayment:</strong> {formatCurrency(totalRepayable)}</Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-            {loading ? "Submitting..." : "Confirm"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {confirmOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-brand-text mb-4">Confirm Loan Application</h3>
+            <p className="text-brand-text-secondary text-sm mb-4">
+              Are you sure you want to apply for this loan? Once confirmed, the request will enter the approval workflow and be reviewed by the Union Representative first.
+            </p>
+            <div className="space-y-2 mb-6">
+              <div className="flex justify-between">
+                <span className="text-brand-text-secondary">Product:</span>
+                <span className="font-semibold text-brand-text">{selectedProduct.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-brand-text-secondary">Amount:</span>
+                <span className="font-semibold text-brand-text">{formatCurrency(principal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-brand-text-secondary">Duration:</span>
+                <span className="font-semibold text-brand-text">{duration} months</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-brand-text-secondary">Monthly Repayment:</span>
+                <span className="font-semibold text-brand-text">{formatCurrency(monthlyRepayment)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-brand-text-secondary">Total Repayment:</span>
+                <span className="font-semibold text-brand-text">{formatCurrency(totalRepayable)}</span>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="px-4 py-2 border border-brand-card-border text-brand-text rounded-lg hover:bg-brand-hover transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="px-4 py-2 bg-brand-green text-white rounded-lg hover:bg-brand-green/90 disabled:opacity-50 transition-all"
+              >
+                {loading ? "Submitting..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <Snackbar
-        open={!!successMessage}
-        autoHideDuration={6000}
-        onClose={() => setSuccessMessage(null)}
-        message={successMessage}
-      />
-    </Paper>
+      {successMessage && (
+        <div className="fixed bottom-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg flex items-center gap-3 max-w-md">
+          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+          <p className="text-sm text-green-800">{successMessage}</p>
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="ml-auto text-green-600 hover:text-green-800"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+    </GlassCard>
   );
 }

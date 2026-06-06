@@ -41,13 +41,13 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 });
 
 const USERS = [
-  { email: "teamsufix31@gmail.com", password: "teamsufix31@", role: "super_admin", full_name: "Super Admin" },
-  { email: "kay@tsg.com", password: "tsg@123", role: "administrator", full_name: "Kay (Administrator)" },
-  { email: "union@tsg.com", password: "tsg@123", role: "union_rep", full_name: "Union Representative" },
-  { email: "fund@tsg.com", password: "tsg@123", role: "fund_manager", full_name: "Fund Manager" },
-  { email: "chair@tsg.com", password: "tsg@123", role: "chairperson", full_name: "Chairperson" },
-  { email: "john@tsg.com", password: "john123", role: "employee", full_name: "John Doe" },
-  { email: "jane@tsg.com", password: "123456", role: "employee", full_name: "Jane Smith" },
+  { email: "superadmin@gtpea.com", password: "teamsufix31@", role: "super_admin", full_name: "Super Admin" },
+  { email: "kay@gtpea.com", password: "tsg@123", role: "administrator", full_name: "Kay (Administrator)" },
+  { email: "union@gtpea.com", password: "tsg@123", role: "union_rep", full_name: "Union Representative" },
+  { email: "fund@gtpea.com", password: "tsg@123", role: "fund_manager", full_name: "Fund Manager" },
+  { email: "chair@gtpea.com", password: "tsg@123", role: "chairperson", full_name: "Chairperson" },
+  { email: "john@gtpea.com", password: "john123", role: "employee", full_name: "John Doe" },
+  { email: "jane@gtpea.com", password: "123456", role: "employee", full_name: "Jane Smith" },
 ];
 
 async function upsertProfile(userId, u) {

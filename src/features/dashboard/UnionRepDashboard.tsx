@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import GlassCard from '@/components/ui/GlassCard';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Star, 
+import {
+  CheckCircle,
+  XCircle,
+  Star,
   ArrowUpRight,
   ArrowDownRight,
   ClipboardList,
@@ -16,6 +16,32 @@ import {
 } from 'lucide-react';
 
 export default function UnionRepDashboard() {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handleApproval = async (loanId: string, action: 'approved' | 'rejected' | 'on_hold') => {
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/loans/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loan_id: loanId, action, notes: '' }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to process approval');
+      }
+
+      setMessage({ type: 'success', text: `Loan ${action} successfully` });
+    } catch (error) {
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Approval failed' });
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -23,6 +49,13 @@ export default function UnionRepDashboard() {
         <h1 className="text-2xl md:text-3xl font-bold text-brand-text mb-2">Union Representative Dashboard</h1>
         <p className="text-sm md:text-base text-brand-text-secondary">Review and recommend loan applications</p>
       </div>
+
+      {message && (
+        <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
+          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+          <p className="text-sm">{message.text}</p>
+        </div>
+      )}
 
       {/* Review Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -199,15 +232,17 @@ function StatCard({ title, value, change, trend, icon: Icon, color }: any) {
   );
 }
 
-function EmployeeEligibilityCard({ 
-  name, 
-  employeeId, 
-  currentSavings, 
-  currentLoans, 
-  monthlyRepayments, 
-  loanHistory, 
-  eligibilityScore, 
-  status 
+function EmployeeEligibilityCard({
+  name,
+  employeeId,
+  currentSavings,
+  currentLoans,
+  monthlyRepayments,
+  loanHistory,
+  eligibilityScore,
+  status,
+  onApprove,
+  loading
 }: any) {
   const statusConfig = {
     eligible: {
@@ -272,15 +307,27 @@ function EmployeeEligibilityCard({
 
       {/* Actions */}
       <div className="flex gap-2">
-        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-success/20 text-brand-success rounded-lg text-sm font-medium hover:bg-brand-success/30 transition-all">
+        <button
+          onClick={() => onApprove && onApprove('approved')}
+          disabled={loading}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-success/20 text-brand-success rounded-lg text-sm font-medium hover:bg-brand-success/30 transition-all disabled:opacity-50"
+        >
           <CheckCircle className="w-4 h-4" />
           Approve
         </button>
-        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-warning/20 text-brand-warning rounded-lg text-sm font-medium hover:bg-brand-warning/30 transition-all">
+        <button
+          onClick={() => onApprove && onApprove('on_hold')}
+          disabled={loading}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-warning/20 text-brand-warning rounded-lg text-sm font-medium hover:bg-brand-warning/30 transition-all disabled:opacity-50"
+        >
           <Star className="w-4 h-4" />
           Recommend
         </button>
-        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-danger/20 text-brand-danger rounded-lg text-sm font-medium hover:bg-brand-danger/30 transition-all">
+        <button
+          onClick={() => onApprove && onApprove('rejected')}
+          disabled={loading}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-danger/20 text-brand-danger rounded-lg text-sm font-medium hover:bg-brand-danger/30 transition-all disabled:opacity-50"
+        >
           <XCircle className="w-4 h-4" />
           Reject
         </button>
