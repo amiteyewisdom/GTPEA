@@ -39,7 +39,7 @@ export default function LoginPage() {
           src="/images/growth-plant.jpeg"
           alt="Growth"
           fill
-          className="object-cover object-center opacity-90"
+          className="object-contain object-top opacity-90"
           priority
         />
         {/* Soft dark tint so the white card and branding text are readable */}
