@@ -20,8 +20,8 @@ export default function UnionRepDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-brand-text mb-2">Union Representative Dashboard</h1>
-        <p className="text-brand-text-secondary">Review and recommend loan applications</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-brand-text mb-2">Union Representative Dashboard</h1>
+        <p className="text-sm md:text-base text-brand-text-secondary">Review and recommend loan applications</p>
       </div>
 
       {/* Review Stats */}

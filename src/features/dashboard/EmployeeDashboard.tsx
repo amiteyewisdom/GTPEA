@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import GlassCard from '@/components/ui/GlassCard';
-import { 
-  DollarSign, 
-  PiggyBank, 
-  Briefcase, 
+import {
+  DollarSign,
+  PiggyBank,
+  Briefcase,
   ArrowRight,
   TrendingUp,
   Clock,
@@ -14,19 +15,20 @@ import {
 } from 'lucide-react';
 
 export default function EmployeeDashboard() {
+  const router = useRouter();
   return (
     <div className="space-y-6">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-brand-lg bg-gradient-to-r from-brand-sidebar to-brand-primary border border-brand-card-border p-8 lg:p-12">
+      <div className="relative overflow-hidden rounded-brand-lg bg-gradient-to-r from-brand-sidebar to-brand-primary border border-brand-card-border p-6 lg:p-12">
         <div className="relative z-10">
-          <h1 className="text-4xl lg:text-5xl font-bold text-brand-text mb-3">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-brand-text mb-3">
             Welcome Back, John
           </h1>
-          <p className="text-brand-text-secondary text-lg mb-6">
+          <p className="text-sm md:text-base lg:text-lg text-brand-text-secondary mb-6">
             Manage your savings, loans, and financial goals
           </p>
           <div className="flex flex-wrap gap-4">
-            <button className="flex items-center gap-2 px-6 py-3 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all">
+            <button onClick={() => router.push('/loans')} className="flex items-center gap-2 px-6 py-3 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all">
               <DollarSign className="w-5 h-5" />
               Apply for Loan
             </button>
