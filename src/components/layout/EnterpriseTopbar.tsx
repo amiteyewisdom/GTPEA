@@ -29,8 +29,13 @@ export default function EnterpriseTopbar({
   const handleLogout = async () => {
     try {
       const supabase = createClient();
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        return;
+      }
       router.push('/login');
+      router.refresh();
     } catch (error) {
       console.error('Logout error:', error);
     }

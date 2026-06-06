@@ -35,14 +35,12 @@ export default function LoginPage() {
       
       {/* SEAMLESS BACKGROUND IMAGE */}
       <div className="absolute inset-0 z-0">
-        <Image 
-          src="/images/growth-plant.jpeg" 
-          alt="Growth" 
-          fill 
-          // 'object-cover' fills the screen entirely (removes black bars)
-          // 'object-left' ensures the plant and cup stay in frame on mobile
-          className="object-cover object-left md:object-center opacity-90" 
-          priority 
+        <Image
+          src="/images/growth-plant.jpeg"
+          alt="Growth"
+          fill
+          className="object-cover object-center opacity-90"
+          priority
         />
         {/* Soft dark tint so the white card and branding text are readable */}
         <div className="absolute inset-0 bg-black/30 md:bg-black/10 backdrop-blur-[1px]" />
