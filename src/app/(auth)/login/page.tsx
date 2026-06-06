@@ -34,12 +34,12 @@ export default function LoginPage() {
     <main className="relative min-h-screen w-full flex items-center justify-center font-sans antialiased overflow-hidden">
       
       {/* SEAMLESS BACKGROUND IMAGE */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 bg-[#1a1a1a]">
         <Image
           src="/images/growth-plant.jpeg"
           alt="Growth"
           fill
-          className="object-contain object-top opacity-90"
+          className="object-cover object-center opacity-90"
           priority
         />
         {/* Soft dark tint so the white card and branding text are readable */}
