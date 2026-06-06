@@ -11,7 +11,7 @@ export default async function LoansPage() {
   const [loanProductsRes, loansRes] = await Promise.all([
     supabase
       .from("loan_products")
-      .select("id, name, interest_rate, min_amount, max_amount, max_tenure_months, is_active")
+      .select("id, name, interest_rate, min_amount, max_amount, max_term_months, is_active")
       .eq("is_active", true),
     supabase
       .from("loans")

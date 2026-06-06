@@ -5,11 +5,13 @@ interface GlassCardProps {
   className?: string;
   hover?: boolean;
   onClick?: () => void;
+  id?: string;
 }
 
-export default function GlassCard({ children, className = '', hover = false, onClick }: GlassCardProps) {
+export default function GlassCard({ children, className = '', hover = false, onClick, id }: GlassCardProps) {
   return (
     <div
+      id={id}
       onClick={onClick}
       className={`
         bg-white
