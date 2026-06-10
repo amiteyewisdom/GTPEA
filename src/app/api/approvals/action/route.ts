@@ -57,6 +57,14 @@ export async function POST(request: Request) {
   const stage = approval.current_stage;
   const nextStage = stage < approval.total_stages ? stage + 1 : approval.total_stages;
   const isFinalStage = stage >= approval.total_stages;
+  const requiredRole = STAGE_ROLE_MAP[stage];
+
+  // Validate that the user has the correct role for the current stage
+  if (role !== requiredRole && role !== "super_admin" && role !== "administrator") {
+    return NextResponse.json({ 
+      error: `You do not have permission to approve at this stage. This stage requires the ${requiredRole.replace("_", " ")} role.` 
+    }, { status: 403 });
+  }
 
   const updates: Record<string, unknown> = {
     current_stage: action === "approved" && !isFinalStage ? nextStage : approval.current_stage,

@@ -7,6 +7,11 @@ export const metadata: Metadata = { title: "Approvals" };
 export default async function ApprovalsPage() {
   const supabase = await createClient();
 
+  // Get current user's role
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user?.id).single();
+  const userRole = profile?.role || "employee";
+
   const { data: approvals, count } = await supabase
     .from("approvals")
     .select(
@@ -118,5 +123,5 @@ export default async function ApprovalsPage() {
     })
   );
 
-  return <ApprovalsClient approvals={approvalsWithDetails} total={count ?? 0} />;
+  return <ApprovalsClient approvals={approvalsWithDetails} total={count ?? 0} userRole={userRole} />;
 }

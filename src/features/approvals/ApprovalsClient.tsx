@@ -63,9 +63,10 @@ interface ApprovalRow {
 interface ApprovalsClientProps {
   approvals: ApprovalRow[];
   total: number;
+  userRole: string;
 }
 
-export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
+export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -76,17 +77,37 @@ export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Stage to role mapping
+  const STAGE_ROLE_MAP: Record<number, string> = {
+    1: "union_rep",
+    2: "fund_manager",
+    3: "chairperson",
+  };
+
   const pending = approvals.filter((a) => a.status === "pending").length;
   const approved = approvals.filter((a) => a.status === "approved").length;
   const rejected = approvals.filter((a) => a.status === "rejected").length;
 
+  // Filter approvals based on user role
   const filtered = approvals.filter((a) => {
     const q = search.toLowerCase();
-    return (
+    const matchesSearch =
       a.entity_type.toLowerCase().includes(q) ||
       (a.profiles?.full_name?.toLowerCase().includes(q) ?? false) ||
-      a.id.toLowerCase().includes(q)
-    );
+      a.id.toLowerCase().includes(q);
+
+    // Admins and super_admins see all approvals
+    if (userRole === "super_admin" || userRole === "administrator") {
+      return matchesSearch;
+    }
+
+    // For other roles, show approvals that need their attention or they submitted
+    const currentStage = a.current_stage ?? 1;
+    const requiredRole = STAGE_ROLE_MAP[currentStage];
+    const needsMyAttention = a.status === "pending" && requiredRole === userRole;
+    const iSubmitted = a.submitted_by === (typeof window !== "undefined" ? localStorage.getItem("user_id") : "");
+
+    return matchesSearch && (needsMyAttention || iSubmitted);
   });
 
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
@@ -192,6 +213,9 @@ export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
                   </TableCell>
                   <TableCell sx={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>
                     {approval.current_stage ?? 1}/{approval.total_stages ?? 3}
+                    <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", fontWeight: 400 }}>
+                      ({STAGE_ROLE_MAP[approval.current_stage ?? 1]?.replace("_", " ") || "Unknown"})
+                    </Typography>
                   </TableCell>
                   <TableCell sx={{ fontSize: "0.875rem", color: "text.secondary", display: { xs: 'none', md: 'table-cell' } }}>
                     <Tooltip title={formatDate(approval.submitted_at, "dd MMM yyyy HH:mm")}>
