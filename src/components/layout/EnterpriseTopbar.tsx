@@ -42,7 +42,7 @@ export default function EnterpriseTopbar({
   };
 
   return (
-    <header className="fixed top-0 right-0 left-0 md:left-[280px] h-16 bg-white/80 backdrop-blur-glass border-b border-brand-card-border z-40">
+    <header className="fixed top-0 right-0 left-0 md:left-0 h-16 bg-white/80 backdrop-blur-glass border-b border-brand-card-border z-40">
       <div className="h-full px-6 flex items-center justify-between">
 
         {/* Hamburger Menu Button (Mobile/Tablet) */}
