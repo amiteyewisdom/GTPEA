@@ -279,6 +279,81 @@ export function ApprovalsClient({ approvals, total }: ApprovalsClientProps) {
                 </Box>
               )}
 
+              {/* Loan Details */}
+              {selected.entity_type === 'loan' && selected.loan_details && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, p: 2, bgcolor: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.2)", borderRadius: 1 }}>
+                  <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, color: "#22D3EE" }}>Loan Details</Typography>
+                  <Box sx={{ display: "grid", gap: 0.75, gridTemplateColumns: "1fr 1fr" }}>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Amount Requested</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{formatCurrency(selected.loan_details.amount_requested)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Amount Approved</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{selected.loan_details.amount_approved ? formatCurrency(selected.loan_details.amount_approved) : "—"}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Outstanding Balance</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{formatCurrency(selected.loan_details.outstanding_balance)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Monthly Repayment</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{formatCurrency(selected.loan_details.monthly_repayment)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Term</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{selected.loan_details.term_months} months</Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Interest Rate</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{selected.loan_details.interest_rate}%</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+
+              {/* Withdrawal Details */}
+              {selected.entity_type === 'withdrawal' && selected.withdrawal_details && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, p: 2, bgcolor: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.2)", borderRadius: 1 }}>
+                  <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, color: "#22D3EE" }}>Withdrawal Details</Typography>
+                  <Box sx={{ display: "grid", gap: 0.75, gridTemplateColumns: "1fr 1fr" }}>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Withdrawal Amount</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{formatCurrency(selected.withdrawal_details.amount)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Savings Balance</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{formatCurrency(selected.withdrawal_details.savings_balance)}</Typography>
+                    </Box>
+                    <Box sx={{ gridColumn: "span 2" }}>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Savings Type</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{selected.withdrawal_details.savings_type}</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+
+              {/* Employee Financial Summary */}
+              {selected.employee_details && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, p: 2, bgcolor: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 1 }}>
+                  <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, color: "#10B981" }}>Employee Financial Summary</Typography>
+                  <Box sx={{ display: "grid", gap: 0.75, gridTemplateColumns: "1fr 1fr 1fr" }}>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Total Savings</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{formatCurrency(selected.employee_details.total_savings)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Total Loan Balance</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{formatCurrency(selected.employee_details.total_loan_balance)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Monthly Savings</Typography>
+                      <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{formatCurrency(selected.employee_details.monthly_savings)}</Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+
               {selected.approval_actions?.length ? (
                 <Box>
                   <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, mb: 1 }}>Approval history</Typography>

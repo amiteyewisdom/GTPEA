@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import { format, formatDistanceToNow, parseISO, addMonths } from 'date-fns';
 
 // ─── Currency ─────────────────────────────────────────────────────────────────
 
@@ -24,6 +24,48 @@ export function formatCompact(value: number): string {
   if (value >= 1_000_000) return `₵${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1_000) return `₵${(value / 1_000).toFixed(1)}K`;
   return formatCurrency(value);
+}
+
+// ─── Amortization Schedule ─────────────────────────────────────────────────────
+
+export interface AmortizationPayment {
+  month: string;
+  principal: number;
+  interest: number;
+  total: number;
+  balance: number;
+}
+
+export function generateAmortizationSchedule(
+  principal: number,
+  durationMonths: number,
+  annualRate: number,
+  startDate?: Date
+): AmortizationPayment[] {
+  const monthlyRate = annualRate / 100 / 12;
+  const monthlyPayment = (principal * monthlyRate * Math.pow(1 + monthlyRate, durationMonths)) / (Math.pow(1 + monthlyRate, durationMonths) - 1);
+  const schedule: AmortizationPayment[] = [];
+  let balance = principal;
+  
+  const start = startDate || new Date();
+  
+  for (let i = 1; i <= durationMonths; i++) {
+    const interestPayment = balance * monthlyRate;
+    const principalPayment = monthlyPayment - interestPayment;
+    balance -= principalPayment;
+    
+    const paymentDate = addMonths(start, i);
+    
+    schedule.push({
+      month: paymentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      principal: principalPayment,
+      interest: interestPayment,
+      total: monthlyPayment,
+      balance: Math.max(0, balance)
+    });
+  }
+  
+  return schedule;
 }
 
 // ─── Date & Time ──────────────────────────────────────────────────────────────

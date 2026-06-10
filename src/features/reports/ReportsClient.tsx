@@ -4,6 +4,7 @@ import { Box, Grid, Paper, Typography, Button, Divider } from "@mui/material";
 import {
   PeopleRounded, SavingsRounded, AccountBalanceRounded,
   MoneyOffRounded, AssessmentRounded, FileDownloadRounded,
+  AccountBalanceWalletRounded, TrendingUpRounded,
 } from "@mui/icons-material";
 import { KPICard } from "@/components/ui/KPICard";
 import { SavingsAreaChart } from "@/components/charts/SavingsAreaChart";
@@ -17,6 +18,8 @@ interface ReportSummary {
   totalSavings: number;
   totalOutstanding: number;
   totalDisbursed: number;
+  totalWithdrawals: number;
+  totalDividends: number;
   defaultRate: number;
 }
 
@@ -26,6 +29,8 @@ interface ChartData {
   contributions: number;
   disbursed: number;
   repaid: number;
+  withdrawals: number;
+  dividends: number;
 }
 
 export function ReportsClient({ summary, savingsChartData = [], loanChartData = [] }: { 
@@ -60,6 +65,12 @@ export function ReportsClient({ summary, savingsChartData = [], loanChartData = 
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
           <KPICard title="Outstanding Balance" value={formatCurrency(summary.totalOutstanding)} icon={MoneyOffRounded} accent="warning" />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <KPICard title="Total Withdrawals" value={formatCurrency(summary.totalWithdrawals)} icon={AccountBalanceWalletRounded} accent="accent" />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <KPICard title="Total Dividends" value={formatCurrency(summary.totalDividends)} icon={TrendingUpRounded} accent="success" />
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
           <KPICard title="Default Rate" value={`${formatPercent(summary.defaultRate)}`} icon={AssessmentRounded} accent={summary.defaultRate > 5 ? "danger" : "primary"} />

@@ -5,14 +5,15 @@ import {
   Box, Paper, Typography, Button, TextField, InputAdornment,
   TableContainer, Table, TableHead, TableRow, TableCell, TableBody,
   TablePagination, LinearProgress, Tooltip, IconButton, Tabs, Tab,
+  Dialog, DialogTitle, DialogContent, DialogActions, Alert,
 } from "@mui/material";
-import { SearchRounded, AddRounded, MoreVertRounded } from "@mui/icons-material";
+import { SearchRounded, AddRounded, MoreVertRounded, ScheduleRounded, DownloadRounded, UploadRounded } from "@mui/icons-material";
 import {
   AccountBalanceRounded, MoneyOffRounded, WarningAmberRounded,
 } from "@mui/icons-material";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { KPICard } from "@/components/ui/KPICard";
-import { formatCurrency, formatDate } from "@/utils/formatters";
+import { formatCurrency, formatDate, generateAmortizationSchedule } from "@/utils/formatters";
 import { LoanApplication } from "@/features/loans/LoanApplication";
 
 interface LoanRow {
@@ -55,6 +56,11 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
   const [tab, setTab] = useState("all");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [selectedLoan, setSelectedLoan] = useState<LoanRow | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; errors?: string[] } | null>(null);
 
   const defaulted = loans.filter((l) => l.status === "defaulted").length;
 
@@ -75,6 +81,56 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
     if (!loan.amount_disbursed || loan.amount_disbursed === 0) return null;
     const paid = loan.amount_disbursed - loan.outstanding_balance;
     return Math.min((paid / loan.amount_disbursed) * 100, 100);
+  };
+
+  const handleExport = async (type: 'loans' | 'all') => {
+    try {
+      const response = await fetch(`/api/export/applications?type=${type}`);
+      if (!response.ok) throw new Error('Export failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/"/g, '') || `export_${type}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Export error:', error);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    
+    setImportLoading(true);
+    setImportResult(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      formData.append('type', 'loans');
+      
+      const response = await fetch('/api/import/applications', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Import failed');
+      
+      setImportResult(result);
+      if (result.imported > 0) {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      setImportResult({ imported: 0, errors: [(error as Error).message] });
+    } finally {
+      setImportLoading(false);
+    }
   };
 
   return (
@@ -105,14 +161,40 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
             ),
           }}
         />
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<AddRounded />}
-          onClick={() => document.getElementById("loan-application")?.scrollIntoView({ behavior: "smooth" })}
-        >
-          New Loan Application
-        </Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<UploadRounded />}
+            onClick={() => setImportDialogOpen(true)}
+          >
+            Import
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<DownloadRounded />}
+            onClick={() => handleExport('loans')}
+          >
+            Export Loans
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<DownloadRounded />}
+            onClick={() => handleExport('all')}
+          >
+            Export All
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddRounded />}
+            onClick={() => document.getElementById("loan-application")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            New Loan Application
+          </Button>
+        </Box>
       </Box>
 
       {/* Status tabs */}
@@ -219,8 +301,14 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
                     </TableCell>
                     <TableCell><StatusChip status={loan.status} /></TableCell>
                     <TableCell align="right">
-                      <Tooltip title="More options">
-                        <IconButton size="small"><MoreVertRounded sx={{ fontSize: 18 }} /></IconButton>
+                      <Tooltip title="View amortization schedule">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => setSelectedLoan(loan)}
+                          sx={{ color: "#818CF8" }}
+                        >
+                          <ScheduleRounded sx={{ fontSize: 18 }} />
+                        </IconButton>
                       </Tooltip>
                     </TableCell>
                   </TableRow>
@@ -240,6 +328,110 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
           sx={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
         />
       </TableContainer>
+
+      {/* Amortization Schedule Dialog */}
+      <Dialog open={!!selectedLoan} onClose={() => setSelectedLoan(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Amortization Schedule</DialogTitle>
+        <DialogContent>
+          {selectedLoan && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box sx={{ display: "grid", gap: 1, gridTemplateColumns: "1fr 1fr 1fr", p: 2, bgcolor: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.2)", borderRadius: 1 }}>
+                <Box>
+                  <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Loan Amount</Typography>
+                  <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{formatCurrency(selectedLoan.amount_requested)}</Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Interest Rate</Typography>
+                  <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{selectedLoan.interest_rate}%</Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Term</Typography>
+                  <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{selectedLoan.term_months} months</Typography>
+                </Box>
+              </Box>
+
+              <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Month</TableCell>
+                      <TableCell align="right">Principal</TableCell>
+                      <TableCell align="right">Interest</TableCell>
+                      <TableCell align="right">Total</TableCell>
+                      <TableCell align="right">Balance</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {generateAmortizationSchedule(
+                      selectedLoan.amount_requested,
+                      selectedLoan.term_months,
+                      selectedLoan.interest_rate,
+                      selectedLoan.disbursement_date ? new Date(selectedLoan.disbursement_date) : undefined
+                    ).map((payment, index) => (
+                      <TableRow key={index} hover>
+                        <TableCell>{payment.month}</TableCell>
+                        <TableCell align="right">{formatCurrency(payment.principal)}</TableCell>
+                        <TableCell align="right">{formatCurrency(payment.interest)}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>{formatCurrency(payment.total)}</TableCell>
+                        <TableCell align="right">{formatCurrency(payment.balance)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedLoan(null)} variant="outlined" size="small">Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Import Loan Applications</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, py: 2 }}>
+            <Typography sx={{ fontSize: "0.875rem", color: "text.secondary" }}>
+              Upload a CSV file to import loan applications. The file should contain columns: Reference, Employee No, Amount Requested, Amount Approved, Interest Rate, Term (months), Monthly Repayment, Purpose, Status, Created At.
+            </Typography>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              style={{ display: 'none' }}
+              id="import-file-input"
+            />
+            <label htmlFor="import-file-input">
+              <Button
+                variant="outlined"
+                component="span"
+                fullWidth
+              >
+                {importFile ? importFile.name : "Select CSV File"}
+              </Button>
+            </label>
+            {importResult && (
+              <Alert severity={importResult.imported > 0 ? "success" : "error"}>
+                {importResult.imported > 0 
+                  ? `Successfully imported ${importResult.imported} loan applications.`
+                  : `Import failed. ${importResult.errors?.join(', ') || 'Unknown error'}`}
+              </Alert>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setImportDialogOpen(false)} variant="outlined" size="small">Cancel</Button>
+          <Button
+            onClick={handleImport}
+            variant="contained"
+            size="small"
+            disabled={!importFile || importLoading}
+          >
+            {importLoading ? "Importing..." : "Import"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
