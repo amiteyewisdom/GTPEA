@@ -50,7 +50,7 @@ export default async function ApprovalsPage() {
             loans (outstanding_balance)
           `)
           .eq('id', approval.loans.employee_id)
-          .single();
+          .single() as any;
 
         if (employeeData) {
           const totalSavings = (employeeData.savings as any[])?.reduce((sum: number, s: any) => sum + (s.balance || 0), 0) || 0;
@@ -81,7 +81,7 @@ export default async function ApprovalsPage() {
             loans (outstanding_balance)
           `)
           .eq('id', approval.withdrawal_requests.employee_id)
-          .single();
+          .single() as any;
 
         if (employeeData) {
           const totalSavings = (employeeData.savings as any[])?.reduce((sum: number, s: any) => sum + (s.balance || 0), 0) || 0;
