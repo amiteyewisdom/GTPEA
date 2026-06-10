@@ -78,7 +78,7 @@ export default function EnterpriseSidebar({
           fixed left-0 right-0 top-0 bg-white z-50 border-b border-brand-card-border
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-y-0' : '-translate-y-full'}
-          md:translate-y-0 md:static md:border-b-0
+          md:translate-y-0 md:static md:border-b-0 md:h-screen
         `}
         style={{ height: isOpen ? 'auto' : sidebarWidth, width: isCollapsed ? '90px' : '280px' }}
       >
