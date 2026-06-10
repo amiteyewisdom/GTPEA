@@ -46,7 +46,7 @@ export default function EnterpriseLayout({
       </button>
 
       {/* Main Content Area */}
-      <main className="pt-16 md:pt-16 md:pl-[280px] pb-16 md:pb-0 min-h-screen">
+      <main className="pt-16 md:pt-0 md:pl-[280px] pb-16 md:pb-0 min-h-screen">
         <div className="p-4 md:p-6 lg:p-8">
           {children}
         </div>
