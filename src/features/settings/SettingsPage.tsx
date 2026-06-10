@@ -361,8 +361,8 @@ function SystemSettings() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SelectField
             label="Default Currency"
-            options={['USD', 'EUR', 'GBP', 'GHS']}
-            defaultValue="USD"
+            options={['GHS', 'EUR', 'GBP', 'USD']}
+            defaultValue="GHS"
           />
           <SelectField
             label="Timezone"

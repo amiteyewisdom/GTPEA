@@ -617,6 +617,27 @@ CREATE INDEX IF NOT EXISTS idx_login_audit_user_id    ON login_audit_logs(user_i
 CREATE INDEX IF NOT EXISTS idx_login_audit_event      ON login_audit_logs(event);
 CREATE INDEX IF NOT EXISTS idx_login_audit_created_at ON login_audit_logs(created_at DESC);
 
+-- -----------------------------------------------------------------------------
+-- notifications  (system notifications for users)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notifications (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  type            TEXT NOT NULL CHECK (type IN ('approval_required', 'approval_completed', 'approval_rejected', 'loan_disbursed', 'withdrawal_disbursed', 'statement_ready', 'system')),
+  title           TEXT NOT NULL,
+  message         TEXT NOT NULL,
+  entity_type     TEXT CHECK (entity_type IN ('loan', 'withdrawal', 'savings', 'dividend', 'statement')),
+  entity_id       UUID,
+  is_read         BOOLEAN NOT NULL DEFAULT FALSE,
+  read_at         TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id     ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read      ON notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_type         ON notifications(type);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at   ON notifications(created_at DESC);
+
 -- =============================================================================
 -- 4. ROW LEVEL SECURITY (RLS)
 -- =============================================================================
@@ -642,6 +663,7 @@ ALTER TABLE dividends                  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE statement_requests         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ledger_entries             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE login_audit_logs           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications              ENABLE ROW LEVEL SECURITY;
 
 -- Helper: get current user's role (returns TEXT to avoid enum txn-safety issues)
 DROP FUNCTION IF EXISTS current_user_role() CASCADE;
@@ -790,6 +812,22 @@ DROP POLICY IF EXISTS "Admins and approvers can manage approvals" ON approvals;
 CREATE POLICY "Admins and approvers can manage approvals"
   ON approvals FOR ALL
   USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson'));
+
+-- ── notifications ───────────────────────────────────────────────────────────────
+DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
+CREATE POLICY "Users can view own notifications"
+  ON notifications FOR SELECT
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update own notifications" ON notifications;
+CREATE POLICY "Users can update own notifications"
+  ON notifications FOR UPDATE
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "System can insert notifications" ON notifications;
+CREATE POLICY "System can insert notifications"
+  ON notifications FOR INSERT
+  WITH CHECK (true);
 
 -- ── transactions ──────────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Staff can view all transactions" ON transactions;

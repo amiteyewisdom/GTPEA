@@ -14,7 +14,7 @@ import {
 import { StatusChip } from "@/components/ui/StatusChip";
 import { useRouter } from "next/navigation";
 import { KPICard } from "@/components/ui/KPICard";
-import { formatDate, formatRelativeTime } from "@/utils/formatters";
+import { formatDate, formatRelativeTime, formatCurrency } from "@/utils/formatters";
 import { createClient } from "@/lib/supabase/client";
 
 interface ApprovalAction {
@@ -39,6 +39,25 @@ interface ApprovalRow {
   completed_at?: string | null;
   profiles?: { full_name: string } | null;
   approval_actions?: ApprovalAction[];
+  // Additional loan/withdrawal details
+  loan_details?: {
+    amount_requested: number;
+    amount_approved: number | null;
+    outstanding_balance: number;
+    monthly_repayment: number;
+    term_months: number;
+    interest_rate: number;
+  } | null;
+  withdrawal_details?: {
+    amount: number;
+    savings_balance: number;
+    savings_type: string;
+  } | null;
+  employee_details?: {
+    total_savings: number;
+    total_loan_balance: number;
+    monthly_savings: number;
+  } | null;
 }
 
 interface ApprovalsClientProps {

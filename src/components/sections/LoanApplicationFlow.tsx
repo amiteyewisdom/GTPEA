@@ -26,9 +26,39 @@ interface LoanApplicationData {
   monthlyRepayment: number;
   firstRepaymentDate: string;
   completionDate: string;
+  loanId?: string;
+  loanRef?: string;
 }
 
 const INTEREST_RATE = 12; // 12% annual interest rate
+
+// Generate payment schedule (amortization)
+function generatePaymentSchedule(principal: number, duration: number, annualRate: number) {
+  const monthlyRate = annualRate / 100 / 12;
+  const monthlyPayment = (principal * monthlyRate * Math.pow(1 + monthlyRate, duration)) / (Math.pow(1 + monthlyRate, duration) - 1);
+  const schedule = [];
+  let balance = principal;
+  
+  const today = new Date();
+  
+  for (let i = 1; i <= duration; i++) {
+    const interestPayment = balance * monthlyRate;
+    const principalPayment = monthlyPayment - interestPayment;
+    balance -= principalPayment;
+    
+    const paymentDate = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    
+    schedule.push({
+      month: paymentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      principal: principalPayment,
+      interest: interestPayment,
+      total: monthlyPayment,
+      balance: Math.max(0, balance)
+    });
+  }
+  
+  return schedule;
+}
 
 export default function LoanApplicationFlow({ onSubmit }: LoanApplicationFlowProps) {
   const [step, setStep] = useState(1);
@@ -56,13 +86,36 @@ export default function LoanApplicationFlow({ onSubmit }: LoanApplicationFlowPro
     completionDate: completionDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onSubmit?.(loanData);
+    try {
+      const response = await fetch('/api/loans/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          principal,
+          duration_months: duration,
+          loan_product_id: 'default', // You may want to fetch available products
+          purpose: 'General loan purpose',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to submit application');
+      }
+
+      const result = await response.json();
+      onSubmit?.({ ...loanData, loanId: result.loan.id, loanRef: result.loan.loan_ref });
       setStep(5); // Success step
-    }, 2000);
+    } catch (error) {
+      console.error('Error submitting loan application:', error);
+      alert('Failed to submit loan application. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const canProceed = () => {
@@ -140,9 +193,9 @@ function Step1({ principal, setPrincipal, onNext, canProceed }: any) {
       </div>
 
       <div className="max-w-md mx-auto mb-8">
-        <label className="block text-brand-text-secondary text-sm mb-2">Principal Amount (USD)</label>
+        <label className="block text-brand-text-secondary text-sm mb-2">Principal Amount (GHS)</label>
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-brand-accent font-bold">$</span>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-brand-accent font-bold">₵</span>
           <input
             type="number"
             value={principal || ''}
@@ -151,7 +204,7 @@ function Step1({ principal, setPrincipal, onNext, canProceed }: any) {
             className="w-full pl-12 pr-4 py-4 bg-brand-card-bg border border-brand-card-border rounded-lg text-white text-2xl font-bold focus:outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all"
           />
         </div>
-        <p className="text-brand-text-secondary text-xs mt-2">Maximum loan amount: $100,000</p>
+        <p className="text-brand-text-secondary text-xs mt-2">Maximum loan amount: ₵100,000</p>
       </div>
 
       {/* Quick Amount Buttons */}
@@ -166,7 +219,7 @@ function Step1({ principal, setPrincipal, onNext, canProceed }: any) {
                 : 'bg-brand-card-bg border border-brand-card-border text-white hover:bg-brand-hover'
             }`}
           >
-            ${amount.toLocaleString()}
+            ₵{amount.toLocaleString()}
           </button>
         ))}
       </div>
@@ -265,7 +318,7 @@ function Step3({ loanData, onNext, onBack }: any) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <CalculationCard
           label="Principal Amount"
-          value={`$${loanData.principal.toLocaleString()}`}
+          value={`₵${loanData.principal.toLocaleString()}`}
           icon={DollarSign}
           color="text-brand-accent"
         />
@@ -283,20 +336,20 @@ function Step3({ loanData, onNext, onBack }: any) {
         />
         <CalculationCard
           label="Interest Amount"
-          value={`$${loanData.interestAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`₵${loanData.interestAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={Calculator}
           color="text-brand-warning"
         />
         <CalculationCard
           label="Total Payable"
-          value={`$${loanData.totalPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`₵${loanData.totalPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={DollarSign}
           color="text-brand-accent"
           highlight
         />
         <CalculationCard
           label="Monthly Repayment"
-          value={`$${loanData.monthlyRepayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`₵${loanData.monthlyRepayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           icon={Calendar}
           color="text-brand-success"
           highlight
@@ -312,6 +365,29 @@ function Step3({ loanData, onNext, onBack }: any) {
           label="Completion Date"
           date={loanData.completionDate}
         />
+      </div>
+
+      {/* Payment Schedule */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-white mb-4">Payment Schedule</h3>
+        <div className="bg-brand-card-bg border border-brand-card-border rounded-lg overflow-hidden">
+          <div className="grid grid-cols-4 gap-4 p-4 bg-brand-card-border border-b border-brand-card-border text-brand-text-secondary text-sm font-medium">
+            <div>Month</div>
+            <div>Principal</div>
+            <div>Interest</div>
+            <div>Total</div>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {generatePaymentSchedule(loanData.principal, loanData.duration, loanData.interestRate).map((payment, index) => (
+              <div key={index} className="grid grid-cols-4 gap-4 p-4 border-b border-brand-card-border text-sm">
+                <div className="text-white">{payment.month}</div>
+                <div className="text-brand-text-secondary">₵{payment.principal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div className="text-brand-text-secondary">₵{payment.interest.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div className="text-brand-accent font-medium">₵{payment.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="flex justify-between">
@@ -348,13 +424,13 @@ function Step4({ loanData, onBack, onSubmit, isSubmitting }: any) {
       <div className="bg-brand-card-bg border border-brand-card-border rounded-lg p-6 mb-8">
         <h3 className="text-lg font-semibold text-white mb-4">Loan Summary</h3>
         <div className="space-y-3">
-          <SummaryRow label="Principal Amount" value={`$${loanData.principal.toLocaleString()}`} />
+          <SummaryRow label="Principal Amount" value={`₵${loanData.principal.toLocaleString()}`} />
           <SummaryRow label="Duration" value={`${loanData.duration} months`} />
           <SummaryRow label="Interest Rate" value={`${loanData.interestRate}% per annum`} />
-          <SummaryRow label="Interest Amount" value={`$${loanData.interestAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+          <SummaryRow label="Interest Amount" value={`₵${loanData.interestAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
           <div className="border-t border-brand-card-border pt-3 mt-3">
-            <SummaryRow label="Total Payable" value={`$${loanData.totalPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} highlight />
-            <SummaryRow label="Monthly Repayment" value={`$${loanData.monthlyRepayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} highlight />
+            <SummaryRow label="Total Payable" value={`₵${loanData.totalPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} highlight />
+            <SummaryRow label="Monthly Repayment" value={`₵${loanData.monthlyRepayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} highlight />
           </div>
         </div>
       </div>

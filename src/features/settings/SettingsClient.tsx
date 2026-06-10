@@ -67,7 +67,6 @@ export function SettingsClient({ role }: { role: UserRole }) {
           <Select value={currency} label="Currency" onChange={(e) => setCurrency(e.target.value)}>
             <MenuItem value="GHS">GHS — Ghanaian Cedi (₵)</MenuItem>
             <MenuItem value="NGN">NGN — Nigerian Naira (₦)</MenuItem>
-            <MenuItem value="USD">USD — US Dollar ($)</MenuItem>
           </Select>
         </FormControl>
       </Grid>

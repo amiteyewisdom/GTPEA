@@ -13,8 +13,19 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 
-export default function EmployeeDashboard() {
+interface DashboardData {
+  fullName: string;
+  totalSavings: number;
+  totalLoanBalance: number;
+  pendingRequests: number;
+  activeLoans: any[];
+  recentActivity: any[];
+  pendingApplications: any[];
+}
+
+export default function EmployeeDashboard({ data }: { data: DashboardData }) {
   const router = useRouter();
   return (
     <div className="space-y-6">
@@ -22,7 +33,7 @@ export default function EmployeeDashboard() {
       <div className="relative overflow-hidden rounded-brand-lg bg-gradient-to-r from-brand-sidebar to-brand-primary border border-brand-card-border p-6 lg:p-12">
         <div className="relative z-10">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-brand-text mb-3">
-            Welcome Back, John
+            Welcome Back, {data.fullName || 'User'}
           </h1>
           <p className="text-sm md:text-base lg:text-lg text-brand-text-secondary mb-6">
             Manage your savings, loans, and financial goals
@@ -47,24 +58,24 @@ export default function EmployeeDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <BalanceCard
           title="Savings Balance"
-          value="$45,000.00"
-          change="+$2,500"
+          value={formatCurrency(data.totalSavings)}
+          change="+₵0"
           trend="up"
           icon={PiggyBank}
           color="text-brand-success"
         />
         <BalanceCard
           title="Loan Balance"
-          value="$15,000.00"
-          change="-$1,250"
+          value={formatCurrency(data.totalLoanBalance)}
+          change="-₵0"
           trend="down"
           icon={Briefcase}
           color="text-brand-warning"
         />
         <BalanceCard
           title="Pending Requests"
-          value="2"
-          change="1 loan, 1 withdrawal"
+          value={data.pendingRequests.toString()}
+          change={`${data.pendingApplications.length} pending`}
           trend="neutral"
           icon={Clock}
           color="text-brand-accent"
@@ -112,22 +123,19 @@ export default function EmployeeDashboard() {
           </button>
         </div>
         <div className="space-y-4">
-          <LoanCard
-            loanId="LN-2026-001"
-            amount="$15,000"
-            remainingBalance="$8,500"
-            monthlyPayment="$1,250"
-            nextDueDate="June 15, 2026"
-            status="active"
-          />
-          <LoanCard
-            loanId="LN-2025-008"
-            amount="$8,000"
-            remainingBalance="$2,100"
-            monthlyPayment="$890"
-            nextDueDate="June 10, 2026"
-            status="active"
-          />
+          {data.activeLoans.length > 0 ? data.activeLoans.map((loan: any) => (
+            <LoanCard
+              key={loan.id}
+              loanId={loan.loan_ref || 'N/A'}
+              amount={formatCurrency(loan.amount_approved || 0)}
+              remainingBalance={formatCurrency(loan.outstanding_balance || 0)}
+              monthlyPayment={formatCurrency(loan.monthly_payment || 0)}
+              nextDueDate={loan.next_payment_date ? formatDate(loan.next_payment_date) : 'N/A'}
+              status={loan.status || 'active'}
+            />
+          )) : (
+            <p className="text-brand-text-secondary text-sm">No active loans</p>
+          )}
         </div>
       </GlassCard>
 
@@ -140,34 +148,18 @@ export default function EmployeeDashboard() {
           </div>
         </div>
         <div className="space-y-3">
-          <ActivityRow
-            type="deposit"
-            description="Savings deposit"
-            amount="$2,500.00"
-            date="June 5, 2026"
-            status="completed"
-          />
-          <ActivityRow
-            type="payment"
-            description="Loan repayment"
-            amount="$1,250.00"
-            date="June 1, 2026"
-            status="completed"
-          />
-          <ActivityRow
-            type="withdrawal"
-            description="Savings withdrawal request"
-            amount="$3,000.00"
-            date="May 28, 2026"
-            status="pending"
-          />
-          <ActivityRow
-            type="dividend"
-            description="Dividend credit"
-            amount="$450.00"
-            date="May 25, 2026"
-            status="completed"
-          />
+          {data.recentActivity.length > 0 ? data.recentActivity.map((activity: any) => (
+            <ActivityRow
+              key={activity.id}
+              type={activity.type || 'deposit'}
+              description={activity.description || activity.type || 'Transaction'}
+              amount={formatCurrency(activity.amount || 0)}
+              date={activity.created_at ? formatDate(activity.created_at) : 'N/A'}
+              status={activity.status || 'completed'}
+            />
+          )) : (
+            <p className="text-brand-text-secondary text-sm">No recent activity</p>
+          )}
         </div>
       </GlassCard>
 
@@ -180,14 +172,19 @@ export default function EmployeeDashboard() {
           </div>
         </div>
         <div className="space-y-4">
-          <ApplicationStatusCard
-            applicationId="LA-2026-015"
-            amount="$12,000"
-            purpose="Home Improvement"
-            submittedDate="June 3, 2026"
-            currentStage="union_review"
-            stages={['submitted', 'union_review', 'fund_manager', 'chairperson', 'approved']}
-          />
+          {data.pendingApplications.length > 0 ? data.pendingApplications.map((app: any) => (
+            <ApplicationStatusCard
+              key={app.id}
+              applicationId={app.loan_ref || 'N/A'}
+              amount={formatCurrency(app.amount_requested || 0)}
+              purpose={app.purpose || 'Loan Application'}
+              submittedDate={app.created_at ? formatDate(app.created_at) : 'N/A'}
+              currentStage={app.current_stage || 'submitted'}
+              stages={['submitted', 'union_review', 'fund_manager', 'chairperson', 'approved']}
+            />
+          )) : (
+            <p className="text-brand-text-secondary text-sm">No pending applications</p>
+          )}
         </div>
       </GlassCard>
     </div>

@@ -10,30 +10,6 @@ import { SavingsAreaChart } from "@/components/charts/SavingsAreaChart";
 import { LoanBarChart } from "@/components/charts/LoanBarChart";
 import { formatCurrency, formatPercent } from "@/utils/formatters";
 
-const MOCK_SAVINGS_DATA = [
-  { month: "Jul", savings: 142000000, contributions: 8400000 },
-  { month: "Aug", savings: 156000000, contributions: 9100000 },
-  { month: "Sep", savings: 168000000, contributions: 8700000 },
-  { month: "Oct", savings: 182000000, contributions: 10200000 },
-  { month: "Nov", savings: 198000000, contributions: 11400000 },
-  { month: "Dec", savings: 215000000, contributions: 9800000 },
-  { month: "Jan", savings: 228000000, contributions: 12100000 },
-  { month: "Feb", savings: 241000000, contributions: 11600000 },
-  { month: "Mar", savings: 256000000, contributions: 13400000 },
-  { month: "Apr", savings: 269000000, contributions: 12900000 },
-  { month: "May", savings: 284000000, contributions: 14200000 },
-  { month: "Jun", savings: 298000000, contributions: 13600000 },
-];
-
-const MOCK_LOAN_DATA = [
-  { month: "Jan", disbursed: 32000000, repaid: 18000000 },
-  { month: "Feb", disbursed: 28000000, repaid: 22000000 },
-  { month: "Mar", disbursed: 41000000, repaid: 19000000 },
-  { month: "Apr", disbursed: 35000000, repaid: 24000000 },
-  { month: "May", disbursed: 38000000, repaid: 27000000 },
-  { month: "Jun", disbursed: 44000000, repaid: 31000000 },
-];
-
 interface ReportSummary {
   totalEmployees: number;
   activeLoans: number;
@@ -44,7 +20,19 @@ interface ReportSummary {
   defaultRate: number;
 }
 
-export function ReportsClient({ summary }: { summary: ReportSummary }) {
+interface ChartData {
+  month: string;
+  savings: number;
+  contributions: number;
+  disbursed: number;
+  repaid: number;
+}
+
+export function ReportsClient({ summary, savingsChartData = [], loanChartData = [] }: { 
+  summary: ReportSummary;
+  savingsChartData?: ChartData[];
+  loanChartData?: ChartData[];
+}) {
   const reports = [
     { label: "Savings Summary Report", desc: "Monthly savings contributions, balances and interest earned" },
     { label: "Loan Disbursement Report", desc: "All disbursements with amounts, dates and borrower details" },
@@ -88,7 +76,7 @@ export function ReportsClient({ summary }: { summary: ReportSummary }) {
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
               Total savings pool vs monthly contributions
             </Typography>
-            <SavingsAreaChart data={MOCK_SAVINGS_DATA} />
+            <SavingsAreaChart data={savingsChartData.length > 0 ? savingsChartData : []} />
           </Paper>
         </Grid>
         <Grid item xs={12} lg={5}>
@@ -99,7 +87,7 @@ export function ReportsClient({ summary }: { summary: ReportSummary }) {
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
               Disbursements vs repayments
             </Typography>
-            <LoanBarChart data={MOCK_LOAN_DATA} />
+            <LoanBarChart data={loanChartData.length > 0 ? loanChartData : []} />
           </Paper>
         </Grid>
       </Grid>

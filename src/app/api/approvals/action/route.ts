@@ -97,5 +97,50 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
+  // Get approval details for notification
+  const approvalDetailsRes = await (supabase
+    .from("approvals")
+    .select("entity_type, entity_id, submitted_by")
+    .eq("id", approvalId)
+    .single() as any);
+
+  if (!approvalDetailsRes.error && approvalDetailsRes.data) {
+    const approvalDetails = approvalDetailsRes.data;
+    const entityName = approvalDetails.entity_type === 'loan' ? 'Loan Application' : 'Withdrawal Request';
+    
+    // Notify the submitter about the action
+    await (supabase.from("notifications").insert([{
+      user_id: approvalDetails.submitted_by,
+      type: action === 'approved' ? 'approval_completed' : 'approval_rejected',
+      title: `${entityName} ${action === 'approved' ? 'Approved' : 'Rejected'}`,
+      message: `Your ${entityName.toLowerCase()} has been ${action === 'approved' ? 'approved' : 'rejected'} at stage ${stage}.`,
+      entity_type: approvalDetails.entity_type,
+      entity_id: approvalDetails.entity_id,
+    }] as any) as any);
+
+    // If approved and not final stage, notify the next approver
+    if (action === 'approved' && !isFinalStage) {
+      const nextRole = STAGE_ROLE_MAP[nextStage];
+      const approversRes = await (supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("role", nextRole)
+        .neq("user_id", user.id) as any);
+
+      if (!approversRes.error && approversRes.data) {
+        for (const approver of approversRes.data) {
+          await (supabase.from("notifications").insert([{
+            user_id: approver.user_id,
+            type: 'approval_required',
+            title: `${entityName} Requires Your Approval`,
+            message: `A ${entityName.toLowerCase()} is now at stage ${nextStage} and requires your approval.`,
+            entity_type: approvalDetails.entity_type,
+            entity_id: approvalDetails.entity_id,
+          }] as any) as any);
+        }
+      }
+    }
+  }
+
   return NextResponse.json({ message: "Action completed." });
 }
