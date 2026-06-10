@@ -9,8 +9,9 @@ export default async function ApprovalsPage() {
 
   // Get current user's role
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user?.id).single();
-  const userRole = profile?.role || "employee";
+  const userRole = user?.id 
+    ? ((await supabase.from("profiles").select("role").eq("user_id", user.id).single()) as any).data?.role || "employee"
+    : "employee";
 
   const { data: approvals, count } = await supabase
     .from("approvals")
