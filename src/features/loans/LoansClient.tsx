@@ -38,7 +38,7 @@ interface LoanProductOption {
   interest_rate: number;
   min_amount: number;
   max_amount: number;
-  max_tenure_months: number;
+  max_term_months: number;
 }
 
 interface LoansClientProps {
