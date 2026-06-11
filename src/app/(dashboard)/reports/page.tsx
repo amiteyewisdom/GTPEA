@@ -24,10 +24,10 @@ export default async function ReportsPage() {
     supabase.from("approvals").select("id", { count: "exact", head: true }),
     supabase.from("savings").select("balance, type, status"),
     supabase.from("loans").select("outstanding_balance, amount_disbursed, status, interest_rate"),
-    supabase.from("savings_contributions").select("amount, contribution_date").order("contribution_date", { ascending: true }).limit(100),
+    supabase.from("savings_contributions").select("amount, period_year, period_month, created_at").order("created_at", { ascending: true }).limit(100),
     supabase.from("transactions").select("amount, type, created_at").order("created_at", { ascending: true }).limit(100),
     supabase.from("withdrawal_requests").select("amount, status, requested_at").order("requested_at", { ascending: true }).limit(100),
-    supabase.from("dividends").select("amount, declared_at").order("declared_at", { ascending: true }).limit(100),
+    supabase.from("dividends").select("dividend_amount, credited_at, created_at").order("created_at", { ascending: true }).limit(100),
   ]);
 
   const savingsData = savingsRes.data as Savings[] | null;
@@ -41,12 +41,13 @@ export default async function ReportsPage() {
   const totalOutstanding = loanData?.reduce((s, r) => s + (r.outstanding_balance ?? 0), 0) ?? 0;
   const totalDisbursed = loanData?.reduce((s, r) => s + (r.amount_disbursed ?? 0), 0) ?? 0;
   const totalWithdrawals = withdrawalsData?.reduce((s, r) => s + (r.amount ?? 0), 0) ?? 0;
-  const totalDividends = dividendsData?.reduce((s, r) => s + (r.amount ?? 0), 0) ?? 0;
+  const totalDividends = dividendsData?.reduce((s, r) => s + (r.dividend_amount ?? 0), 0) ?? 0;
 
   // Aggregate savings contributions by month for chart data
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
   const savingsChartData = contributionsData?.reduce((acc: any[], curr: any) => {
-    const date = new Date(curr.contribution_date);
-    const month = date.toLocaleString("default", { month: "short" });
+    const month = monthNames[(curr.period_month ?? 1) - 1] ?? "Jan";
     const existing = acc.find((item: any) => item.month === month);
     if (existing) {
       existing.contributions += curr.amount;
@@ -113,11 +114,11 @@ export default async function ReportsPage() {
 
   // Add dividends to loan chart data
   dividendsData?.reduce((acc: any[], curr: any) => {
-    const date = new Date(curr.declared_at);
+    const date = new Date(curr.credited_at ?? curr.created_at);
     const month = date.toLocaleString("default", { month: "short" });
     const existing = acc.find((item: any) => item.month === month);
     if (existing) {
-      existing.dividends += curr.amount;
+      existing.dividends += curr.dividend_amount;
     } else {
       acc.push({ 
         month, 
@@ -126,7 +127,7 @@ export default async function ReportsPage() {
         savings: 0,
         contributions: 0,
         withdrawals: 0,
-        dividends: curr.amount,
+        dividends: curr.dividend_amount,
       });
     }
     return acc;

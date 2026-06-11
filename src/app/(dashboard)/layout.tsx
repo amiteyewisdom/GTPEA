@@ -35,10 +35,9 @@ export default async function DashboardLayout({
     };
 
     return (
-      <EnterpriseLayout 
-        currentRole={(profile?.role as UserRole) || 'employee'}
+      <EnterpriseLayout
+        currentRole={(profile?.role as UserRole) || "employee"}
         userName={userInfo.full_name}
-        userAvatar={userInfo.avatar_url || undefined}
       >
         {children}
       </EnterpriseLayout>

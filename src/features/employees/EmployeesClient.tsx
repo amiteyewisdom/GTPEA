@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, User } from "lucide-react";
+import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
+import { useDownload } from "@/hooks/use-download";
 import type { Employee } from "@/types/database";
 
 interface EmployeesClientProps {
@@ -15,6 +16,7 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { download, loading: exporting } = useDownload();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [formData, setFormData] = useState({
     first_name: "",
@@ -40,6 +42,19 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
     active: { color: "text-brand-success", bgColor: "bg-brand-success/20", label: "Active" },
     inactive: { color: "text-brand-text-secondary", bgColor: "bg-brand-text-secondary/20", label: "Inactive" },
     suspended: { color: "text-brand-warning", bgColor: "bg-brand-warning/20", label: "Suspended" },
+  };
+
+  const handleExport = async () => {
+    setMessage(null);
+    try {
+      await download("/api/reports/employees", "gtpea_employees.csv");
+      setMessage({ type: "success", text: "Employee list downloaded." });
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Could not export employees.",
+      });
+    }
   };
 
   const handleAddEmployee = async (e: React.FormEvent) => {
@@ -95,9 +110,13 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
           />
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2.5 border border-brand-card-border text-brand-text-secondary rounded-lg hover:bg-brand-hover transition-all">
+          <button
+            onClick={handleExport}
+            disabled={exporting || total === 0}
+            className="flex items-center gap-2 px-4 py-2.5 border border-brand-card-border text-brand-text-secondary rounded-lg hover:bg-brand-hover transition-all disabled:cursor-not-allowed disabled:opacity-50"
+          >
             <Download className="w-4 h-4" />
-            Export
+            {exporting ? "Exporting..." : "Export"}
           </button>
           <button
             onClick={() => setShowForm(!showForm)}

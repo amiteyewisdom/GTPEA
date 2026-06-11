@@ -2,16 +2,17 @@
 
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
+import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
   PiggyBank,
   DollarSign,
   TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
   Users,
   Calendar,
   TrendingDown
 } from 'lucide-react';
+import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
+import { formatCurrency } from '@/utils/formatters';
 import {
   LineChart,
   Line,
@@ -26,26 +27,17 @@ import {
   Bar
 } from 'recharts';
 
-// Sample data for charts
-const savingsTrendData = [
-  { month: 'Jul', savings: 0 },
-  { month: 'Aug', savings: 0 },
-  { month: 'Sep', savings: 0 },
-  { month: 'Oct', savings: 0 },
-  { month: 'Nov', savings: 0 },
-  { month: 'Dec', savings: 0 },
-];
+export default function ChairpersonDashboard({ stats }: { stats: DashboardStats }) {
+  const solvencyRatio = stats.totalSavings
+    ? Math.round((stats.fundBalance / stats.totalSavings) * 100)
+    : 0;
+  const loanToSavings = stats.totalSavings
+    ? Math.round((stats.totalLoansOutstanding / stats.totalSavings) * 100)
+    : 0;
+  const recoveryRate = stats.totalLoansDisbursed
+    ? Math.round(((stats.totalLoansDisbursed - stats.totalLoansOutstanding) / stats.totalLoansDisbursed) * 100)
+    : 0;
 
-const loanTrendData = [
-  { month: 'Jul', disbursements: 0, repayments: 0 },
-  { month: 'Aug', disbursements: 0, repayments: 0 },
-  { month: 'Sep', disbursements: 0, repayments: 0 },
-  { month: 'Oct', disbursements: 0, repayments: 0 },
-  { month: 'Nov', disbursements: 0, repayments: 0 },
-  { month: 'Dec', disbursements: 0, repayments: 0 },
-];
-
-export default function ChairpersonDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -56,35 +48,31 @@ export default function ChairpersonDashboard() {
 
       {/* Executive KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <ExecutiveKPICard
+        <DashboardStatCard
+          large
           title="Total Savings"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.totalSavings)}
           icon={PiggyBank}
           color="text-brand-success"
         />
-        <ExecutiveKPICard
+        <DashboardStatCard
+          large
           title="Total Loans"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.totalLoansOutstanding)}
           icon={DollarSign}
           color="text-brand-warning"
         />
-        <ExecutiveKPICard
+        <DashboardStatCard
+          large
           title="Dividends Distributed"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.totalDividends)}
           icon={TrendingUp}
           color="text-brand-accent"
         />
-        <ExecutiveKPICard
+        <DashboardStatCard
+          large
           title="Withdrawals"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.totalWithdrawals)}
           icon={TrendingDown}
           color="text-brand-danger"
         />
@@ -107,7 +95,7 @@ export default function ChairpersonDashboard() {
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={savingsTrendData}>
+              <AreaChart data={stats.savingsTrend}>
                 <defs>
                   <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2D7A4D" stopOpacity={0.3}/>
@@ -142,7 +130,7 @@ export default function ChairpersonDashboard() {
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={loanTrendData}>
+              <BarChart data={stats.loanTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
                 <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `₵${(value / 1000000).toFixed(1)}M`} />
@@ -169,21 +157,21 @@ export default function ChairpersonDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-success flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-brand-text">0%</span>
+              <span className="text-3xl font-bold text-brand-text">{solvencyRatio}%</span>
             </div>
             <p className="text-brand-text font-semibold text-lg">Solvency Ratio</p>
             <p className="text-brand-success text-sm mt-1">Excellent</p>
           </div>
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-accent flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-brand-text">0%</span>
+              <span className="text-3xl font-bold text-brand-text">{loanToSavings}%</span>
             </div>
             <p className="text-brand-text font-semibold text-lg">Loan-to-Savings</p>
             <p className="text-brand-accent text-sm mt-1">Healthy</p>
           </div>
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-warning flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-brand-text">0%</span>
+              <span className="text-3xl font-bold text-brand-text">{recoveryRate}%</span>
             </div>
             <p className="text-brand-text font-semibold text-lg">Recovery Rate</p>
             <p className="text-brand-warning text-sm mt-1">Good</p>
@@ -222,46 +210,23 @@ export default function ChairpersonDashboard() {
               </tr>
             </thead>
             <tbody>
-              <EmployeeRow 
-                name="" 
-                savings="₵0" 
-                loans="₵0" 
-                balance="₵0" 
-                dividends="₵0" 
-                withdrawals="₵0" 
-              />
-              <EmployeeRow 
-                name="" 
-                savings="₵0" 
-                loans="₵0" 
-                balance="₵0" 
-                dividends="₵0" 
-                withdrawals="₵0" 
-              />
-              <EmployeeRow 
-                name="" 
-                savings="₵0" 
-                loans="₵0" 
-                balance="₵0" 
-                dividends="₵0" 
-                withdrawals="₵0" 
-              />
-              <EmployeeRow 
-                name="" 
-                savings="₵0" 
-                loans="₵0" 
-                balance="₵0" 
-                dividends="₵0" 
-                withdrawals="₵0" 
-              />
-              <EmployeeRow 
-                name="" 
-                savings="₵0" 
-                loans="₵0" 
-                balance="₵0" 
-                dividends="₵0" 
-                withdrawals="₵0" 
-              />
+              {stats.employeeSummaries.length > 0 ? stats.employeeSummaries.map((employee) => (
+                <EmployeeRow
+                  key={employee.id}
+                  name={employee.name}
+                  savings={employee.savings}
+                  loans={employee.loans}
+                  balance={employee.balance}
+                  dividends={employee.dividends}
+                  withdrawals={employee.withdrawals}
+                />
+              )) : (
+                <tr>
+                  <td colSpan={6} className="py-6 px-4 text-center text-brand-text-secondary text-sm">
+                    No employee data available
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -276,59 +241,22 @@ export default function ChairpersonDashboard() {
           </div>
           <Calendar className="w-5 h-5 text-brand-accent" />
         </div>
-        <div className="space-y-4">
-          <MeetingCard
-            title="Board Meeting"
-            date="June 15, 2026"
-            time="10:00 AM"
-            location="Conference Room A"
-            agenda="Quarterly financial review, loan approvals, dividend distribution"
-          />
-          <MeetingCard
-            title="Finance Committee"
-            date="June 22, 2026"
-            time="2:00 PM"
-            location="Board Room"
-            agenda="Budget review, fund allocation, investment strategy"
-          />
-          <MeetingCard
-            title="Annual General Meeting"
-            date="July 10, 2026"
-            time="9:00 AM"
-            location="Main Hall"
-            agenda="Annual report presentation, member elections, strategic planning"
-          />
-        </div>
+        <p className="py-8 text-center text-sm text-brand-text-secondary">
+          No meetings scheduled. Meetings will appear here once added to the system.
+        </p>
       </GlassCard>
     </div>
   );
 }
 
-function ExecutiveKPICard({ title, value, change, trend, icon: Icon, color }: any) {
-  return (
-    <GlassCard className="p-6 hover:bg-brand-hover transition-all">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-lg bg-brand-card-bg ${color}`}>
-          <Icon className="w-6 h-6" />
-        </div>
-        <div className={`flex items-center gap-1 text-sm font-medium ${trend === 'up' ? 'text-brand-success' : 'text-brand-danger'}`}>
-          {trend === 'up' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
-          {change}
-        </div>
-      </div>
-      <p className="text-brand-text-secondary text-sm mb-2">{title}</p>
-      <p className="text-brand-text text-3xl font-bold">{value}</p>
-    </GlassCard>
-  );
-}
-
 function EmployeeRow({ name, savings, loans, balance, dividends, withdrawals }: any) {
+  const initial = name?.charAt(0) || "?";
   return (
     <tr className="border-b border-brand-card-border hover:bg-brand-hover transition-all">
       <td className="py-4 px-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold">
-            {name.charAt(0)}
+            {initial}
           </div>
           <span className="text-brand-text font-medium">{name}</span>
         </div>

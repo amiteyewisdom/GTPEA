@@ -2,19 +2,20 @@
 
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
+import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
   Wallet,
   DollarSign,
   CreditCard,
   TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
   Calendar,
   BarChart3,
   CheckCircle,
   XCircle,
   Clock
 } from 'lucide-react';
+import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
+import { formatCurrency, formatNumber } from '@/utils/formatters';
 import {
   LineChart,
   Line,
@@ -27,17 +28,18 @@ import {
   Area
 } from 'recharts';
 
-// Sample data for charts
-const fundPerformanceData = [
-  { month: 'Jan', returns: 0 },
-  { month: 'Feb', returns: 0 },
-  { month: 'Mar', returns: 0 },
-  { month: 'Apr', returns: 0 },
-  { month: 'May', returns: 0 },
-  { month: 'Jun', returns: 0 },
-];
+export default function FundManagerDashboard({ stats }: { stats: DashboardStats }) {
+  const fundPerformanceData = stats.loanTrend.map((item) => ({
+    month: item.month,
+    returns: item.repayments > 0
+      ? Math.round((item.repayments / Math.max(item.disbursements, 1)) * 100)
+      : 0,
+  }));
+  const forecastTotal = stats.upcomingRepayments.reduce(
+    (acc, item) => acc + item.amountValue,
+    0
+  );
 
-export default function FundManagerDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -48,35 +50,29 @@ export default function FundManagerDashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
+        <DashboardStatCard
           title="Fund Balance"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.fundBalance)}
           icon={Wallet}
           color="text-brand-accent"
         />
-        <KPICard
+        <DashboardStatCard
           title="Expected Collections"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(
+            stats.upcomingRepayments.reduce((acc, item) => acc + item.amountValue, 0)
+          )}
           icon={DollarSign}
           color="text-brand-success"
         />
-        <KPICard
+        <DashboardStatCard
           title="Disbursements"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.totalLoansDisbursed)}
           icon={CreditCard}
           color="text-brand-warning"
         />
-        <KPICard
+        <DashboardStatCard
           title="Loan Portfolio"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.totalLoansOutstanding)}
           icon={TrendingUp}
           color="text-brand-accent"
         />
@@ -92,42 +88,17 @@ export default function FundManagerDashboard() {
           <Calendar className="w-5 h-5 text-brand-accent" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <RepaymentCard
-            borrower=""
-            amount="₵0"
-            dueDate=""
-            status="pending"
-          />
-          <RepaymentCard
-            borrower=""
-            amount="₵0"
-            dueDate=""
-            status="pending"
-          />
-          <RepaymentCard
-            borrower=""
-            amount="₵0"
-            dueDate=""
-            status="pending"
-          />
-          <RepaymentCard
-            borrower=""
-            amount="₵0"
-            dueDate=""
-            status="pending"
-          />
-          <RepaymentCard
-            borrower=""
-            amount="₵0"
-            dueDate=""
-            status="pending"
-          />
-          <RepaymentCard
-            borrower=""
-            amount="₵0"
-            dueDate=""
-            status="pending"
-          />
+          {stats.upcomingRepayments.length > 0 ? stats.upcomingRepayments.map((repayment) => (
+            <RepaymentCard
+              key={repayment.id}
+              borrower={repayment.borrower}
+              amount={repayment.amount}
+              dueDate={repayment.dueDate}
+              status={repayment.status}
+            />
+          )) : (
+            <p className="text-brand-text-secondary text-sm col-span-full">No upcoming repayments</p>
+          )}
         </div>
       </GlassCard>
 
@@ -172,14 +143,19 @@ export default function FundManagerDashboard() {
             <TrendingUp className="w-5 h-5 text-brand-success" />
           </div>
           <div className="space-y-4">
-            <ForecastMonth month="July" amount="₵0" percentage="0%" />
-            <ForecastMonth month="August" amount="₵0" percentage="0%" />
-            <ForecastMonth month="September" amount="₵0" percentage="0%" />
+            {stats.upcomingRepayments.slice(0, 3).map((repayment) => (
+              <ForecastMonth
+                key={repayment.id}
+                month={repayment.dueDate}
+                amount={repayment.amount}
+                percentage={forecastTotal > 0 ? `${Math.round((repayment.amountValue / forecastTotal) * 100)}%` : "0%"}
+              />
+            ))}
           </div>
           <div className="mt-6 p-4 bg-brand-card-bg rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-brand-text-secondary text-sm">Total Forecast</span>
-              <span className="text-brand-text text-xl font-bold">₵0</span>
+              <span className="text-brand-text text-xl font-bold">{formatCurrency(forecastTotal)}</span>
             </div>
           </div>
         </GlassCard>
@@ -194,7 +170,7 @@ export default function FundManagerDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-brand-warning/20 text-brand-warning rounded-full text-sm font-medium">
-              0 pending
+              {formatNumber(stats.pendingLoanReviews.length)} pending
             </span>
           </div>
         </div>
@@ -211,34 +187,22 @@ export default function FundManagerDashboard() {
               </tr>
             </thead>
             <tbody>
-              <LoanReviewRow
-                applicant=""
-                amount="₵0"
-                duration=""
-                purpose=""
-                riskScore=""
-              />
-              <LoanReviewRow
-                applicant=""
-                amount="₵0"
-                duration=""
-                purpose=""
-                riskScore=""
-              />
-              <LoanReviewRow
-                applicant=""
-                amount="₵0"
-                duration=""
-                purpose=""
-                riskScore=""
-              />
-              <LoanReviewRow
-                applicant=""
-                amount="₵0"
-                duration=""
-                purpose=""
-                riskScore=""
-              />
+              {stats.pendingLoanReviews.length > 0 ? stats.pendingLoanReviews.map((loan) => (
+                <LoanReviewRow
+                  key={loan.id}
+                  applicant={loan.applicant}
+                  amount={loan.amount}
+                  duration={loan.duration}
+                  purpose={loan.purpose}
+                  riskScore={loan.riskScore}
+                />
+              )) : (
+                <tr>
+                  <td colSpan={6} className="py-6 px-4 text-center text-brand-text-secondary text-sm">
+                    No loans awaiting review
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -254,55 +218,21 @@ export default function FundManagerDashboard() {
           <CreditCard className="w-5 h-5 text-brand-accent" />
         </div>
         <div className="space-y-3">
-          <DisbursementRow
-            recipient=""
-            amount="₵0"
-            loanId=""
-            date=""
-            status="completed"
-          />
-          <DisbursementRow
-            recipient=""
-            amount="₵0"
-            loanId=""
-            date=""
-            status="completed"
-          />
-          <DisbursementRow
-            recipient=""
-            amount="₵0"
-            loanId=""
-            date=""
-            status="completed"
-          />
-          <DisbursementRow
-            recipient=""
-            amount="₵0"
-            loanId=""
-            date=""
-            status="pending"
-          />
+          {stats.recentDisbursements.length > 0 ? stats.recentDisbursements.map((item) => (
+            <DisbursementRow
+              key={item.id}
+              recipient={item.recipient}
+              amount={item.amount}
+              loanId={item.loanId}
+              date={item.date}
+              status={item.status}
+            />
+          )) : (
+            <p className="text-brand-text-secondary text-sm">No recent disbursements</p>
+          )}
         </div>
       </GlassCard>
     </div>
-  );
-}
-
-function KPICard({ title, value, change, trend, icon: Icon, color }: any) {
-  return (
-    <GlassCard className="p-5 hover:bg-brand-hover transition-all">
-      <div className="flex items-start justify-between mb-3">
-        <div className={`p-2.5 rounded-lg bg-brand-card-bg ${color}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div className={`flex items-center gap-1 text-sm font-medium ${trend === 'up' ? 'text-brand-success' : 'text-brand-danger'}`}>
-          {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-          {change}
-        </div>
-      </div>
-      <p className="text-brand-text-secondary text-sm mb-1">{title}</p>
-      <p className="text-brand-text text-2xl font-bold">{value}</p>
-    </GlassCard>
   );
 }
 

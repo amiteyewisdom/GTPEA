@@ -2,6 +2,7 @@
 
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
+import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
   Users,
   PiggyBank,
@@ -10,11 +11,11 @@ import {
   CheckCircle,
   TrendingUp,
   Activity,
-  ArrowUpRight,
-  ArrowDownRight,
   Clock,
   Shield
 } from 'lucide-react';
+import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
+import { formatCompact, formatCurrency, formatNumber } from '@/utils/formatters';
 import {
   LineChart,
   Line,
@@ -32,24 +33,12 @@ import {
   Cell
 } from 'recharts';
 
-// Sample data for charts
-const savingsData = [
-  { month: 'Jan', savings: 0 },
-  { month: 'Feb', savings: 0 },
-  { month: 'Mar', savings: 0 },
-  { month: 'Apr', savings: 0 },
-  { month: 'May', savings: 0 },
-  { month: 'Jun', savings: 0 },
-];
+export default function SuperAdminDashboard({ stats }: { stats: DashboardStats }) {
+  const totalCapital = stats.totalSavings + stats.totalLoansOutstanding || 1;
+  const loanPct = Math.round((stats.totalLoansOutstanding / totalCapital) * 100);
+  const savingsPct = Math.round((stats.totalSavings / totalCapital) * 100);
+  const reservePct = Math.max(0, 100 - loanPct - savingsPct);
 
-const loanDistributionData = [
-  { name: 'Personal', value: 0, color: '#b59a6d' },
-  { name: 'Emergency', value: 0, color: '#2D7A4D' },
-  { name: 'Education', value: 0, color: '#F59E0B' },
-  { name: 'Business', value: 0, color: '#DC2626' },
-];
-
-export default function SuperAdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -59,52 +48,40 @@ export default function SuperAdminDashboard() {
       </div>
 
       {/* Section 1: KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <KPICard
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 [&>*]:min-w-0">
+        <DashboardStatCard
           title="Total Employees"
-          value="0"
-          change="+0%"
-          trend="up"
+          value={formatNumber(stats.totalEmployees)}
           icon={Users}
           color="text-brand-accent"
         />
-        <KPICard
+        <DashboardStatCard
           title="Total Savings"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.totalSavings)}
           icon={PiggyBank}
           color="text-brand-success"
         />
-        <KPICard
+        <DashboardStatCard
           title="Total Loans"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.totalLoansOutstanding)}
           icon={DollarSign}
           color="text-brand-warning"
         />
-        <KPICard
+        <DashboardStatCard
           title="Fund Balance"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.fundBalance)}
           icon={Wallet}
           color="text-brand-accent"
         />
-        <KPICard
+        <DashboardStatCard
           title="Pending Approvals"
-          value="0"
-          change="+0%"
-          trend="up"
+          value={formatNumber(stats.pendingApprovals)}
           icon={CheckCircle}
           color="text-brand-warning"
         />
-        <KPICard
+        <DashboardStatCard
           title="Monthly Dividends"
-          value="₵0"
-          change="+0%"
-          trend="up"
+          value={formatCurrency(stats.totalDividends)}
           icon={TrendingUp}
           color="text-brand-success"
         />
@@ -127,7 +104,7 @@ export default function SuperAdminDashboard() {
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={savingsData}>
+              <AreaChart data={stats.savingsTrend}>
                 <defs>
                   <linearGradient id="colorSavings" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2D7A4D" stopOpacity={0.3}/>
@@ -155,37 +132,45 @@ export default function SuperAdminDashboard() {
               <p className="text-brand-text-secondary text-sm">Distribution by type</p>
             </div>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={loanDistributionData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {loanDistributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value) => `${value}%`}
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap gap-4 justify-center mt-4">
-            {loanDistributionData.map((item) => (
-              <div key={item.name} className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-sm text-brand-text-secondary">{item.name}</span>
+          {stats.loanDistribution.length === 0 ? (
+            <p className="flex h-64 items-center justify-center text-sm text-brand-text-secondary">
+              No loan data yet.
+            </p>
+          ) : (
+            <>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.loanDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {stats.loanDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => `${value}%`}
+                      contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-          </div>
+              <div className="mt-4 flex flex-wrap justify-center gap-4">
+                {stats.loanDistribution.map((item) => (
+                  <div key={item.name} className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-sm text-brand-text-secondary">{item.name}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </GlassCard>
       </div>
 
@@ -200,31 +185,31 @@ export default function SuperAdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-accent flex items-center justify-center mb-3">
-              <span className="text-2xl font-bold text-brand-text">0%</span>
+              <span className="text-2xl font-bold text-brand-text">{loanPct}%</span>
             </div>
             <p className="text-brand-text font-medium">Loans</p>
-            <p className="text-brand-text-secondary text-sm">₵0</p>
+            <p className="text-brand-text-secondary text-sm">{formatCompact(stats.totalLoansOutstanding)}</p>
           </div>
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-green flex items-center justify-center mb-3">
-              <span className="text-2xl font-bold text-brand-text">0%</span>
+              <span className="text-2xl font-bold text-brand-text">{savingsPct}%</span>
             </div>
             <p className="text-brand-text font-medium">Savings</p>
-            <p className="text-brand-text-secondary text-sm">₵0</p>
+            <p className="text-brand-text-secondary text-sm">{formatCompact(stats.totalSavings)}</p>
           </div>
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-warning flex items-center justify-center mb-3">
-              <span className="text-2xl font-bold text-brand-text">0%</span>
+              <span className="text-2xl font-bold text-brand-text">{reservePct}%</span>
             </div>
             <p className="text-brand-text font-medium">Reserves</p>
-            <p className="text-brand-text-secondary text-sm">₵0</p>
+            <p className="text-brand-text-secondary text-sm">{formatCompact(stats.fundBalance)}</p>
           </div>
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-card-border flex items-center justify-center mb-3">
-              <span className="text-2xl font-bold text-brand-text">0%</span>
+              <span className="text-2xl font-bold text-brand-text">{formatNumber(stats.activeUsers)}</span>
             </div>
             <p className="text-brand-text font-medium">Operations</p>
-            <p className="text-brand-text-secondary text-sm">₵0</p>
+            <p className="text-brand-text-secondary text-sm">Active users</p>
           </div>
         </div>
       </GlassCard>
@@ -241,34 +226,18 @@ export default function SuperAdminDashboard() {
             <Activity className="w-5 h-5 text-brand-accent" />
           </div>
           <div className="space-y-4">
-            <ActivityItem
-              title="New user registered"
-              description="New employee joined"
-              time="2 minutes ago"
-              icon={Users}
-              color="text-brand-success"
-            />
-            <ActivityItem
-              title="Loan approved"
-              description="Loan approved by Fund Manager"
-              time="15 minutes ago"
-              icon={CheckCircle}
-              color="text-brand-accent"
-            />
-            <ActivityItem
-              title="Savings deposit"
-              description="Savings deposit processed"
-              time="1 hour ago"
-              icon={PiggyBank}
-              color="text-brand-success"
-            />
-            <ActivityItem
-              title="System update"
-              description="Interest rates updated to 12%"
-              time="3 hours ago"
-              icon={Shield}
-              color="text-brand-warning"
-            />
+            {stats.recentActivity.length > 0 ? stats.recentActivity.map((item) => (
+              <ActivityItem
+                key={item.id}
+                title={item.title}
+                description={item.description}
+                time={item.time}
+                icon={Activity}
+                color="text-brand-accent"
+              />
+            )) : (
+              <p className="text-brand-text-secondary text-sm">No recent activity</p>
+            )}
           </div>
         </GlassCard>
 
@@ -282,11 +251,11 @@ export default function SuperAdminDashboard() {
             <Shield className="w-5 h-5 text-brand-green" />
           </div>
           <div className="space-y-4">
-            <HealthMetric label="Database Status" value="Operational" status="healthy" />
-            <HealthMetric label="API Response Time" value="45ms" status="healthy" />
-            <HealthMetric label="Uptime" value="99.9%" status="healthy" />
-            <HealthMetric label="Storage Usage" value="67%" status="warning" />
-            <HealthMetric label="Active Sessions" value="0" status="healthy" />
+            <HealthMetric label="Active Users" value={formatNumber(stats.activeUsers)} status="healthy" />
+            <HealthMetric label="Pending Approvals" value={formatNumber(stats.pendingApprovals)} status={stats.pendingApprovals > 0 ? "warning" : "healthy"} />
+            <HealthMetric label="Audit Events" value={formatNumber(stats.auditLogCount)} status="healthy" />
+            <HealthMetric label="Transactions Today" value={formatNumber(stats.transactionsToday)} status="healthy" />
+            <HealthMetric label="Total Employees" value={formatNumber(stats.totalEmployees)} status="healthy" />
           </div>
         </GlassCard>
       </div>
@@ -300,7 +269,7 @@ export default function SuperAdminDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-brand-warning/20 text-brand-warning rounded-full text-sm font-medium">
-              0 pending
+              {stats.pendingApprovals} pending
             </span>
           </div>
         </div>
@@ -317,32 +286,27 @@ export default function SuperAdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              <ApprovalRow type="Loan" requester="" amount="₵0" status="Pending" time="" />
-              <ApprovalRow type="Loan" requester="" amount="₵0" status="Pending" time="" />
-              <ApprovalRow type="Withdrawal" requester="" amount="₵0" status="Pending" time="" />
+              {stats.approvalQueue.length > 0 ? stats.approvalQueue.map((item) => (
+                <ApprovalRow
+                  key={item.id}
+                  type={item.type}
+                  requester={item.requester}
+                  amount={item.amount}
+                  status={item.status}
+                  time={item.time}
+                />
+              )) : (
+                <tr>
+                  <td colSpan={6} className="py-6 px-4 text-center text-brand-text-secondary text-sm">
+                    No pending approvals
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </GlassCard>
     </div>
-  );
-}
-
-function KPICard({ title, value, change, trend, icon: Icon, color }: any) {
-  return (
-    <GlassCard className="p-5 hover:bg-brand-hover transition-all">
-      <div className="flex items-start justify-between mb-3">
-        <div className={`p-2.5 rounded-lg bg-brand-hover ${color}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div className={`flex items-center gap-1 text-sm font-medium ${trend === 'up' ? 'text-brand-green' : 'text-brand-danger'}`}>
-          {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-          {change}
-        </div>
-      </div>
-      <p className="text-brand-text-secondary text-sm mb-1">{title}</p>
-      <p className="text-brand-text text-2xl font-bold">{value}</p>
-    </GlassCard>
   );
 }
 

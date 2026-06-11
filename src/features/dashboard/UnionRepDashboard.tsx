@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import GlassCard from '@/components/ui/GlassCard';
+import DashboardStatCard from '@/components/ui/DashboardStatCard';
+import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
+import { formatNumber } from '@/utils/formatters';
 import {
   CheckCircle,
   XCircle,
   Star,
-  ArrowUpRight,
-  ArrowDownRight,
   ClipboardList,
   DollarSign,
   PiggyBank,
@@ -15,7 +16,7 @@ import {
   UserCheck
 } from 'lucide-react';
 
-export default function UnionRepDashboard() {
+export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -59,26 +60,26 @@ export default function UnionRepDashboard() {
 
       {/* Review Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard
+        <DashboardStatCard
           title="Pending Reviews"
-          value="0"
-          change="+0"
+          value={formatNumber(stats.unionRepStats.pendingReviews)}
+          change={`${stats.unionRepStats.pendingReviews}`}
           trend="up"
           icon={ClipboardList}
           color="text-brand-warning"
         />
-        <StatCard
+        <DashboardStatCard
           title="Approved Reviews"
-          value="0"
-          change="+0"
+          value={formatNumber(stats.unionRepStats.approvedReviews)}
+          change={`${stats.unionRepStats.approvedReviews}`}
           trend="up"
           icon={CheckCircle}
           color="text-brand-success"
         />
-        <StatCard
+        <DashboardStatCard
           title="Rejected Reviews"
-          value="0"
-          change="+0"
+          value={formatNumber(stats.unionRepStats.rejectedReviews)}
+          change={`${stats.unionRepStats.rejectedReviews}`}
           trend="up"
           icon={XCircle}
           color="text-brand-danger"
@@ -96,77 +97,23 @@ export default function UnionRepDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Employee Card 1 */}
-          <EmployeeEligibilityCard
-            name=""
-            employeeId=""
-            currentSavings="₵0"
-            currentLoans="₵0"
-            monthlyRepayments="₵0"
-            loanHistory=""
-            eligibilityScore={0}
-            status="eligible"
-          />
-          
-          {/* Employee Card 2 */}
-          <EmployeeEligibilityCard
-            name=""
-            employeeId=""
-            currentSavings="₵0"
-            currentLoans="₵0"
-            monthlyRepayments="₵0"
-            loanHistory=""
-            eligibilityScore={0}
-            status="review"
-          />
-          
-          {/* Employee Card 3 */}
-          <EmployeeEligibilityCard
-            name=""
-            employeeId=""
-            currentSavings="₵0"
-            currentLoans="₵0"
-            monthlyRepayments="₵0"
-            loanHistory=""
-            eligibilityScore={0}
-            status="caution"
-          />
-          
-          {/* Employee Card 4 */}
-          <EmployeeEligibilityCard
-            name=""
-            employeeId=""
-            currentSavings="₵0"
-            currentLoans="₵0"
-            monthlyRepayments="₵0"
-            loanHistory=""
-            eligibilityScore={0}
-            status="eligible"
-          />
-          
-          {/* Employee Card 5 */}
-          <EmployeeEligibilityCard
-            name=""
-            employeeId=""
-            currentSavings="₵0"
-            currentLoans="₵0"
-            monthlyRepayments="₵0"
-            loanHistory=""
-            eligibilityScore={0}
-            status="eligible"
-          />
-          
-          {/* Employee Card 6 */}
-          <EmployeeEligibilityCard
-            name=""
-            employeeId=""
-            currentSavings="₵0"
-            currentLoans="₵0"
-            monthlyRepayments="₵0"
-            loanHistory=""
-            eligibilityScore={0}
-            status="ineligible"
-          />
+          {stats.unionRepLoans.length > 0 ? stats.unionRepLoans.map((loan) => (
+            <EmployeeEligibilityCard
+              key={loan.id}
+              name={loan.name}
+              employeeId={loan.employeeId}
+              currentSavings={loan.currentSavings}
+              currentLoans={loan.currentLoans}
+              monthlyRepayments={loan.monthlyRepayments}
+              loanHistory={loan.loanHistory}
+              eligibilityScore={loan.eligibilityScore}
+              status={loan.status}
+              onApprove={(action: 'approved' | 'rejected' | 'on_hold') => handleApproval(loan.id, action)}
+              loading={loading}
+            />
+          )) : (
+            <p className="text-brand-text-secondary text-sm col-span-full">No pending loan reviews</p>
+          )}
         </div>
       </GlassCard>
 
@@ -180,55 +127,21 @@ export default function UnionRepDashboard() {
           <Star className="w-5 h-5 text-brand-accent" />
         </div>
         <div className="space-y-3">
-          <RecommendationRow
-            employee=""
-            action=""
-            amount="₵0"
-            date=""
-            status="approved"
-          />
-          <RecommendationRow
-            employee=""
-            action=""
-            amount="₵0"
-            date=""
-            status="pending"
-          />
-          <RecommendationRow
-            employee=""
-            action=""
-            amount="₵0"
-            date=""
-            status="rejected"
-          />
-          <RecommendationRow
-            employee=""
-            action=""
-            amount="₵0"
-            date=""
-            status="approved"
-          />
+          {stats.recentRecommendations.length > 0 ? stats.recentRecommendations.map((item, index) => (
+            <RecommendationRow
+              key={`${item.employee}-${index}`}
+              employee={item.employee}
+              action={item.action}
+              amount={item.amount}
+              date={item.date}
+              status={item.status}
+            />
+          )) : (
+            <p className="text-brand-text-secondary text-sm">No recent recommendations</p>
+          )}
         </div>
       </GlassCard>
     </div>
-  );
-}
-
-function StatCard({ title, value, change, trend, icon: Icon, color }: any) {
-  return (
-    <GlassCard className="p-5 hover:bg-brand-hover transition-all">
-      <div className="flex items-start justify-between mb-3">
-        <div className={`p-2.5 rounded-lg bg-brand-card-bg ${color}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        <div className={`flex items-center gap-1 text-sm font-medium ${trend === 'up' ? 'text-brand-success' : 'text-brand-danger'}`}>
-          {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-          {change}
-        </div>
-      </div>
-      <p className="text-brand-text-secondary text-sm mb-1">{title}</p>
-      <p className="text-brand-text text-2xl font-bold">{value}</p>
-    </GlassCard>
   );
 }
 

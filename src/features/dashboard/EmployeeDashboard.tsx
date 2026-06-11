@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import GlassCard from '@/components/ui/GlassCard';
+import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
   DollarSign,
   PiggyBank,
@@ -23,6 +24,8 @@ interface DashboardData {
   activeLoans: any[];
   recentActivity: any[];
   pendingApplications: any[];
+  savingsChange?: string;
+  loanChange?: string;
 }
 
 export default function EmployeeDashboard({ data }: { data: DashboardData }) {
@@ -56,27 +59,29 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
 
       {/* Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <BalanceCard
+        <DashboardStatCard
+          large
           title="Savings Balance"
           value={formatCurrency(data.totalSavings)}
-          change="+₵0"
+          change={data.savingsChange}
           trend="up"
           icon={PiggyBank}
           color="text-brand-success"
         />
-        <BalanceCard
+        <DashboardStatCard
+          large
           title="Loan Balance"
           value={formatCurrency(data.totalLoanBalance)}
-          change="-₵0"
+          change={data.loanChange}
           trend="down"
           icon={Briefcase}
           color="text-brand-warning"
         />
-        <BalanceCard
+        <DashboardStatCard
+          large
           title="Pending Requests"
           value={data.pendingRequests.toString()}
           change={`${data.pendingApplications.length} pending`}
-          trend="neutral"
           icon={Clock}
           color="text-brand-accent"
         />
@@ -188,25 +193,6 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
         </div>
       </GlassCard>
     </div>
-  );
-}
-
-function BalanceCard({ title, value, change, trend, icon: Icon, color }: any) {
-  return (
-    <GlassCard className="p-6 hover:bg-brand-hover transition-all">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-lg bg-brand-card-bg ${color}`}>
-          <Icon className="w-6 h-6" />
-        </div>
-        {trend !== 'neutral' && (
-          <div className={`flex items-center gap-1 text-sm font-medium ${trend === 'up' ? 'text-brand-success' : 'text-brand-danger'}`}>
-            {change}
-          </div>
-        )}
-      </div>
-      <p className="text-brand-text-secondary text-sm mb-2">{title}</p>
-      <p className="text-brand-text text-3xl font-bold">{value}</p>
-    </GlassCard>
   );
 }
 

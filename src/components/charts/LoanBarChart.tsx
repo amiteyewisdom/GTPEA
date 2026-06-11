@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 
 interface DataPoint {
@@ -24,20 +23,12 @@ const CustomTooltip = ({ active, payload, label }: {
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div
-      style={{
-        background: "#161B26",
-        border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: 8,
-        padding: "10px 14px",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-      }}
-    >
-      <p style={{ color: "#94A3B8", fontSize: 11, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+    <div className="rounded-lg border border-brand-card-border bg-white px-3.5 py-2.5 shadow-md">
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-text-secondary">
         {label}
       </p>
       {payload.map((entry) => (
-        <p key={entry.name} style={{ color: entry.color, fontSize: 13, fontWeight: 600, margin: "2px 0" }}>
+        <p key={entry.name} className="text-sm font-semibold" style={{ color: entry.color }}>
           {entry.name}: ₵{entry.value.toLocaleString()}
         </p>
       ))}
@@ -45,30 +36,36 @@ const CustomTooltip = ({ active, payload, label }: {
   );
 };
 
+function formatAxis(value: number) {
+  if (value >= 1_000_000) return `₵${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `₵${(value / 1_000).toFixed(0)}K`;
+  return `₵${value}`;
+}
+
 interface LoanBarChartProps {
   data: DataPoint[];
 }
 
 export function LoanBarChart({ data }: LoanBarChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={240}>
+    <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={4}>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
         <XAxis
           dataKey="month"
-          tick={{ fill: "#475569", fontSize: 11, fontWeight: 500 }}
+          tick={{ fill: "#64748B", fontSize: 11, fontWeight: 500 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: "#475569", fontSize: 11 }}
+          tick={{ fill: "#64748B", fontSize: 11 }}
           axisLine={false}
           tickLine={false}
-          tickFormatter={(v) => `₵${(v / 1000000).toFixed(1)}M`}
+          tickFormatter={formatAxis}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-        <Bar dataKey="disbursed" name="Disbursed" fill="#6366F1" radius={[4, 4, 0, 0]} maxBarSize={24} />
-        <Bar dataKey="repaid" name="Repaid" fill="#06B6D4" radius={[4, 4, 0, 0]} maxBarSize={24} />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(45, 122, 77, 0.06)" }} />
+        <Bar dataKey="disbursed" name="Disbursed" fill="#2D7A4D" radius={[4, 4, 0, 0]} maxBarSize={28} />
+        <Bar dataKey="repaid" name="Repaid" fill="#b59a6d" radius={[4, 4, 0, 0]} maxBarSize={28} />
       </BarChart>
     </ResponsiveContainer>
   );

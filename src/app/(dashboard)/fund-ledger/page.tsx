@@ -1,81 +1,64 @@
-'use client';
+import { createClient } from "@/lib/supabase/server";
+import { LedgerClient } from "@/features/ledger/LedgerClient";
+import { fetchLedgerSummary } from "@/lib/data/page-data";
+import GlassCard from "@/components/ui/GlassCard";
+import { formatCurrency } from "@/utils/formatters";
+import { Minus, Plus, DollarSign } from "lucide-react";
+import type { Metadata } from "next";
 
-import React from 'react';
-import GlassCard from '@/components/ui/GlassCard';
-import { BookOpen, DollarSign, Plus, Minus, Search, Filter, Download } from 'lucide-react';
+export const metadata: Metadata = { title: "Fund Ledger" };
 
-export default function FundLedgerPage() {
+export default async function FundLedgerPage() {
+  const supabase = await createClient();
+  const [summary, ledgerRes] = await Promise.all([
+    fetchLedgerSummary(),
+    supabase
+      .from("ledger_entries")
+      .select(`*, employees (first_name, last_name, employee_no)`, { count: "exact" })
+      .order("posted_at", { ascending: false })
+      .limit(100),
+  ]);
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-brand-text mb-2">Fund Ledger</h1>
-        <p className="text-sm md:text-base text-brand-text-secondary">Complete record of fund transactions</p>
+        <h1 className="mb-2 text-2xl font-bold text-brand-text md:text-3xl">Fund Ledger</h1>
+        <p className="text-sm text-brand-text-secondary md:text-base">
+          Complete record of fund transactions
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <GlassCard className="p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 rounded-lg bg-brand-card-bg text-brand-success">
-              <Plus className="w-5 h-5" />
+          <div className="mb-2 flex items-center gap-3">
+            <div className="rounded-lg bg-brand-card-bg p-3 text-brand-success">
+              <Plus className="h-5 w-5" />
             </div>
-            <span className="text-brand-text-secondary text-sm">Total Credits</span>
+            <span className="text-sm text-brand-text-secondary">Total Credits</span>
           </div>
-          <p className="text-brand-text text-2xl font-bold">₵0</p>
+          <p className="text-2xl font-bold text-brand-text">{formatCurrency(summary.totalCredits)}</p>
         </GlassCard>
-
         <GlassCard className="p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 rounded-lg bg-brand-card-bg text-brand-danger">
-              <Minus className="w-5 h-5" />
+          <div className="mb-2 flex items-center gap-3">
+            <div className="rounded-lg bg-brand-card-bg p-3 text-brand-danger">
+              <Minus className="h-5 w-5" />
             </div>
-            <span className="text-brand-text-secondary text-sm">Total Debits</span>
+            <span className="text-sm text-brand-text-secondary">Total Debits</span>
           </div>
-          <p className="text-brand-text text-2xl font-bold">₵0</p>
+          <p className="text-2xl font-bold text-brand-text">{formatCurrency(summary.totalDebits)}</p>
         </GlassCard>
-
         <GlassCard className="p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-3 rounded-lg bg-brand-card-bg text-brand-accent">
-              <DollarSign className="w-5 h-5" />
+          <div className="mb-2 flex items-center gap-3">
+            <div className="rounded-lg bg-brand-card-bg p-3 text-brand-accent">
+              <DollarSign className="h-5 w-5" />
             </div>
-            <span className="text-brand-text-secondary text-sm">Current Balance</span>
+            <span className="text-sm text-brand-text-secondary">Current Balance</span>
           </div>
-          <p className="text-brand-text text-2xl font-bold">₵0</p>
+          <p className="text-2xl font-bold text-brand-text">{formatCurrency(summary.currentBalance)}</p>
         </GlassCard>
       </div>
 
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-text-secondary" />
-            <input
-              type="text"
-              placeholder="Search transactions..."
-              className="pl-10 pr-4 py-2 bg-brand-card-bg border border-brand-card-border rounded-lg text-brand-text placeholder-brand-text-secondary focus:outline-none focus:border-brand-accent w-64"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 bg-brand-card-bg border border-brand-card-border rounded-lg text-brand-text hover:bg-brand-hover transition-all">
-              <Filter className="w-4 h-4" />
-              Filter
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-brand-card-bg border border-brand-card-border rounded-lg text-brand-text hover:bg-brand-hover transition-all">
-              <Download className="w-4 h-4" />
-              Export
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-brand-card-bg">
-            <BookOpen className="w-5 h-5 text-brand-text-secondary" />
-            <div className="flex-1">
-              <p className="text-brand-text font-medium text-sm">No transactions recorded</p>
-              <p className="text-brand-text-secondary text-xs">-</p>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
+      <LedgerClient ledgerEntries={ledgerRes.data ?? []} total={ledgerRes.count ?? 0} />
     </div>
   );
 }

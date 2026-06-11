@@ -1,67 +1,52 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import EnterpriseSidebar from './EnterpriseSidebar';
-import EnterpriseTopbar from './EnterpriseTopbar';
-import MobileBottomNav from './MobileBottomNav';
-import { UserRole } from '@/lib/role-menus';
-import { Menu } from 'lucide-react';
+import EnterpriseSidebar from "./EnterpriseSidebar";
+import EnterpriseTopbar from "./EnterpriseTopbar";
+import MobileBottomNav from "./MobileBottomNav";
+import { UserRole } from "@/lib/role-menus";
+import { useSidebarState } from "@/hooks/use-sidebar-state";
 
-interface EnterpriseLayoutProps {
+type EnterpriseLayoutProps = {
   children: React.ReactNode;
   currentRole: UserRole;
   userName?: string;
-  userAvatar?: string;
-}
+};
 
-export default function EnterpriseLayout({ 
-  children, 
-  currentRole, 
-  userName = 'User',
-  userAvatar 
+export default function EnterpriseLayout({
+  children,
+  currentRole,
+  userName = "User",
 }: EnterpriseLayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  const sidebarWidth = isSidebarCollapsed ? '80px' : '280px';
+  const { isOpen, isCollapsed, open, close, toggleCollapse } = useSidebarState();
+  const sidebarWidth = isCollapsed ? "5rem" : "17.5rem";
 
   return (
-    <div className="min-h-screen bg-brand-background flex">
+    <div className="min-h-dvh bg-brand-background">
       <EnterpriseSidebar
         currentRole={currentRole}
         userName={userName}
-        userAvatar={userAvatar}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isOpen={isOpen}
+        onClose={close}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={toggleCollapse}
       />
-      <div className="flex-1 flex flex-col min-h-screen">
+
+      <div
+        className="flex h-dvh min-w-0 flex-col transition-[margin] duration-300 md:ml-[var(--sidebar-width)]"
+        style={{ "--sidebar-width": sidebarWidth } as React.CSSProperties}
+      >
         <EnterpriseTopbar
           userName={userName}
-          userRole={currentRole.replace('_', ' ')}
-          onMenuClick={() => setIsSidebarOpen(true)}
-          sidebarCollapsed={isSidebarCollapsed}
+          userRole={currentRole}
+          onMenuClick={open}
           sidebarWidth={sidebarWidth}
         />
 
-        {/* Hamburger Button (Mobile/Tablet) */}
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-lg bg-white border border-brand-card-border backdrop-blur-glass text-brand-text hover:bg-brand-hover transition-all shadow-lg"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-
-        {/* Main Content Area */}
-        <main className="pt-16 md:pt-16 pb-16 md:pb-0 min-h-screen flex-1">
-          <div className="p-4 md:p-6 lg:p-8">
-            {children}
-          </div>
+        <main className="flex-1 overflow-y-auto pb-20 pt-16 md:pb-0">
+          <div className="p-4 md:p-6 lg:p-8">{children}</div>
         </main>
 
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNav currentRole={currentRole} />
+        <MobileBottomNav currentRole={currentRole} onOpenMenu={open} />
       </div>
     </div>
   );

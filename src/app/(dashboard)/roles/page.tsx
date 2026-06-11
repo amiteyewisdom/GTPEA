@@ -2,7 +2,7 @@
 
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
-import { Shield, Users, Key, Lock } from 'lucide-react';
+import { Shield, Users, Key, Lock, Wallet, Star, User } from 'lucide-react';
 
 export default function RolesPage() {
   return (

@@ -1,133 +1,150 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { canImport, getStaffUser } from "@/lib/api/staff-auth";
+import { parseCsv } from "@/lib/csv";
+import { logImportRun } from "@/lib/imports/log-import";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getStaffUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    return NextResponse.json({ error: "Please sign in to import data." }, { status: 401 });
   }
 
-  // Check if user is fund manager or admin
-  const profileRes = await (supabase.from("profiles").select("role").eq("user_id", user.id).single() as any);
-  const role = profileRes.data?.role ?? "employee";
-
-  if (!["fund_manager", "super_admin", "administrator", "chairperson"].includes(role)) {
-    return NextResponse.json({ error: "Forbidden. Only fund managers and admins can import applications." }, { status: 403 });
+  if (!canImport(role)) {
+    return NextResponse.json({ error: "You do not have permission to import applications." }, { status: 403 });
   }
 
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as File;
-    const type = formData.get("type") as string; // loans, withdrawals, or all
+    const file = formData.get("file") as File | null;
+    const type = (formData.get("type") as string) || "all";
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided." }, { status: 400 });
+      return NextResponse.json({ error: "Choose a file to upload." }, { status: 400 });
     }
 
-    const text = await file.text();
-    const lines = text.split("\n").filter((line) => line.trim());
-    
-    if (lines.length < 2) {
-      return NextResponse.json({ error: "Invalid CSV file." }, { status: 400 });
+    const rows = parseCsv(await file.text());
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "The CSV file has no data rows." }, { status: 400 });
     }
 
-    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
-    let importedCount = 0;
-    let errors: string[] = [];
+    const { data: products } = await (supabase.from("loan_products").select("id, name") as any);
+    const productMap = new Map((products ?? []).map((item: any) => [item.name.toLowerCase(), item.id]));
 
-    // Parse CSV rows
-    for (let i = 1; i < lines.length; i++) {
-      try {
-        const values = lines[i].split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
-        const row: any = {};
-        headers.forEach((header, index) => {
-          row[header] = values[index] || "";
-        });
+    let imported = 0;
+    const errors: string[] = [];
 
-        if (type === "loans" || type === "all") {
-          if (headers.includes("reference") && headers.includes("amount requested")) {
-            // Import loan
-            const { data: employee } = await (supabase
-              .from("employees")
-              .select("id")
-              .eq("employee_no", row["employee no"])
-              .single() as any);
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNo = i + 2;
 
-            if (employee) {
-              const { error: loanError } = await (supabase.from("loans").insert([{
-                employee_id: employee.id,
-                loan_ref: row.reference,
-                amount_requested: parseFloat(row["amount requested"]),
-                amount_approved: row["amount approved"] ? parseFloat(row["amount approved"]) : null,
-                interest_rate: parseFloat(row["interest rate"]),
-                term_months: parseInt(row["term (months)"]),
-                monthly_repayment: parseFloat(row["monthly repayment"]),
-                purpose: row.purpose || "",
-                status: row.status || "pending",
-                created_at: row["created at"] || new Date().toISOString(),
-              }] as any) as any);
+      if ((type === "loans" || type === "all") && row.reference && row["amount requested"]) {
+        const employeeNo = row["employee no"];
+        const productName = (row.product || "Regular Loan").toLowerCase();
+        const productId = productMap.get(productName);
 
-              if (!loanError) {
-                importedCount++;
-              } else {
-                errors.push(`Row ${i + 1}: ${loanError.message}`);
-              }
-            }
-          }
+        const { data: employee } = await (supabase
+          .from("employees")
+          .select("id")
+          .eq("employee_no", employeeNo)
+          .single() as any);
+
+        if (!employee) {
+          errors.push(`Row ${rowNo}: employee ${employeeNo} was not found.`);
+          continue;
         }
 
-        if (type === "withdrawals" || type === "all") {
-          if (headers.includes("reference") && headers.includes("amount")) {
-            // Import withdrawal
-            const { data: employee } = await (supabase
-              .from("employees")
-              .select("id")
-              .eq("employee_no", row["employee no"])
-              .single() as any);
-
-            if (employee) {
-              const { data: savings } = await (supabase
-                .from("savings")
-                .select("id")
-                .eq("account_number", row["account number"])
-                .eq("employee_id", employee.id)
-                .single() as any);
-
-              if (savings) {
-                const { error: withdrawalError } = await (supabase.from("withdrawal_requests").insert([{
-                  employee_id: employee.id,
-                  savings_id: savings.id,
-                  request_ref: row.reference,
-                  amount: parseFloat(row.amount),
-                  reason: row.reason || "",
-                  status: row.status || "pending",
-                  requested_at: row["requested at"] || new Date().toISOString(),
-                }] as any) as any);
-
-                if (!withdrawalError) {
-                  importedCount++;
-                } else {
-                  errors.push(`Row ${i + 1}: ${withdrawalError.message}`);
-                }
-              }
-            }
-          }
+        if (!productId) {
+          errors.push(`Row ${rowNo}: loan product was not found.`);
+          continue;
         }
-      } catch (error) {
-        errors.push(`Row ${i + 1}: Failed to parse`);
+
+        const amountRequested = parseFloat(row["amount requested"]);
+        const termMonths = parseInt(row["term (months)"] || row["term months"] || "12", 10);
+        const interestRate = parseFloat(row["interest rate"] || "0.1");
+        const monthlyRepayment = parseFloat(row["monthly repayment"] || "0");
+
+        const { error } = await ((supabase as any).from("loans").upsert(
+          {
+            loan_ref: row.reference,
+            employee_id: employee.id,
+            loan_product_id: productId,
+            amount_requested: amountRequested,
+            amount_approved: row["amount approved"] ? parseFloat(row["amount approved"]) : null,
+            outstanding_balance: row["outstanding balance"]
+              ? parseFloat(row["outstanding balance"])
+              : amountRequested,
+            interest_rate: interestRate,
+            term_months: termMonths,
+            monthly_repayment:
+              monthlyRepayment > 0
+                ? monthlyRepayment
+                : Math.round((amountRequested * (1 + interestRate)) / termMonths),
+            purpose: row.purpose || "",
+            status: row.status || "pending",
+          },
+          { onConflict: "loan_ref" }
+        ) as any);
+
+        if (error) errors.push(`Row ${rowNo}: ${error.message}`);
+        else imported++;
+      }
+
+      if ((type === "withdrawals" || type === "all") && row.reference && row.amount && row["account number"]) {
+        const { data: employee } = await (supabase
+          .from("employees")
+          .select("id")
+          .eq("employee_no", row["employee no"])
+          .single() as any);
+
+        if (!employee) {
+          errors.push(`Row ${rowNo}: employee was not found.`);
+          continue;
+        }
+
+        const { data: savings } = await (supabase
+          .from("savings")
+          .select("id")
+          .eq("account_number", row["account number"])
+          .eq("employee_id", employee.id)
+          .single() as any);
+
+        if (!savings) {
+          errors.push(`Row ${rowNo}: savings account was not found.`);
+          continue;
+        }
+
+        const { error } = await ((supabase as any).from("withdrawal_requests").upsert(
+          {
+            request_ref: row.reference,
+            employee_id: employee.id,
+            savings_id: savings.id,
+            amount: parseFloat(row.amount),
+            reason: row.reason || "",
+            status: row.status || "pending",
+            requested_at: row["requested at"] || new Date().toISOString(),
+          },
+          { onConflict: "request_ref" }
+        ) as any);
+
+        if (error) errors.push(`Row ${rowNo}: ${error.message}`);
+        else imported++;
       }
     }
 
+    const importType = type === "withdrawals" ? "savings" : "loans";
+    const result = { imported, skipped: errors.length, errors };
+    await logImportRun(supabase, user.id, importType, file.name, result);
+
     return NextResponse.json({
-      message: "Import completed",
-      imported: importedCount,
+      message: "Import finished.",
+      imported,
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
-    return NextResponse.json({ error: "Import failed: " + (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Import failed." },
+      { status: 500 }
+    );
   }
 }
