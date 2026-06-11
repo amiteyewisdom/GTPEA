@@ -28,10 +28,13 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const isDashboard = request.nextUrl.pathname.startsWith('/dashboard');
+  const pathname = request.nextUrl.pathname;
+  const publicPaths = ['/', '/login', '/forgot-password', '/reset-password'];
+  const isPublic = publicPaths.includes(pathname);
+  const isApi = pathname.startsWith('/api');
 
-  if (!user && isDashboard) return NextResponse.redirect(new URL('/login', request.url));
-  if (user && request.nextUrl.pathname === '/login') return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (!user && !isPublic && !isApi) return NextResponse.redirect(new URL('/login', request.url));
+  if (user && pathname === '/login') return NextResponse.redirect(new URL('/dashboard', request.url));
 
   return response;
 }

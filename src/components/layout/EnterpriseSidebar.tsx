@@ -173,7 +173,7 @@ export default function EnterpriseSidebar({
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => router.push('/dashboard/profile')}
+                    onClick={() => router.push('/profile')}
                     className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-brand bg-brand-hover border border-brand-card-border text-brand-text-secondary hover:bg-brand-card-border hover:text-brand-text transition-all text-xs font-medium"
                   >
                     <User className="w-4 h-4" />
