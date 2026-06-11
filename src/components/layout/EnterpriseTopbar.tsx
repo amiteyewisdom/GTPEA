@@ -14,8 +14,8 @@ interface EnterpriseTopbarProps {
 }
 
 export default function EnterpriseTopbar({
-  userName = 'John Doe',
-  userRole = 'Administrator',
+  userName = '',
+  userRole = '',
   notificationCount = 3,
   messageCount = 5,
   onMenuClick
@@ -93,7 +93,7 @@ export default function EnterpriseTopbar({
                 <div className="max-h-96 overflow-y-auto">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="p-4 border-b border-brand-card-border hover:bg-brand-hover cursor-pointer transition-all">
-                      <p className="text-brand-text text-sm">New loan application from John Smith</p>
+                      <p className="text-brand-text text-sm"></p>
                       <p className="text-brand-text-secondary text-xs mt-1">2 minutes ago</p>
                     </div>
                   ))}
@@ -125,7 +125,7 @@ export default function EnterpriseTopbar({
                 <div className="max-h-96 overflow-y-auto">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="p-4 border-b border-brand-card-border hover:bg-brand-hover cursor-pointer transition-all">
-                      <p className="text-brand-text text-sm font-medium">Sarah Johnson</p>
+                      <p className="text-brand-text text-sm font-medium"></p>
                       <p className="text-brand-text-secondary text-xs mt-1">Loan approval pending...</p>
                     </div>
                   ))}

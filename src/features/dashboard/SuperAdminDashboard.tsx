@@ -70,7 +70,7 @@ export default function SuperAdminDashboard() {
         />
         <KPICard
           title="Total Savings"
-          value="$2.4M"
+          value="₵2.4M"
           change="+8.2%"
           trend="up"
           icon={PiggyBank}
@@ -78,7 +78,7 @@ export default function SuperAdminDashboard() {
         />
         <KPICard
           title="Total Loans"
-          value="$1.8M"
+          value="₵1.8M"
           change="+15.3%"
           trend="up"
           icon={DollarSign}
@@ -86,7 +86,7 @@ export default function SuperAdminDashboard() {
         />
         <KPICard
           title="Fund Balance"
-          value="$3.2M"
+          value="₵3.2M"
           change="+5.7%"
           trend="up"
           icon={Wallet}
@@ -102,7 +102,7 @@ export default function SuperAdminDashboard() {
         />
         <KPICard
           title="Monthly Dividends"
-          value="$45K"
+          value="₵45K"
           change="+22.4%"
           trend="up"
           icon={TrendingUp}
@@ -136,9 +136,9 @@ export default function SuperAdminDashboard() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
+                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `₵${(value / 1000000).toFixed(1)}M`} />
                 <Tooltip
-                  formatter={(value) => `$${(value as number).toLocaleString()}`}
+                  formatter={(value) => `₵${(value as number).toLocaleString()}`}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
                 />
                 <Area type="monotone" dataKey="savings" stroke="#2D7A4D" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={2} />
@@ -203,28 +203,28 @@ export default function SuperAdminDashboard() {
               <span className="text-2xl font-bold text-brand-text">56%</span>
             </div>
             <p className="text-brand-text font-medium">Loans</p>
-            <p className="text-brand-text-secondary text-sm">$1.8M</p>
+            <p className="text-brand-text-secondary text-sm">₵1.8M</p>
           </div>
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-green flex items-center justify-center mb-3">
               <span className="text-2xl font-bold text-brand-text">75%</span>
             </div>
             <p className="text-brand-text font-medium">Savings</p>
-            <p className="text-brand-text-secondary text-sm">$2.4M</p>
+            <p className="text-brand-text-secondary text-sm">₵2.4M</p>
           </div>
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-warning flex items-center justify-center mb-3">
               <span className="text-2xl font-bold text-brand-text">15%</span>
             </div>
             <p className="text-brand-text font-medium">Reserves</p>
-            <p className="text-brand-text-secondary text-sm">$480K</p>
+            <p className="text-brand-text-secondary text-sm">₵480K</p>
           </div>
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-card-border flex items-center justify-center mb-3">
               <span className="text-2xl font-bold text-brand-text">4%</span>
             </div>
             <p className="text-brand-text font-medium">Operations</p>
-            <p className="text-brand-text-secondary text-sm">$128K</p>
+            <p className="text-brand-text-secondary text-sm">₵128K</p>
           </div>
         </div>
       </GlassCard>
@@ -243,21 +243,21 @@ export default function SuperAdminDashboard() {
           <div className="space-y-4">
             <ActivityItem
               title="New user registered"
-              description="John Smith joined as employee"
+              description="New employee joined"
               time="2 minutes ago"
               icon={Users}
               color="text-brand-success"
             />
             <ActivityItem
               title="Loan approved"
-              description="Loan #12345 approved by Fund Manager"
+              description="Loan approved by Fund Manager"
               time="15 minutes ago"
               icon={CheckCircle}
               color="text-brand-accent"
             />
             <ActivityItem
               title="Savings deposit"
-              description="Sarah Johnson deposited $5,000"
+              description="Savings deposit processed"
               time="1 hour ago"
               icon={PiggyBank}
               color="text-brand-success"
@@ -317,9 +317,9 @@ export default function SuperAdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              <ApprovalRow type="Loan" requester="John Smith" amount="$15,000" status="Pending" time="2h ago" />
-              <ApprovalRow type="Loan" requester="Sarah Johnson" amount="$8,500" status="Pending" time="3h ago" />
-              <ApprovalRow type="Withdrawal" requester="Mike Davis" amount="$3,200" status="Pending" time="5h ago" />
+              <ApprovalRow type="Loan" requester="" amount="₵15,000" status="Pending" time="" />
+              <ApprovalRow type="Loan" requester="" amount="₵8,500" status="Pending" time="" />
+              <ApprovalRow type="Withdrawal" requester="" amount="₵3,200" status="Pending" time="" />
             </tbody>
           </table>
         </div>

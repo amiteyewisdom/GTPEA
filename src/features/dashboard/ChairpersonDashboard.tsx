@@ -58,7 +58,7 @@ export default function ChairpersonDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <ExecutiveKPICard
           title="Total Savings"
-          value="$2,456,789"
+          value="₵2,456,789"
           change="+8.2%"
           trend="up"
           icon={PiggyBank}
@@ -66,7 +66,7 @@ export default function ChairpersonDashboard() {
         />
         <ExecutiveKPICard
           title="Total Loans"
-          value="$1,823,456"
+          value="₵1,823,456"
           change="+12.5%"
           trend="up"
           icon={DollarSign}
@@ -74,7 +74,7 @@ export default function ChairpersonDashboard() {
         />
         <ExecutiveKPICard
           title="Dividends Distributed"
-          value="$456,789"
+          value="₵456,789"
           change="+15.3%"
           trend="up"
           icon={TrendingUp}
@@ -82,7 +82,7 @@ export default function ChairpersonDashboard() {
         />
         <ExecutiveKPICard
           title="Withdrawals"
-          value="$234,567"
+          value="₵234,567"
           change="-5.2%"
           trend="down"
           icon={TrendingDown}
@@ -116,9 +116,9 @@ export default function ChairpersonDashboard() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
+                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `₵${(value / 1000000).toFixed(1)}M`} />
                 <Tooltip
-                  formatter={(value) => `$${(value as number).toLocaleString()}`}
+                  formatter={(value) => `₵${(value as number).toLocaleString()}`}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
                 />
                 <Area type="monotone" dataKey="savings" stroke="#2D7A4D" fillOpacity={1} fill="url(#colorSavings)" strokeWidth={2} />
@@ -145,9 +145,9 @@ export default function ChairpersonDashboard() {
               <BarChart data={loanTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
+                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `₵${(value / 1000000).toFixed(1)}M`} />
                 <Tooltip
-                  formatter={(value) => `$${(value as number).toLocaleString()}`}
+                  formatter={(value) => `₵${(value as number).toLocaleString()}`}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
                 />
                 <Bar dataKey="disbursements" fill="#b59a6d" name="Disbursements" />
@@ -223,44 +223,44 @@ export default function ChairpersonDashboard() {
             </thead>
             <tbody>
               <EmployeeRow 
-                name="John Smith" 
-                savings="$45,000" 
-                loans="$15,000" 
-                balance="$8,500" 
-                dividends="$2,250" 
-                withdrawals="$5,000" 
+                name="" 
+                savings="₵45,000" 
+                loans="₵15,000" 
+                balance="₵8,500" 
+                dividends="₵2,250" 
+                withdrawals="₵5,000" 
               />
               <EmployeeRow 
-                name="Sarah Johnson" 
-                savings="$32,000" 
-                loans="$8,000" 
-                balance="$4,200" 
-                dividends="$1,600" 
-                withdrawals="$2,000" 
+                name="" 
+                savings="₵32,000" 
+                loans="₵8,000" 
+                balance="₵4,200" 
+                dividends="₵1,600" 
+                withdrawals="₵2,000" 
               />
               <EmployeeRow 
-                name="Mike Davis" 
-                savings="$28,000" 
-                loans="$12,000" 
-                balance="$6,800" 
-                dividends="$1,400" 
-                withdrawals="$3,500" 
+                name="" 
+                savings="₵28,000" 
+                loans="₵12,000" 
+                balance="₵6,800" 
+                dividends="₵1,400" 
+                withdrawals="₵3,500" 
               />
               <EmployeeRow 
-                name="Emily Brown" 
-                savings="$55,000" 
-                loans="$20,000" 
-                balance="$11,200" 
-                dividends="$2,750" 
-                withdrawals="$8,000" 
+                name="" 
+                savings="₵55,000" 
+                loans="₵20,000" 
+                balance="₵11,200" 
+                dividends="₵2,750" 
+                withdrawals="₵8,000" 
               />
               <EmployeeRow 
-                name="David Wilson" 
-                savings="$38,000" 
-                loans="$10,000" 
-                balance="$5,500" 
-                dividends="$1,900" 
-                withdrawals="$4,500" 
+                name="" 
+                savings="₵38,000" 
+                loans="₵10,000" 
+                balance="₵5,500" 
+                dividends="₵1,900" 
+                withdrawals="₵4,500" 
               />
             </tbody>
           </table>

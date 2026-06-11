@@ -258,8 +258,8 @@ function InterestRateSettings() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <NumberField label="Annual Interest Rate (%)" defaultValue="12" suffix="%" />
           <NumberField label="Late Payment Penalty (%)" defaultValue="2" suffix="%" />
-          <NumberField label="Minimum Loan Amount ($)" defaultValue="1000" prefix="$" />
-          <NumberField label="Maximum Loan Amount ($)" defaultValue="100000" prefix="$" />
+          <NumberField label="Minimum Loan Amount (₵)" defaultValue="1000" prefix="₵" />
+          <NumberField label="Maximum Loan Amount (₵)" defaultValue="100000" prefix="₵" />
         </div>
 
         <div className="p-4 rounded-lg bg-brand-warning/10 border border-brand-warning/30">
@@ -328,7 +328,7 @@ function DividendsSettings() {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <NumberField label="Dividend Rate (%)" defaultValue="5" suffix="%" />
-          <NumberField label="Minimum Savings for Dividend ($)" defaultValue="1000" prefix="$" />
+          <NumberField label="Minimum Savings for Dividend (₵)" defaultValue="1000" prefix="₵" />
           <SelectField
             label="Distribution Frequency"
             options={['Monthly', 'Quarterly', 'Annually']}

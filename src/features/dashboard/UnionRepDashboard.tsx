@@ -98,73 +98,73 @@ export default function UnionRepDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Employee Card 1 */}
           <EmployeeEligibilityCard
-            name="John Smith"
-            employeeId="EMP-001"
-            currentSavings="$45,000"
-            currentLoans="$15,000"
-            monthlyRepayments="$1,250"
-            loanHistory="3 loans, all repaid on time"
-            eligibilityScore={92}
+            name=""
+            employeeId=""
+            currentSavings="₵0"
+            currentLoans="₵0"
+            monthlyRepayments="₵0"
+            loanHistory=""
+            eligibilityScore={0}
             status="eligible"
           />
           
           {/* Employee Card 2 */}
           <EmployeeEligibilityCard
-            name="Sarah Johnson"
-            employeeId="EMP-002"
-            currentSavings="$32,000"
-            currentLoans="$8,000"
-            monthlyRepayments="$890"
-            loanHistory="2 loans, 1 late payment"
-            eligibilityScore={78}
+            name=""
+            employeeId=""
+            currentSavings="₵0"
+            currentLoans="₵0"
+            monthlyRepayments="₵0"
+            loanHistory=""
+            eligibilityScore={0}
             status="review"
           />
           
           {/* Employee Card 3 */}
           <EmployeeEligibilityCard
-            name="Mike Davis"
-            employeeId="EMP-003"
-            currentSavings="$28,000"
-            currentLoans="$12,000"
-            monthlyRepayments="$1,450"
-            loanHistory="4 loans, 2 late payments"
-            eligibilityScore={65}
+            name=""
+            employeeId=""
+            currentSavings="₵0"
+            currentLoans="₵0"
+            monthlyRepayments="₵0"
+            loanHistory=""
+            eligibilityScore={0}
             status="caution"
           />
           
           {/* Employee Card 4 */}
           <EmployeeEligibilityCard
-            name="Emily Brown"
-            employeeId="EMP-004"
-            currentSavings="$55,000"
-            currentLoans="$20,000"
-            monthlyRepayments="$2,100"
-            loanHistory="5 loans, all repaid on time"
-            eligibilityScore={95}
+            name=""
+            employeeId=""
+            currentSavings="₵0"
+            currentLoans="₵0"
+            monthlyRepayments="₵0"
+            loanHistory=""
+            eligibilityScore={0}
             status="eligible"
           />
           
           {/* Employee Card 5 */}
           <EmployeeEligibilityCard
-            name="David Wilson"
-            employeeId="EMP-005"
-            currentSavings="$38,000"
-            currentLoans="$10,000"
-            monthlyRepayments="$780"
-            loanHistory="2 loans, all repaid on time"
-            eligibilityScore={88}
+            name=""
+            employeeId=""
+            currentSavings="₵0"
+            currentLoans="₵0"
+            monthlyRepayments="₵0"
+            loanHistory=""
+            eligibilityScore={0}
             status="eligible"
           />
           
           {/* Employee Card 6 */}
           <EmployeeEligibilityCard
-            name="Lisa Anderson"
-            employeeId="EMP-006"
-            currentSavings="$22,000"
-            currentLoans="$18,000"
-            monthlyRepayments="$1,670"
-            loanHistory="3 loans, multiple late payments"
-            eligibilityScore={52}
+            name=""
+            employeeId=""
+            currentSavings="₵0"
+            currentLoans="₵0"
+            monthlyRepayments="₵0"
+            loanHistory=""
+            eligibilityScore={0}
             status="ineligible"
           />
         </div>
@@ -181,31 +181,31 @@ export default function UnionRepDashboard() {
         </div>
         <div className="space-y-3">
           <RecommendationRow
-            employee="John Smith"
-            action="Recommended for approval"
-            amount="$15,000"
-            date="2 hours ago"
+            employee=""
+            action=""
+            amount="₵0"
+            date=""
             status="approved"
           />
           <RecommendationRow
-            employee="Sarah Johnson"
-            action="Recommended with conditions"
-            amount="$8,500"
-            date="4 hours ago"
+            employee=""
+            action=""
+            amount="₵0"
+            date=""
             status="pending"
           />
           <RecommendationRow
-            employee="Mike Davis"
-            action="Recommended for rejection"
-            amount="$25,000"
-            date="6 hours ago"
+            employee=""
+            action=""
+            amount="₵0"
+            date=""
             status="rejected"
           />
           <RecommendationRow
-            employee="Emily Brown"
-            action="Recommended for approval"
-            amount="$12,000"
-            date="1 day ago"
+            employee=""
+            action=""
+            amount="₵0"
+            date=""
             status="approved"
           />
         </div>

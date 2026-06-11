@@ -12,12 +12,7 @@ const RELATION_COLOR: Record<string, string> = {
 };
 
 export default function BeneficiariesPage() {
-  const rows = [
-    { name: "Abena Asante", employee: "Kwame Asante", relation: "spouse", phone: "+233 20 123 4567", allocation: 60, primary: true },
-    { name: "Kofi Asante Jr.", employee: "Kwame Asante", relation: "child", phone: "+233 24 555 8888", allocation: 30, primary: false },
-    { name: "Esi Mensah", employee: "Ama Mensah", relation: "parent", phone: "+233 20 999 1111", allocation: 50, primary: true },
-    { name: "Yaw Boateng", employee: "Yaw Boateng", relation: "sibling", phone: "+233 24 222 3333", allocation: 40, primary: true },
-  ];
+  const rows: any[] = [];
 
   return (
     <Box>

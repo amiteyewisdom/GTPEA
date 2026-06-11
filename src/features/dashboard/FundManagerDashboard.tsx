@@ -50,7 +50,7 @@ export default function FundManagerDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Fund Balance"
-          value="$3,245,678"
+          value="₵3,245,678"
           change="+5.7%"
           trend="up"
           icon={Wallet}
@@ -58,7 +58,7 @@ export default function FundManagerDashboard() {
         />
         <KPICard
           title="Expected Collections"
-          value="$456,789"
+          value="₵456,789"
           change="+12.3%"
           trend="up"
           icon={DollarSign}
@@ -66,7 +66,7 @@ export default function FundManagerDashboard() {
         />
         <KPICard
           title="Disbursements"
-          value="$234,567"
+          value="₵234,567"
           change="+8.1%"
           trend="up"
           icon={CreditCard}
@@ -74,7 +74,7 @@ export default function FundManagerDashboard() {
         />
         <KPICard
           title="Loan Portfolio"
-          value="$1,823,456"
+          value="₵1,823,456"
           change="+15.2%"
           trend="up"
           icon={TrendingUp}
@@ -93,39 +93,39 @@ export default function FundManagerDashboard() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <RepaymentCard
-            borrower="John Smith"
-            amount="$1,250"
-            dueDate="June 10, 2026"
+            borrower=""
+            amount="₵1,250"
+            dueDate=""
             status="pending"
           />
           <RepaymentCard
-            borrower="Sarah Johnson"
-            amount="$890"
-            dueDate="June 12, 2026"
+            borrower=""
+            amount="₵890"
+            dueDate=""
             status="pending"
           />
           <RepaymentCard
-            borrower="Mike Davis"
-            amount="$1,450"
-            dueDate="June 15, 2026"
+            borrower=""
+            amount="₵1,450"
+            dueDate=""
             status="pending"
           />
           <RepaymentCard
-            borrower="Emily Brown"
-            amount="$2,100"
-            dueDate="June 18, 2026"
+            borrower=""
+            amount="₵2,100"
+            dueDate=""
             status="pending"
           />
           <RepaymentCard
-            borrower="David Wilson"
-            amount="$780"
-            dueDate="June 20, 2026"
+            borrower=""
+            amount="₵780"
+            dueDate=""
             status="pending"
           />
           <RepaymentCard
-            borrower="Lisa Anderson"
-            amount="$1,670"
-            dueDate="June 22, 2026"
+            borrower=""
+            amount="₵1,670"
+            dueDate=""
             status="pending"
           />
         </div>
@@ -172,14 +172,14 @@ export default function FundManagerDashboard() {
             <TrendingUp className="w-5 h-5 text-brand-success" />
           </div>
           <div className="space-y-4">
-            <ForecastMonth month="July" amount="$125,000" percentage="85%" />
-            <ForecastMonth month="August" amount="$132,000" percentage="90%" />
-            <ForecastMonth month="September" amount="$145,000" percentage="95%" />
+            <ForecastMonth month="July" amount="₵125,000" percentage="85%" />
+            <ForecastMonth month="August" amount="₵132,000" percentage="90%" />
+            <ForecastMonth month="September" amount="₵145,000" percentage="95%" />
           </div>
           <div className="mt-6 p-4 bg-brand-card-bg rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-brand-text-secondary text-sm">Total Forecast</span>
-              <span className="text-brand-text text-xl font-bold">$402,000</span>
+              <span className="text-brand-text text-xl font-bold">₵402,000</span>
             </div>
           </div>
         </GlassCard>
@@ -212,32 +212,32 @@ export default function FundManagerDashboard() {
             </thead>
             <tbody>
               <LoanReviewRow
-                applicant="John Smith"
-                amount="$15,000"
-                duration="12 months"
-                purpose="Emergency"
-                riskScore="Low"
+                applicant=""
+                amount="₵15,000"
+                duration=""
+                purpose=""
+                riskScore=""
               />
               <LoanReviewRow
-                applicant="Sarah Johnson"
-                amount="$8,500"
-                duration="6 months"
-                purpose="Education"
-                riskScore="Low"
+                applicant=""
+                amount="₵8,500"
+                duration=""
+                purpose=""
+                riskScore=""
               />
               <LoanReviewRow
-                applicant="Mike Davis"
-                amount="$25,000"
-                duration="24 months"
-                purpose="Business"
-                riskScore="Medium"
+                applicant=""
+                amount="₵25,000"
+                duration=""
+                purpose=""
+                riskScore=""
               />
               <LoanReviewRow
-                applicant="Emily Brown"
-                amount="$12,000"
-                duration="18 months"
-                purpose="Home Improvement"
-                riskScore="Low"
+                applicant=""
+                amount="₵12,000"
+                duration=""
+                purpose=""
+                riskScore=""
               />
             </tbody>
           </table>
@@ -255,31 +255,31 @@ export default function FundManagerDashboard() {
         </div>
         <div className="space-y-3">
           <DisbursementRow
-            recipient="John Smith"
-            amount="$15,000"
-            loanId="LN-2026-001"
-            date="June 5, 2026"
+            recipient=""
+            amount="₵15,000"
+            loanId=""
+            date=""
             status="completed"
           />
           <DisbursementRow
-            recipient="Sarah Johnson"
-            amount="$8,500"
-            loanId="LN-2026-002"
-            date="June 4, 2026"
+            recipient=""
+            amount="₵8,500"
+            loanId=""
+            date=""
             status="completed"
           />
           <DisbursementRow
-            recipient="Mike Davis"
-            amount="$25,000"
-            loanId="LN-2026-003"
-            date="June 3, 2026"
+            recipient=""
+            amount="₵25,000"
+            loanId=""
+            date=""
             status="completed"
           />
           <DisbursementRow
-            recipient="Emily Brown"
-            amount="$12,000"
-            loanId="LN-2026-004"
-            date="June 2, 2026"
+            recipient=""
+            amount="₵12,000"
+            loanId=""
+            date=""
             status="pending"
           />
         </div>

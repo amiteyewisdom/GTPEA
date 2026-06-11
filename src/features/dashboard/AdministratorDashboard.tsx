@@ -70,7 +70,7 @@ export default function AdministratorDashboard() {
             />
             <KPICard
               title="Total Savings"
-              value="$2.4M"
+              value="₵2.4M"
               change="+6.1%"
               trend="up"
               icon={PiggyBank}
@@ -78,7 +78,7 @@ export default function AdministratorDashboard() {
             />
             <KPICard
               title="Withdrawals"
-              value="$125K"
+              value="₵125K"
               change="+3.4%"
               trend="up"
               icon={TrendingUp}
@@ -86,7 +86,7 @@ export default function AdministratorDashboard() {
             />
             <KPICard
               title="Dividends"
-              value="$45K"
+              value="₵45K"
               change="+18.2%"
               trend="up"
               icon={TrendingUp}
@@ -134,7 +134,7 @@ export default function AdministratorDashboard() {
               />
               <ActivityRow
                 action="Savings Deposit"
-                description="Bulk deposit of $50,000 processed"
+                description="Bulk deposit of ₵50,000 processed"
                 time="4 hours ago"
                 status="success"
               />
