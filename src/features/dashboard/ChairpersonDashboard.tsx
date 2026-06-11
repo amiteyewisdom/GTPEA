@@ -28,21 +28,21 @@ import {
 
 // Sample data for charts
 const savingsTrendData = [
-  { month: 'Jul', savings: 2100000 },
-  { month: 'Aug', savings: 2180000 },
-  { month: 'Sep', savings: 2250000 },
-  { month: 'Oct', savings: 2320000 },
-  { month: 'Nov', savings: 2390000 },
-  { month: 'Dec', savings: 2456789 },
+  { month: 'Jul', savings: 0 },
+  { month: 'Aug', savings: 0 },
+  { month: 'Sep', savings: 0 },
+  { month: 'Oct', savings: 0 },
+  { month: 'Nov', savings: 0 },
+  { month: 'Dec', savings: 0 },
 ];
 
 const loanTrendData = [
-  { month: 'Jul', disbursements: 1800000, repayments: 1200000 },
-  { month: 'Aug', disbursements: 1950000, repayments: 1350000 },
-  { month: 'Sep', disbursements: 2100000, repayments: 1450000 },
-  { month: 'Oct', disbursements: 2250000, repayments: 1550000 },
-  { month: 'Nov', disbursements: 2350000, repayments: 1650000 },
-  { month: 'Dec', disbursements: 2450000, repayments: 1750000 },
+  { month: 'Jul', disbursements: 0, repayments: 0 },
+  { month: 'Aug', disbursements: 0, repayments: 0 },
+  { month: 'Sep', disbursements: 0, repayments: 0 },
+  { month: 'Oct', disbursements: 0, repayments: 0 },
+  { month: 'Nov', disbursements: 0, repayments: 0 },
+  { month: 'Dec', disbursements: 0, repayments: 0 },
 ];
 
 export default function ChairpersonDashboard() {
@@ -58,33 +58,33 @@ export default function ChairpersonDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <ExecutiveKPICard
           title="Total Savings"
-          value="₵2,456,789"
-          change="+8.2%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={PiggyBank}
           color="text-brand-success"
         />
         <ExecutiveKPICard
           title="Total Loans"
-          value="₵1,823,456"
-          change="+12.5%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={DollarSign}
           color="text-brand-warning"
         />
         <ExecutiveKPICard
           title="Dividends Distributed"
-          value="₵456,789"
-          change="+15.3%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={TrendingUp}
           color="text-brand-accent"
         />
         <ExecutiveKPICard
           title="Withdrawals"
-          value="₵234,567"
-          change="-5.2%"
-          trend="down"
+          value="₵0"
+          change="+0%"
+          trend="up"
           icon={TrendingDown}
           color="text-brand-danger"
         />
@@ -169,21 +169,21 @@ export default function ChairpersonDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-success flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-brand-text">75%</span>
+              <span className="text-3xl font-bold text-brand-text">0%</span>
             </div>
             <p className="text-brand-text font-semibold text-lg">Solvency Ratio</p>
             <p className="text-brand-success text-sm mt-1">Excellent</p>
           </div>
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-accent flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-brand-text">68%</span>
+              <span className="text-3xl font-bold text-brand-text">0%</span>
             </div>
             <p className="text-brand-text font-semibold text-lg">Loan-to-Savings</p>
             <p className="text-brand-accent text-sm mt-1">Healthy</p>
           </div>
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-warning flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-brand-text">82%</span>
+              <span className="text-3xl font-bold text-brand-text">0%</span>
             </div>
             <p className="text-brand-text font-semibold text-lg">Recovery Rate</p>
             <p className="text-brand-warning text-sm mt-1">Good</p>
@@ -224,43 +224,43 @@ export default function ChairpersonDashboard() {
             <tbody>
               <EmployeeRow 
                 name="" 
-                savings="₵45,000" 
-                loans="₵15,000" 
-                balance="₵8,500" 
-                dividends="₵2,250" 
-                withdrawals="₵5,000" 
+                savings="₵0" 
+                loans="₵0" 
+                balance="₵0" 
+                dividends="₵0" 
+                withdrawals="₵0" 
               />
               <EmployeeRow 
                 name="" 
-                savings="₵32,000" 
-                loans="₵8,000" 
-                balance="₵4,200" 
-                dividends="₵1,600" 
-                withdrawals="₵2,000" 
+                savings="₵0" 
+                loans="₵0" 
+                balance="₵0" 
+                dividends="₵0" 
+                withdrawals="₵0" 
               />
               <EmployeeRow 
                 name="" 
-                savings="₵28,000" 
-                loans="₵12,000" 
-                balance="₵6,800" 
-                dividends="₵1,400" 
-                withdrawals="₵3,500" 
+                savings="₵0" 
+                loans="₵0" 
+                balance="₵0" 
+                dividends="₵0" 
+                withdrawals="₵0" 
               />
               <EmployeeRow 
                 name="" 
-                savings="₵55,000" 
-                loans="₵20,000" 
-                balance="₵11,200" 
-                dividends="₵2,750" 
-                withdrawals="₵8,000" 
+                savings="₵0" 
+                loans="₵0" 
+                balance="₵0" 
+                dividends="₵0" 
+                withdrawals="₵0" 
               />
               <EmployeeRow 
                 name="" 
-                savings="₵38,000" 
-                loans="₵10,000" 
-                balance="₵5,500" 
-                dividends="₵1,900" 
-                withdrawals="₵4,500" 
+                savings="₵0" 
+                loans="₵0" 
+                balance="₵0" 
+                dividends="₵0" 
+                withdrawals="₵0" 
               />
             </tbody>
           </table>

@@ -61,25 +61,25 @@ export default function UnionRepDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           title="Pending Reviews"
-          value="18"
-          change="+5"
+          value="0"
+          change="+0"
           trend="up"
           icon={ClipboardList}
           color="text-brand-warning"
         />
         <StatCard
           title="Approved Reviews"
-          value="45"
-          change="+12"
+          value="0"
+          change="+0"
           trend="up"
           icon={CheckCircle}
           color="text-brand-success"
         />
         <StatCard
           title="Rejected Reviews"
-          value="7"
-          change="-2"
-          trend="down"
+          value="0"
+          change="+0"
+          trend="up"
           icon={XCircle}
           color="text-brand-danger"
         />

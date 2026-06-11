@@ -46,48 +46,48 @@ export default function AdministratorDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <KPICard
               title="Active Employees"
-              value="1,247"
-              change="+5.2%"
+              value="0"
+              change="+0%"
               trend="up"
               icon={Users}
               color="text-brand-accent"
             />
             <KPICard
               title="Pending Loans"
-              value="45"
-              change="-12.3%"
-              trend="down"
+              value="0"
+              change="+0%"
+              trend="up"
               icon={DollarSign}
               color="text-brand-warning"
             />
             <KPICard
               title="Approved Loans"
-              value="892"
-              change="+8.7%"
+              value="0"
+              change="+0%"
               trend="up"
               icon={CheckCircle}
               color="text-brand-success"
             />
             <KPICard
               title="Total Savings"
-              value="₵2.4M"
-              change="+6.1%"
+              value="₵0"
+              change="+0%"
               trend="up"
               icon={PiggyBank}
               color="text-brand-success"
             />
             <KPICard
               title="Withdrawals"
-              value="₵125K"
-              change="+3.4%"
+              value="₵0"
+              change="+0%"
               trend="up"
               icon={TrendingUp}
               color="text-brand-warning"
             />
             <KPICard
               title="Dividends"
-              value="₵45K"
-              change="+18.2%"
+              value="₵0"
+              change="+0%"
               trend="up"
               icon={TrendingUp}
               color="text-brand-accent"
@@ -128,19 +128,19 @@ export default function AdministratorDashboard() {
             <div className="space-y-3">
               <ActivityRow
                 action="Employee Import"
-                description="25 employees imported successfully"
+                description="0 employees imported successfully"
                 time="2 hours ago"
                 status="success"
               />
               <ActivityRow
                 action="Savings Deposit"
-                description="Bulk deposit of ₵50,000 processed"
+                description="Bulk deposit of ₵0 processed"
                 time="4 hours ago"
                 status="success"
               />
               <ActivityRow
                 action="Loan Approval"
-                description="15 loans approved in batch"
+                description="0 loans approved in batch"
                 time="6 hours ago"
                 status="success"
               />

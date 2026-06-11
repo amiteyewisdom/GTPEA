@@ -34,19 +34,19 @@ import {
 
 // Sample data for charts
 const savingsData = [
-  { month: 'Jan', savings: 1800000 },
-  { month: 'Feb', savings: 1950000 },
-  { month: 'Mar', savings: 2100000 },
-  { month: 'Apr', savings: 2250000 },
-  { month: 'May', savings: 2300000 },
-  { month: 'Jun', savings: 2400000 },
+  { month: 'Jan', savings: 0 },
+  { month: 'Feb', savings: 0 },
+  { month: 'Mar', savings: 0 },
+  { month: 'Apr', savings: 0 },
+  { month: 'May', savings: 0 },
+  { month: 'Jun', savings: 0 },
 ];
 
 const loanDistributionData = [
-  { name: 'Personal', value: 45, color: '#b59a6d' },
-  { name: 'Emergency', value: 28, color: '#2D7A4D' },
-  { name: 'Education', value: 18, color: '#F59E0B' },
-  { name: 'Business', value: 9, color: '#DC2626' },
+  { name: 'Personal', value: 0, color: '#b59a6d' },
+  { name: 'Emergency', value: 0, color: '#2D7A4D' },
+  { name: 'Education', value: 0, color: '#F59E0B' },
+  { name: 'Business', value: 0, color: '#DC2626' },
 ];
 
 export default function SuperAdminDashboard() {
@@ -62,48 +62,48 @@ export default function SuperAdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <KPICard
           title="Total Employees"
-          value="1,247"
-          change="+12.5%"
+          value="0"
+          change="+0%"
           trend="up"
           icon={Users}
           color="text-brand-accent"
         />
         <KPICard
           title="Total Savings"
-          value="₵2.4M"
-          change="+8.2%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={PiggyBank}
           color="text-brand-success"
         />
         <KPICard
           title="Total Loans"
-          value="₵1.8M"
-          change="+15.3%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={DollarSign}
           color="text-brand-warning"
         />
         <KPICard
           title="Fund Balance"
-          value="₵3.2M"
-          change="+5.7%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={Wallet}
           color="text-brand-accent"
         />
         <KPICard
           title="Pending Approvals"
-          value="23"
-          change="-8.1%"
-          trend="down"
+          value="0"
+          change="+0%"
+          trend="up"
           icon={CheckCircle}
           color="text-brand-warning"
         />
         <KPICard
           title="Monthly Dividends"
-          value="₵45K"
-          change="+22.4%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={TrendingUp}
           color="text-brand-success"
@@ -200,31 +200,31 @@ export default function SuperAdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-accent flex items-center justify-center mb-3">
-              <span className="text-2xl font-bold text-brand-text">56%</span>
+              <span className="text-2xl font-bold text-brand-text">0%</span>
             </div>
             <p className="text-brand-text font-medium">Loans</p>
-            <p className="text-brand-text-secondary text-sm">₵1.8M</p>
+            <p className="text-brand-text-secondary text-sm">₵0</p>
           </div>
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-green flex items-center justify-center mb-3">
-              <span className="text-2xl font-bold text-brand-text">75%</span>
+              <span className="text-2xl font-bold text-brand-text">0%</span>
             </div>
             <p className="text-brand-text font-medium">Savings</p>
-            <p className="text-brand-text-secondary text-sm">₵2.4M</p>
+            <p className="text-brand-text-secondary text-sm">₵0</p>
           </div>
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-warning flex items-center justify-center mb-3">
-              <span className="text-2xl font-bold text-brand-text">15%</span>
+              <span className="text-2xl font-bold text-brand-text">0%</span>
             </div>
             <p className="text-brand-text font-medium">Reserves</p>
-            <p className="text-brand-text-secondary text-sm">₵480K</p>
+            <p className="text-brand-text-secondary text-sm">₵0</p>
           </div>
           <div className="text-center">
             <div className="w-24 h-24 mx-auto rounded-full border-4 border-brand-card-border flex items-center justify-center mb-3">
-              <span className="text-2xl font-bold text-brand-text">4%</span>
+              <span className="text-2xl font-bold text-brand-text">0%</span>
             </div>
             <p className="text-brand-text font-medium">Operations</p>
-            <p className="text-brand-text-secondary text-sm">₵128K</p>
+            <p className="text-brand-text-secondary text-sm">₵0</p>
           </div>
         </div>
       </GlassCard>
@@ -286,7 +286,7 @@ export default function SuperAdminDashboard() {
             <HealthMetric label="API Response Time" value="45ms" status="healthy" />
             <HealthMetric label="Uptime" value="99.9%" status="healthy" />
             <HealthMetric label="Storage Usage" value="67%" status="warning" />
-            <HealthMetric label="Active Sessions" value="142" status="healthy" />
+            <HealthMetric label="Active Sessions" value="0" status="healthy" />
           </div>
         </GlassCard>
       </div>
@@ -300,7 +300,7 @@ export default function SuperAdminDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-brand-warning/20 text-brand-warning rounded-full text-sm font-medium">
-              23 pending
+              0 pending
             </span>
           </div>
         </div>
@@ -317,9 +317,9 @@ export default function SuperAdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              <ApprovalRow type="Loan" requester="" amount="₵15,000" status="Pending" time="" />
-              <ApprovalRow type="Loan" requester="" amount="₵8,500" status="Pending" time="" />
-              <ApprovalRow type="Withdrawal" requester="" amount="₵3,200" status="Pending" time="" />
+              <ApprovalRow type="Loan" requester="" amount="₵0" status="Pending" time="" />
+              <ApprovalRow type="Loan" requester="" amount="₵0" status="Pending" time="" />
+              <ApprovalRow type="Withdrawal" requester="" amount="₵0" status="Pending" time="" />
             </tbody>
           </table>
         </div>

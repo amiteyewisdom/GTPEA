@@ -29,12 +29,12 @@ import {
 
 // Sample data for charts
 const fundPerformanceData = [
-  { month: 'Jan', returns: 4.2 },
-  { month: 'Feb', returns: 3.8 },
-  { month: 'Mar', returns: 5.1 },
-  { month: 'Apr', returns: 4.5 },
-  { month: 'May', returns: 5.8 },
-  { month: 'Jun', returns: 6.2 },
+  { month: 'Jan', returns: 0 },
+  { month: 'Feb', returns: 0 },
+  { month: 'Mar', returns: 0 },
+  { month: 'Apr', returns: 0 },
+  { month: 'May', returns: 0 },
+  { month: 'Jun', returns: 0 },
 ];
 
 export default function FundManagerDashboard() {
@@ -50,32 +50,32 @@ export default function FundManagerDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Fund Balance"
-          value="₵3,245,678"
-          change="+5.7%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={Wallet}
           color="text-brand-accent"
         />
         <KPICard
           title="Expected Collections"
-          value="₵456,789"
-          change="+12.3%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={DollarSign}
           color="text-brand-success"
         />
         <KPICard
           title="Disbursements"
-          value="₵234,567"
-          change="+8.1%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={CreditCard}
           color="text-brand-warning"
         />
         <KPICard
           title="Loan Portfolio"
-          value="₵1,823,456"
-          change="+15.2%"
+          value="₵0"
+          change="+0%"
           trend="up"
           icon={TrendingUp}
           color="text-brand-accent"
@@ -94,37 +94,37 @@ export default function FundManagerDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <RepaymentCard
             borrower=""
-            amount="₵1,250"
+            amount="₵0"
             dueDate=""
             status="pending"
           />
           <RepaymentCard
             borrower=""
-            amount="₵890"
+            amount="₵0"
             dueDate=""
             status="pending"
           />
           <RepaymentCard
             borrower=""
-            amount="₵1,450"
+            amount="₵0"
             dueDate=""
             status="pending"
           />
           <RepaymentCard
             borrower=""
-            amount="₵2,100"
+            amount="₵0"
             dueDate=""
             status="pending"
           />
           <RepaymentCard
             borrower=""
-            amount="₵780"
+            amount="₵0"
             dueDate=""
             status="pending"
           />
           <RepaymentCard
             borrower=""
-            amount="₵1,670"
+            amount="₵0"
             dueDate=""
             status="pending"
           />
@@ -172,14 +172,14 @@ export default function FundManagerDashboard() {
             <TrendingUp className="w-5 h-5 text-brand-success" />
           </div>
           <div className="space-y-4">
-            <ForecastMonth month="July" amount="₵125,000" percentage="85%" />
-            <ForecastMonth month="August" amount="₵132,000" percentage="90%" />
-            <ForecastMonth month="September" amount="₵145,000" percentage="95%" />
+            <ForecastMonth month="July" amount="₵0" percentage="0%" />
+            <ForecastMonth month="August" amount="₵0" percentage="0%" />
+            <ForecastMonth month="September" amount="₵0" percentage="0%" />
           </div>
           <div className="mt-6 p-4 bg-brand-card-bg rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-brand-text-secondary text-sm">Total Forecast</span>
-              <span className="text-brand-text text-xl font-bold">₵402,000</span>
+              <span className="text-brand-text text-xl font-bold">₵0</span>
             </div>
           </div>
         </GlassCard>
@@ -194,7 +194,7 @@ export default function FundManagerDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 bg-brand-warning/20 text-brand-warning rounded-full text-sm font-medium">
-              12 pending
+              0 pending
             </span>
           </div>
         </div>
@@ -213,28 +213,28 @@ export default function FundManagerDashboard() {
             <tbody>
               <LoanReviewRow
                 applicant=""
-                amount="₵15,000"
+                amount="₵0"
                 duration=""
                 purpose=""
                 riskScore=""
               />
               <LoanReviewRow
                 applicant=""
-                amount="₵8,500"
+                amount="₵0"
                 duration=""
                 purpose=""
                 riskScore=""
               />
               <LoanReviewRow
                 applicant=""
-                amount="₵25,000"
+                amount="₵0"
                 duration=""
                 purpose=""
                 riskScore=""
               />
               <LoanReviewRow
                 applicant=""
-                amount="₵12,000"
+                amount="₵0"
                 duration=""
                 purpose=""
                 riskScore=""
@@ -256,28 +256,28 @@ export default function FundManagerDashboard() {
         <div className="space-y-3">
           <DisbursementRow
             recipient=""
-            amount="₵15,000"
+            amount="₵0"
             loanId=""
             date=""
             status="completed"
           />
           <DisbursementRow
             recipient=""
-            amount="₵8,500"
+            amount="₵0"
             loanId=""
             date=""
             status="completed"
           />
           <DisbursementRow
             recipient=""
-            amount="₵25,000"
+            amount="₵0"
             loanId=""
             date=""
             status="completed"
           />
           <DisbursementRow
             recipient=""
-            amount="₵12,000"
+            amount="₵0"
             loanId=""
             date=""
             status="pending"
