@@ -36,6 +36,8 @@ interface EnterpriseSidebarProps {
   userAvatar?: string;
   isOpen?: boolean;
   onClose?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export default function EnterpriseSidebar({ 
@@ -43,11 +45,12 @@ export default function EnterpriseSidebar({
   userName = 'User', 
   userAvatar,
   isOpen = false,
-  onClose
+  onClose,
+  isCollapsed = false,
+  onToggleCollapse
 }: EnterpriseSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = getMenuItemsForRole(currentRole);
 
@@ -60,7 +63,7 @@ export default function EnterpriseSidebar({
     router.push('/login');
   };
 
-  const sidebarWidth = isCollapsed ? '90px' : '280px';
+  const sidebarWidth = isCollapsed ? '80px' : '280px';
 
   return (
     <>
@@ -72,15 +75,15 @@ export default function EnterpriseSidebar({
         />
       )}
 
-      {/* Hamburger Dropdown Sidebar - drops from top */}
+      {/* Sidebar */}
       <aside
         className={`
-          fixed left-0 right-0 top-0 bg-white z-50 border-b border-brand-card-border
-          transition-transform duration-300 ease-in-out
-          ${isOpen ? 'translate-y-0' : '-translate-y-full'}
-          md:translate-y-0 md:static md:border-b-0 md:h-screen
+          fixed left-0 top-0 bg-white z-50 border-r border-brand-card-border
+          transition-all duration-300 ease-in-out h-screen
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0 md:static
         `}
-        style={{ height: isOpen ? 'auto' : sidebarWidth, width: isCollapsed ? '90px' : '280px' }}
+        style={{ width: isCollapsed ? '80px' : '280px' }}
       >
         <div className="h-full flex flex-col">
           {/* Logo Section */}
@@ -203,17 +206,19 @@ export default function EnterpriseSidebar({
       </aside>
 
       {/* Collapse Toggle (Desktop) */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="hidden md:flex fixed left-0 bottom-6 z-50 items-center justify-center w-8 h-8 bg-brand-green rounded-r-lg shadow-lg hover:bg-brand-green-dark transition-all"
-        style={{ left: sidebarWidth }}
-      >
-        {isCollapsed ? (
-          <ChevronRight className="w-4 h-4 text-white" />
-        ) : (
-          <ChevronRight className="w-4 h-4 text-white rotate-180" />
-        )}
-      </button>
+      {onToggleCollapse && (
+        <button
+          onClick={onToggleCollapse}
+          className="hidden md:flex fixed left-0 bottom-6 z-50 items-center justify-center w-8 h-8 bg-brand-green rounded-r-lg shadow-lg hover:bg-brand-green-dark transition-all"
+          style={{ left: sidebarWidth }}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-4 h-4 text-white" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-white rotate-180" />
+          )}
+        </button>
+      )}
     </>
   );
 }
