@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
@@ -17,8 +17,26 @@ import {
   Download,
 } from 'lucide-react';
 
-export default function AdministratorDashboard({ stats }: { stats: DashboardStats }) {
+export default function AdministratorDashboard({ stats: initialStats }: { stats: DashboardStats }) {
+  const [stats, setStats] = useState(initialStats);
   const [activeTab, setActiveTab] = useState<'overview' | 'imports' | 'exports'>('overview');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch('/api/dashboard/stats')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (!cancelled && data) {
+          setStats(data as DashboardStats);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="space-y-6">

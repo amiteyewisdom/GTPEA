@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import ApprovalQueuePanel from '@/components/approvals/ApprovalQueuePanel';
 import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
@@ -10,8 +11,6 @@ import {
   TrendingUp,
   Calendar,
   BarChart3,
-  CheckCircle,
-  XCircle,
   Clock
 } from 'lucide-react';
 import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
@@ -161,52 +160,23 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
         </GlassCard>
       </div>
 
-      {/* Loan Reviews Queue */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-brand-text">Loan Reviews</h3>
-            <p className="text-brand-text-secondary text-sm">Applications awaiting your review</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-brand-warning/20 text-brand-warning rounded-full text-sm font-medium">
-              {formatNumber(stats.pendingLoanReviews.length)} pending
-            </span>
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-brand-card-border">
-                <th className="text-left py-3 px-4 text-brand-text-secondary text-sm font-medium">Applicant</th>
-                <th className="text-left py-3 px-4 text-brand-text-secondary text-sm font-medium">Amount</th>
-                <th className="text-left py-3 px-4 text-brand-text-secondary text-sm font-medium">Duration</th>
-                <th className="text-left py-3 px-4 text-brand-text-secondary text-sm font-medium">Purpose</th>
-                <th className="text-left py-3 px-4 text-brand-text-secondary text-sm font-medium">Risk Score</th>
-                <th className="text-left py-3 px-4 text-brand-text-secondary text-sm font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.pendingLoanReviews.length > 0 ? stats.pendingLoanReviews.map((loan) => (
-                <LoanReviewRow
-                  key={loan.id}
-                  applicant={loan.applicant}
-                  amount={loan.amount}
-                  duration={loan.duration}
-                  purpose={loan.purpose}
-                  riskScore={loan.riskScore}
-                />
-              )) : (
-                <tr>
-                  <td colSpan={6} className="py-6 px-4 text-center text-brand-text-secondary text-sm">
-                    No loans awaiting review
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </GlassCard>
+      <ApprovalQueuePanel
+        title="Loan Reviews — Your Turn"
+        description="Stage 2 applications ready for Fund Manager review. Approving sends them to the Chairperson."
+        items={stats.pendingLoanReviews.map((loan) => ({
+          approvalId: loan.approvalId,
+          loanId: loan.id,
+          applicant: loan.applicant,
+          amount: loan.amount,
+          amountValue: 0,
+          duration: loan.duration,
+          purpose: loan.purpose,
+          currentStage: loan.currentStage,
+          totalStages: loan.totalStages,
+          riskScore: loan.riskScore,
+        }))}
+        emptyText="No applications waiting for Fund Manager approval."
+      />
 
       {/* Recent Disbursements */}
       <GlassCard className="p-6">
@@ -278,45 +248,6 @@ function ForecastMonth({ month, amount, percentage }: any) {
         <div className="h-full bg-brand-accent rounded-full transition-all duration-500" style={{ width: percentage }} />
       </div>
     </div>
-  );
-}
-
-function LoanReviewRow({ applicant, amount, duration, purpose, riskScore }: any) {
-  const riskColors = {
-    Low: 'bg-brand-success/20 text-brand-success',
-    Medium: 'bg-brand-warning/20 text-brand-warning',
-    High: 'bg-brand-danger/20 text-brand-danger',
-  };
-
-  return (
-    <tr className="border-b border-brand-card-border hover:bg-brand-hover transition-all">
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold text-sm">
-            {applicant.charAt(0)}
-          </div>
-          <span className="text-brand-text text-sm">{applicant}</span>
-        </div>
-      </td>
-      <td className="py-3 px-4 text-brand-text font-medium text-sm">{amount}</td>
-      <td className="py-3 px-4 text-brand-text-secondary text-sm">{duration}</td>
-      <td className="py-3 px-4 text-brand-text text-sm">{purpose}</td>
-      <td className="py-3 px-4">
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${riskColors[riskScore as keyof typeof riskColors]}`}>
-          {riskScore}
-        </span>
-      </td>
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-2">
-          <button className="p-2 rounded-lg bg-brand-success/20 text-brand-success hover:bg-brand-success/30 transition-all">
-            <CheckCircle className="w-4 h-4" />
-          </button>
-          <button className="p-2 rounded-lg bg-brand-danger/20 text-brand-danger hover:bg-brand-danger/30 transition-all">
-            <XCircle className="w-4 h-4" />
-          </button>
-        </div>
-      </td>
-    </tr>
   );
 }
 

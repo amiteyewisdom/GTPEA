@@ -13,7 +13,24 @@ interface LoanProduct {
   interest_rate: number;
   min_amount: number;
   max_amount: number;
+  min_term_months: number;
   max_term_months: number;
+}
+
+function amountError(product: LoanProduct | undefined, amount: number) {
+  if (!product || amount <= 0) return "Enter a valid loan amount.";
+  if (amount < product.min_amount || amount > product.max_amount) {
+    return `Amount must be between ${formatCurrency(product.min_amount)} and ${formatCurrency(product.max_amount)}.`;
+  }
+  return null;
+}
+
+function termError(product: LoanProduct | undefined, months: number) {
+  if (!product || months <= 0) return "Enter a valid loan term.";
+  if (months < product.min_term_months || months > product.max_term_months) {
+    return `Term must be between ${product.min_term_months} and ${product.max_term_months} months.`;
+  }
+  return null;
 }
 
 interface LoanApplicationProps {
@@ -23,8 +40,8 @@ interface LoanApplicationProps {
 export function LoanApplication({ loanProducts }: LoanApplicationProps) {
   const router = useRouter();
   const [productId, setProductId] = useState(loanProducts[0]?.id ?? "");
-  const [principal, setPrincipal] = useState(5000);
-  const [duration, setDuration] = useState(12);
+  const [principal, setPrincipal] = useState(loanProducts[0]?.min_amount ?? 1000);
+  const [duration, setDuration] = useState(loanProducts[0]?.min_term_months ?? 12);
   const [purpose, setPurpose] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,7 +68,25 @@ export function LoanApplication({ loanProducts }: LoanApplicationProps) {
   const firstRepaymentDate = useMemo(() => format(addMonths(new Date(), 1), "dd MMM yyyy"), []);
   const expectedCompletionDate = useMemo(() => format(addMonths(new Date(), duration), "dd MMM yyyy"), [duration]);
 
+  const amountValidation = amountError(selectedProduct, principal);
+  const termValidation = termError(selectedProduct, duration);
+  const formValid = !amountValidation && !termValidation && Boolean(selectedProduct);
+
+  const handleProductChange = (nextProductId: string) => {
+    const product = loanProducts.find((item) => item.id === nextProductId);
+    setProductId(nextProductId);
+    if (product) {
+      setPrincipal(product.min_amount);
+      setDuration(product.min_term_months);
+    }
+    setErrorMessage(null);
+  };
+
   const handleSubmit = async () => {
+    if (!formValid) {
+      setErrorMessage(amountValidation ?? termValidation ?? "Please fix the form errors.");
+      return;
+    }
     setLoading(true);
     setErrorMessage(null);
 
@@ -108,7 +143,7 @@ export function LoanApplication({ loanProducts }: LoanApplicationProps) {
             <label className="block text-sm font-medium text-brand-text mb-2">Loan Product</label>
             <select
               value={productId}
-              onChange={(e) => setProductId(e.target.value)}
+              onChange={(e) => handleProductChange(e.target.value)}
               className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
             >
               {loanProducts.map((product) => (
@@ -122,16 +157,25 @@ export function LoanApplication({ loanProducts }: LoanApplicationProps) {
           <div>
             <label className="block text-sm font-medium text-brand-text mb-2">Principal Amount</label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-text-secondary" />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-brand-text-secondary">GH₵</span>
               <input
                 type="number"
                 value={principal}
-                onChange={(e) => setPrincipal(Number(e.target.value))}
+                onChange={(e) => {
+                  setPrincipal(Number(e.target.value));
+                  setErrorMessage(null);
+                }}
                 min={selectedProduct.min_amount}
                 max={selectedProduct.max_amount}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+                className="w-full pl-12 pr-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
               />
             </div>
+            <p className="mt-1 text-xs text-brand-text-secondary">
+              Allowed: {formatCurrency(selectedProduct.min_amount)} – {formatCurrency(selectedProduct.max_amount)}
+            </p>
+            {amountValidation && (
+              <p className="mt-1 text-xs text-red-600">{amountValidation}</p>
+            )}
           </div>
 
           <div>
@@ -141,12 +185,21 @@ export function LoanApplication({ loanProducts }: LoanApplicationProps) {
               <input
                 type="number"
                 value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-                min={1}
+                onChange={(e) => {
+                  setDuration(Number(e.target.value));
+                  setErrorMessage(null);
+                }}
+                min={selectedProduct.min_term_months}
                 max={selectedProduct.max_term_months}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
               />
             </div>
+            <p className="mt-1 text-xs text-brand-text-secondary">
+              Allowed: {selectedProduct.min_term_months}–{selectedProduct.max_term_months} months
+            </p>
+            {termValidation && (
+              <p className="mt-1 text-xs text-red-600">{termValidation}</p>
+            )}
           </div>
         </div>
 
@@ -190,8 +243,15 @@ export function LoanApplication({ loanProducts }: LoanApplicationProps) {
 
         <div className="flex justify-end">
           <button
-            onClick={() => setConfirmOpen(true)}
-            disabled={principal <= 0 || duration <= 0 || !selectedProduct}
+            onClick={() => {
+              if (!formValid) {
+                setErrorMessage(amountValidation ?? termValidation ?? "Please fix the form errors.");
+                return;
+              }
+              setErrorMessage(null);
+              setConfirmOpen(true);
+            }}
+            disabled={!formValid}
             className="px-6 py-2.5 bg-brand-green text-white font-semibold rounded-lg hover:bg-brand-green/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Review & Submit

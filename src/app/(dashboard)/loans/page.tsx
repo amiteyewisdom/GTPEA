@@ -11,12 +11,12 @@ export default async function LoansPage() {
   const [loanProductsRes, loansRes] = await Promise.all([
     supabase
       .from("loan_products")
-      .select("id, name, interest_rate, min_amount, max_amount, max_term_months, is_active")
+      .select("id, name, interest_rate, min_amount, max_amount, min_term_months, max_term_months, is_active")
       .eq("is_active", true),
     supabase
       .from("loans")
       .select(
-        `*, employees (first_name, last_name, employee_no, department), loan_products (name)`,
+        `*, employees!employee_id (first_name, last_name, employee_no, department), loan_products (name)`,
         { count: "exact" }
       )
       .order("created_at", { ascending: false }),

@@ -15,7 +15,12 @@ import { StatusChip } from "@/components/ui/StatusChip";
 import { useRouter } from "next/navigation";
 import { KPICard } from "@/components/ui/KPICard";
 import { formatDate, formatRelativeTime, formatCurrency } from "@/utils/formatters";
-import { createClient } from "@/lib/supabase/client";
+import {
+  APPROVAL_STAGES,
+  canApproveAtStage,
+  labelForStage,
+  labelForRole,
+} from "@/lib/loans/workflow";
 
 interface ApprovalAction {
   stage: number;
@@ -64,9 +69,10 @@ interface ApprovalsClientProps {
   approvals: ApprovalRow[];
   total: number;
   userRole: string;
+  userId: string;
 }
 
-export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientProps) {
+export function ApprovalsClient({ approvals, total, userRole, userId }: ApprovalsClientProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -76,15 +82,17 @@ export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientP
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [view, setView] = useState<"action" | "all">("action");
 
-  // Stage to role mapping
-  const STAGE_ROLE_MAP: Record<number, string> = {
-    1: "union_rep",
-    2: "fund_manager",
-    3: "chairperson",
-  };
+  const STAGE_ROLE_MAP: Record<number, string> = Object.fromEntries(
+    APPROVAL_STAGES.map((s) => [s.stage, s.role])
+  );
+
+  const needsMyAction = (approval: ApprovalRow) =>
+    approval.status === "pending" && canApproveAtStage(userRole, approval.current_stage ?? 1);
 
   const pending = approvals.filter((a) => a.status === "pending").length;
+  const myActionCount = approvals.filter(needsMyAction).length;
   const approved = approvals.filter((a) => a.status === "approved").length;
   const rejected = approvals.filter((a) => a.status === "rejected").length;
 
@@ -101,11 +109,12 @@ export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientP
       return matchesSearch;
     }
 
-    // For other roles, show approvals that need their attention or they submitted
-    const currentStage = a.current_stage ?? 1;
-    const requiredRole = STAGE_ROLE_MAP[currentStage];
-    const needsMyAttention = a.status === "pending" && requiredRole === userRole;
-    const iSubmitted = a.submitted_by === (typeof window !== "undefined" ? localStorage.getItem("user_id") : "");
+    const needsMyAttention = needsMyAction(a);
+    const iSubmitted = userId ? a.submitted_by === userId : false;
+
+    if (view === "action") {
+      return matchesSearch && needsMyAttention;
+    }
 
     return matchesSearch && (needsMyAttention || iSubmitted);
   });
@@ -127,7 +136,7 @@ export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientP
         throw new Error(payload?.error || "Unable to process approval action.");
       }
 
-      setSuccessMessage("Approval updated successfully.");
+      setSuccessMessage(payload.message || "Approval updated successfully.");
       setSelected(null);
       setNotes("");
       router.refresh();
@@ -141,9 +150,33 @@ export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientP
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
       {/* KPIs */}
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 2 }}>
-        <KPICard title="Pending Review" value={pending} icon={PendingActionsRounded} accent={pending > 5 ? "warning" : "primary"} subtitle="Awaiting action" />
+        <KPICard
+          title="Needs My Action"
+          value={myActionCount}
+          icon={PendingActionsRounded}
+          accent={myActionCount > 0 ? "warning" : "primary"}
+          subtitle="Ready for your review"
+        />
+        <KPICard title="Pending Review" value={pending} icon={PendingActionsRounded} accent="primary" subtitle="All pending" />
         <KPICard title="Approved" value={approved} icon={CheckCircleRounded} accent="success" subtitle="This period" />
         <KPICard title="Rejected" value={rejected} icon={CancelRounded} accent="danger" subtitle="This period" />
+      </Box>
+
+      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+        <Button
+          size="small"
+          variant={view === "action" ? "contained" : "outlined"}
+          onClick={() => { setView("action"); setPage(0); }}
+        >
+          Needs my action ({myActionCount})
+        </Button>
+        <Button
+          size="small"
+          variant={view === "all" ? "contained" : "outlined"}
+          onClick={() => { setView("all"); setPage(0); }}
+        >
+          All relevant
+        </Button>
       </Box>
 
       {/* Controls */}
@@ -214,8 +247,16 @@ export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientP
                   <TableCell sx={{ fontSize: "0.875rem", fontWeight: 600, color: "#111827" }}>
                     {approval.current_stage ?? 1}/{approval.total_stages ?? 3}
                     <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", fontWeight: 400 }}>
-                      ({STAGE_ROLE_MAP[approval.current_stage ?? 1]?.replace("_", " ") || "Unknown"})
+                      ({labelForStage(approval.current_stage ?? 1)})
                     </Typography>
+                    {approval.status === "pending" && needsMyAction(approval) && (
+                      <Chip label="Your turn" size="small" color="warning" sx={{ mt: 0.5, height: 20, fontSize: "0.65rem" }} />
+                    )}
+                    {approval.status === "pending" && !needsMyAction(approval) && (
+                      <Typography sx={{ fontSize: "0.65rem", color: "text.secondary", mt: 0.5 }}>
+                        Waiting for {labelForStage(approval.current_stage ?? 1)}
+                      </Typography>
+                    )}
                   </TableCell>
                   <TableCell sx={{ fontSize: "0.875rem", color: "text.secondary", display: { xs: 'none', md: 'table-cell' } }}>
                     <Tooltip title={formatDate(approval.submitted_at, "dd MMM yyyy HH:mm")}>
@@ -227,7 +268,7 @@ export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientP
                   </TableCell>
                   <TableCell align="right">
                     <Box sx={{ display: "flex", gap: 0.5, justifyContent: "flex-end" }}>
-                      {approval.status === "pending" && (
+                      {approval.status === "pending" && needsMyAction(approval) && (
                         <>
                           <Tooltip title="Approve">
                             <IconButton
@@ -378,6 +419,33 @@ export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientP
                 </Box>
               )}
 
+              {selected.status === "pending" && (
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", py: 1 }}>
+                  {[{ label: "Submitted", stage: 0 }, ...APPROVAL_STAGES.map((s) => ({ label: s.label, stage: s.stage }))].map(
+                    (step) => {
+                      const stage = selected.current_stage ?? 1;
+                      const done = step.stage === 0 || step.stage < stage;
+                      const current = step.stage === stage;
+                      return (
+                        <Chip
+                          key={step.label}
+                          label={step.label}
+                          size="small"
+                          color={current ? "warning" : done ? "success" : "default"}
+                          variant={current ? "filled" : "outlined"}
+                        />
+                      );
+                    }
+                  )}
+                </Box>
+              )}
+
+              {selected.status === "pending" && !needsMyAction(selected) && (
+                <Alert severity="info">
+                  This application is waiting for {labelForRole(STAGE_ROLE_MAP[selected.current_stage ?? 1] ?? "next reviewer")}.
+                </Alert>
+              )}
+
               {selected.approval_actions?.length ? (
                 <Box>
                   <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, mb: 1 }}>Approval history</Typography>
@@ -415,7 +483,7 @@ export function ApprovalsClient({ approvals, total, userRole }: ApprovalsClientP
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSelected(null)} variant="outlined" size="small">Close</Button>
-          {selected?.status === "pending" && (
+          {selected?.status === "pending" && needsMyAction(selected) && (
             <>
               <Button
                 onClick={() => handleAction(selected.id, "rejected")}

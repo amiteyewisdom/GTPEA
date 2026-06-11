@@ -38,6 +38,7 @@ interface LoanProductOption {
   interest_rate: number;
   min_amount: number;
   max_amount: number;
+  min_term_months: number;
   max_term_months: number;
 }
 

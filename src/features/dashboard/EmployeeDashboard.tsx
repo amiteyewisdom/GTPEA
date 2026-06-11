@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/utils/formatters';
+import { APPROVAL_STAGES, employeeStageLabel } from '@/lib/loans/workflow';
 
 interface DashboardData {
   fullName: string;
@@ -184,8 +185,9 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
               amount={formatCurrency(app.amount_requested || 0)}
               purpose={app.purpose || 'Loan Application'}
               submittedDate={app.created_at ? formatDate(app.created_at) : 'N/A'}
-              currentStage={app.current_stage || 'submitted'}
-              stages={['submitted', 'union_review', 'fund_manager', 'chairperson', 'approved']}
+              currentStage={app.current_stage ?? 1}
+              totalStages={app.total_stages ?? 3}
+              statusLabel={employeeStageLabel(app.current_stage ?? 1, app.status ?? 'pending')}
             />
           )) : (
             <p className="text-brand-text-secondary text-sm">No pending applications</p>
@@ -293,16 +295,27 @@ function ActivityRow({ type, description, amount, date, status }: any) {
   );
 }
 
-function ApplicationStatusCard({ applicationId, amount, purpose, submittedDate, currentStage, stages }: any) {
-  const stageLabels = {
-    submitted: 'Submitted',
-    union_review: 'Union Review',
-    fund_manager: 'Fund Manager',
-    chairperson: 'Chairperson',
-    approved: 'Approved',
-  };
-
-  const currentIndex = stages.indexOf(currentStage);
+function ApplicationStatusCard({
+  applicationId,
+  amount,
+  purpose,
+  submittedDate,
+  currentStage,
+  totalStages,
+  statusLabel,
+}: {
+  applicationId: string;
+  amount: string;
+  purpose: string;
+  submittedDate: string;
+  currentStage: number;
+  totalStages: number;
+  statusLabel: string;
+}) {
+  const steps = [
+    { label: 'Submitted', stage: 0 },
+    ...APPROVAL_STAGES.map((s) => ({ label: s.label, stage: s.stage })),
+  ];
 
   return (
     <div className="p-5 rounded-lg bg-brand-card-bg border border-brand-card-border">
@@ -311,19 +324,22 @@ function ApplicationStatusCard({ applicationId, amount, purpose, submittedDate, 
           <p className="text-brand-text font-semibold">{applicationId}</p>
           <p className="text-brand-text-secondary text-sm">{purpose} • {amount}</p>
         </div>
-        <span className="text-brand-text-secondary text-xs">{submittedDate}</span>
+        <div className="text-right">
+          <span className="text-brand-accent text-xs font-medium">{statusLabel}</span>
+          <p className="text-brand-text-secondary text-xs">{submittedDate}</p>
+        </div>
       </div>
 
-      {/* Progress Timeline */}
       <div className="relative">
         <div className="flex items-center justify-between mb-2">
-          {stages.map((stage: string, index: number) => {
-            const isCompleted = index < currentIndex;
-            const isCurrent = index === currentIndex;
-            const isPending = index > currentIndex;
+          {steps.map((step, index) => {
+            const isSubmitted = step.stage === 0;
+            const isCompleted = isSubmitted || step.stage < currentStage;
+            const isCurrent = !isSubmitted && step.stage === currentStage;
+            const isPending = !isSubmitted && step.stage > currentStage;
 
             return (
-              <div key={stage} className="flex flex-col items-center flex-1">
+              <div key={step.label} className="flex flex-col items-center flex-1">
                 <div
                   className={`
                     w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
@@ -334,18 +350,17 @@ function ApplicationStatusCard({ applicationId, amount, purpose, submittedDate, 
                 >
                   {isCompleted ? <CheckCircle className="w-4 h-4" /> : index + 1}
                 </div>
-                <p className={`text-xs mt-2 ${isCurrent ? 'text-brand-accent font-medium' : 'text-brand-text-secondary'}`}>
-                  {stageLabels[stage as keyof typeof stageLabels]}
+                <p className={`text-xs mt-2 text-center ${isCurrent ? 'text-brand-accent font-medium' : 'text-brand-text-secondary'}`}>
+                  {step.label}
                 </p>
               </div>
             );
           })}
         </div>
-        {/* Progress Line */}
         <div className="absolute top-4 left-0 right-0 h-0.5 bg-brand-card-border -z-10">
-          <div 
+          <div
             className="h-full bg-brand-accent transition-all duration-500"
-            style={{ width: `${(currentIndex / (stages.length - 1)) * 100}%` }}
+            style={{ width: `${(currentStage / totalStages) * 100}%` }}
           />
         </div>
       </div>

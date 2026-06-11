@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { buildLoanApprovalQueue } from "@/lib/approvals/build-queue";
 import { resolveEmployeeUuid } from "@/lib/data/session";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/utils/formatters";
 import { format, subMonths } from "date-fns";
@@ -49,12 +51,26 @@ export interface DashboardStats {
     status: string;
   }[];
   pendingLoanReviews: {
+    approvalId: string;
     id: string;
     applicant: string;
     amount: string;
     duration: string;
     purpose: string;
     riskScore: string;
+    currentStage: number;
+    totalStages: number;
+  }[];
+  chairpersonQueue: {
+    approvalId: string;
+    id: string;
+    applicant: string;
+    amount: string;
+    duration: string;
+    purpose: string;
+    riskScore: string;
+    currentStage: number;
+    totalStages: number;
   }[];
   recentDisbursements: {
     id: string;
@@ -79,6 +95,7 @@ export interface DashboardStats {
     rejectedReviews: number;
   };
   unionRepLoans: {
+    approvalId: string;
     id: string;
     name: string;
     employeeId: string;
@@ -107,7 +124,7 @@ export interface DashboardStats {
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const months = lastMonths(6);
 
   const [
@@ -126,22 +143,25 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     transactionsTodayRes,
   ] = await Promise.all([
     supabase.from("employees").select("id, first_name, last_name, status"),
-    supabase.from("savings").select("id, employee_id, balance"),
+    supabase.from("savings").select("id, employee_id, balance, status").eq("status", "active"),
     supabase
       .from("loans")
       .select(
-        "id, loan_ref, employee_id, amount_requested, amount_approved, amount_disbursed, outstanding_balance, status, purpose, term_months, monthly_repayment, disbursement_date, created_at, loan_product_id, employees(first_name, last_name), loan_products(name)"
+        "id, loan_ref, employee_id, amount_requested, amount_approved, amount_disbursed, outstanding_balance, status, purpose, term_months, monthly_repayment, disbursement_date, created_at, loan_product_id, employees!employee_id(first_name, last_name), loan_products(name)"
       ),
     supabase
       .from("approvals")
-      .select("id, entity_type, entity_id, status, submitted_at, submitted_by, current_stage")
+      .select("id, entity_type, entity_id, status, submitted_at, submitted_by, current_stage, total_stages")
       .eq("status", "pending")
       .order("submitted_at", { ascending: false })
       .limit(20),
     supabase
       .from("withdrawal_requests")
       .select("id, employee_id, amount, status, employees(first_name, last_name)"),
-    supabase.from("dividends").select("id, employee_id, dividend_amount"),
+    supabase
+      .from("dividends")
+      .select("id, employee_id, dividend_amount, credited_at")
+      .not("credited_at", "is", null),
     supabase.from("profiles").select("id").eq("is_active", true),
     supabase
       .from("transactions")
@@ -169,6 +189,18 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
       .select("id", { count: "exact", head: true })
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
   ]);
+
+  for (const [label, result] of [
+    ["employees", employeesRes],
+    ["savings", savingsRes],
+    ["loans", loansRes],
+    ["withdrawals", withdrawalsRes],
+    ["dividends", dividendsRes],
+  ] as const) {
+    if (result.error) {
+      console.error(`[fetchDashboardStats] ${label} query failed:`, result.error.message);
+    }
+  }
 
   const employees = (employeesRes.data || []) as any[];
   const savings = (savingsRes.data || []) as any[];
@@ -295,22 +327,33 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     };
   });
 
-  const pendingLoanReviews = loans
-    .filter((loan) => loan.status === "pending")
-    .slice(0, 6)
-    .map((loan) => ({
-      id: loan.id,
-      applicant: employeeName(loan),
-      amount: formatCurrency(Number(loan.amount_requested) || 0),
-      duration: `${loan.term_months} months`,
-      purpose: loan.purpose || "—",
-      riskScore:
-        Number(loan.amount_requested) > Number(loan.amount_approved || 0) * 2
-          ? "High"
-          : Number(loan.amount_requested) > 50000
-            ? "Medium"
-            : "Low",
-    }));
+  const fundManagerQueue = buildLoanApprovalQueue(approvals, loans, 2);
+  const chairpersonQueueItems = buildLoanApprovalQueue(approvals, loans, 3);
+  const unionRepQueue = buildLoanApprovalQueue(approvals, loans, 1);
+
+  const pendingLoanReviews = fundManagerQueue.slice(0, 6).map((item) => ({
+    approvalId: item.approvalId,
+    id: item.loanId,
+    applicant: item.applicant,
+    amount: item.amount,
+    duration: item.duration,
+    purpose: item.purpose,
+    riskScore: item.riskScore,
+    currentStage: item.currentStage,
+    totalStages: item.totalStages,
+  }));
+
+  const chairpersonQueue = chairpersonQueueItems.slice(0, 6).map((item) => ({
+    approvalId: item.approvalId,
+    id: item.loanId,
+    applicant: item.applicant,
+    amount: item.amount,
+    duration: item.duration,
+    purpose: item.purpose,
+    riskScore: item.riskScore,
+    currentStage: item.currentStage,
+    totalStages: item.totalStages,
+  }));
 
   const recentDisbursements = loans
     .filter((loan) => loan.amount_disbursed && loan.disbursement_date)
@@ -359,38 +402,38 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     };
   });
 
-  const unionRepLoans = loans
-    .filter((loan) => loan.status === "pending")
-    .slice(0, 6)
-    .map((loan) => {
-      const savingsTotal = savingsByEmployee[loan.employee_id] || 0;
-      const outstanding = loansByEmployee[loan.employee_id]?.outstanding || 0;
-      const score = Math.min(
-        100,
-        Math.round((savingsTotal / Math.max(Number(loan.amount_requested) || 1, 1)) * 40 + 60)
-      );
-      return {
-        id: loan.id,
-        name: employeeName(loan),
-        employeeId: loan.employee_id,
-        currentSavings: formatCurrency(savingsTotal),
-        currentLoans: formatCurrency(outstanding),
-        monthlyRepayments: formatCurrency(Number(loan.monthly_repayment) || 0),
-        loanHistory: `${loansByEmployee[loan.employee_id]?.count || 0} prior loans`,
-        eligibilityScore: score,
-        status:
-          score >= 80
-            ? ("eligible" as const)
-            : score >= 60
-              ? ("review" as const)
-              : score >= 40
-                ? ("caution" as const)
-                : ("ineligible" as const),
-      };
-    });
+  const unionRepLoans = unionRepQueue.slice(0, 6).map((item) => {
+    const loan = loanMap.get(item.loanId);
+    const savingsTotal = loan ? savingsByEmployee[loan.employee_id] || 0 : 0;
+    const outstanding = loan ? loansByEmployee[loan.employee_id]?.outstanding || 0 : 0;
+    const score = Math.min(
+      100,
+      Math.round((savingsTotal / Math.max(item.amountValue || 1, 1)) * 40 + 60)
+    );
+
+    return {
+      approvalId: item.approvalId,
+      id: item.loanId,
+      name: item.applicant,
+      employeeId: loan?.employee_id ?? "",
+      currentSavings: formatCurrency(savingsTotal),
+      currentLoans: formatCurrency(outstanding),
+      monthlyRepayments: loan ? formatCurrency(Number(loan.monthly_repayment) || 0) : item.amount,
+      loanHistory: loan ? `${loansByEmployee[loan.employee_id]?.count || 0} prior loans` : "—",
+      eligibilityScore: score,
+      status:
+        score >= 80
+          ? ("eligible" as const)
+          : score >= 60
+            ? ("review" as const)
+            : score >= 40
+              ? ("caution" as const)
+              : ("ineligible" as const),
+    };
+  });
 
   const unionRepStats = {
-    pendingReviews: loans.filter((loan) => loan.status === "pending").length,
+    pendingReviews: unionRepQueue.length,
     approvedReviews: approvalActions.filter((action) => action.action === "approved").length,
     rejectedReviews: approvalActions.filter((action) => action.action === "rejected").length,
   };
@@ -445,6 +488,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     approvalQueue,
     upcomingRepayments,
     pendingLoanReviews,
+    chairpersonQueue,
     recentDisbursements,
     employeeSummaries,
     unionRepStats,
@@ -499,8 +543,17 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
 
   const savingsData = savingsRes.data || [];
   const loansData = loansRes.data || [];
-  const approvalsData = approvalsRes.data || [];
+  const approvalsData = (approvalsRes.data || []) as any[];
   const transactionsData = transactionsRes.data || [];
+
+  const loanIds = approvalsData.map((a) => a.entity_id).filter(Boolean);
+  const pendingLoanDetailsRes =
+    loanIds.length > 0
+      ? await supabase.from("loans").select("id, loan_ref, amount_requested, purpose, created_at").in("id", loanIds)
+      : { data: [] };
+  const pendingLoanMap = new Map(
+    ((pendingLoanDetailsRes.data || []) as any[]).map((loan) => [loan.id, loan])
+  );
   const now = new Date();
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const contributions = (contributionsRes.data || []) as any[];
@@ -525,7 +578,20 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     pendingRequests: approvalsData.length,
     activeLoans: loansData,
     recentActivity: transactionsData,
-    pendingApplications: approvalsData,
+    pendingApplications: approvalsData.map((approval) => {
+      const loan = pendingLoanMap.get(approval.entity_id);
+      return {
+        id: approval.id,
+        current_stage: approval.current_stage ?? 1,
+        total_stages: approval.total_stages ?? 3,
+        status: approval.status,
+        submitted_at: approval.submitted_at,
+        loan_ref: loan?.loan_ref ?? approval.entity_id?.slice(0, 8) ?? "—",
+        amount_requested: loan?.amount_requested ?? 0,
+        purpose: loan?.purpose ?? "Loan Application",
+        created_at: loan?.created_at ?? approval.submitted_at,
+      };
+    }),
     savingsChange:
       currentMonthTotal > 0 || lastMonthTotal > 0
         ? `${currentMonthTotal >= lastMonthTotal ? "+" : ""}${formatCurrency(currentMonthTotal - lastMonthTotal)}`

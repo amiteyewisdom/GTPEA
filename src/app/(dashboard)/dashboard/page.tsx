@@ -9,6 +9,8 @@ import FundManagerDashboard from "@/features/dashboard/FundManagerDashboard";
 import UnionRepDashboard from "@/features/dashboard/UnionRepDashboard";
 import EmployeeDashboard from "@/features/dashboard/EmployeeDashboard";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardRouter() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

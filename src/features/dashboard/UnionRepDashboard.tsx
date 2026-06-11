@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
@@ -17,18 +18,23 @@ import {
 } from 'lucide-react';
 
 export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleApproval = async (loanId: string, action: 'approved' | 'rejected' | 'on_hold') => {
+  const handleApproval = async (approvalId: string, action: 'approved' | 'rejected' | 'on_hold') => {
     setLoading(true);
     setMessage(null);
 
     try {
-      const response = await fetch('/api/loans/approve', {
+      const response = await fetch('/api/approvals/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ loan_id: loanId, action, notes: '' }),
+        body: JSON.stringify({
+          approval_id: approvalId,
+          action: action === 'on_hold' ? 'rejected' : action,
+          notes: '',
+        }),
       });
 
       const payload = await response.json();
@@ -36,7 +42,8 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
         throw new Error(payload?.error || 'Failed to process approval');
       }
 
-      setMessage({ type: 'success', text: `Loan ${action} successfully` });
+      setMessage({ type: 'success', text: payload.message || `Loan ${action} successfully` });
+      router.refresh();
     } catch (error) {
       setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Approval failed' });
     } finally {
@@ -108,7 +115,7 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
               loanHistory={loan.loanHistory}
               eligibilityScore={loan.eligibilityScore}
               status={loan.status}
-              onApprove={(action: 'approved' | 'rejected' | 'on_hold') => handleApproval(loan.id, action)}
+              onApprove={(action: 'approved' | 'rejected' | 'on_hold') => handleApproval(loan.approvalId, action)}
               loading={loading}
             />
           )) : (

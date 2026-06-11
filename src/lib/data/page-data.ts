@@ -190,7 +190,7 @@ export async function fetchDisbursementsData() {
       amount_disbursed,
       disbursement_date,
       status,
-      employees (first_name, last_name, employee_no),
+      employees!employee_id (first_name, last_name, employee_no),
       loan_products (name)
     `)
     .not("amount_disbursed", "is", null)

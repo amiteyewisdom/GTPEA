@@ -8,7 +8,7 @@ export default async function ApplyLoanPage() {
   const supabase = await createClient();
   const { data: loanProducts } = await supabase
     .from("loan_products")
-    .select("id, name, interest_rate, min_amount, max_amount, max_term_months")
+    .select("id, name, interest_rate, min_amount, max_amount, min_term_months, max_term_months")
     .eq("is_active", true);
 
   return (

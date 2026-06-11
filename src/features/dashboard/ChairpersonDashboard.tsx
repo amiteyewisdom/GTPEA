@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import ApprovalQueuePanel from '@/components/approvals/ApprovalQueuePanel';
 import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
@@ -45,6 +46,24 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
         <h1 className="text-2xl md:text-3xl font-bold text-brand-text mb-2">Executive Dashboard</h1>
         <p className="text-sm md:text-base text-brand-text-secondary">High-level financial oversight and strategic insights</p>
       </div>
+
+      <ApprovalQueuePanel
+        title="Final Approvals — Your Turn"
+        description="Stage 3 loan applications waiting for Chairperson sign-off."
+        items={stats.chairpersonQueue.map((loan) => ({
+          approvalId: loan.approvalId,
+          loanId: loan.id,
+          applicant: loan.applicant,
+          amount: loan.amount,
+          amountValue: 0,
+          duration: loan.duration,
+          purpose: loan.purpose,
+          currentStage: loan.currentStage,
+          totalStages: loan.totalStages,
+          riskScore: loan.riskScore,
+        }))}
+        emptyText="No applications waiting for final approval."
+      />
 
       {/* Executive KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

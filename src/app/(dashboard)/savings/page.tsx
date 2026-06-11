@@ -18,7 +18,10 @@ export default async function SavingsPage() {
 
   const typedSavings = savings as Savings[] | null;
 
-  const totalBalance = typedSavings?.reduce((sum, s) => sum + (s.balance ?? 0), 0) ?? 0;
+  const totalBalance =
+    typedSavings
+      ?.filter((s) => s.status === "active")
+      .reduce((sum, s) => sum + (s.balance ?? 0), 0) ?? 0;
 
   return <SavingsClient savings={typedSavings ?? []} total={count ?? 0} totalBalance={totalBalance} />;
 }
