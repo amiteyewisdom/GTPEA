@@ -4,7 +4,7 @@ export const APP_NAME = 'GTPEA';
 export const APP_DESCRIPTION = 'Ghana Teachers & Public Employees Association — Finance Platform';
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  super_admin: 'Super Admin',
+  super_admin: 'Administrator',
   administrator: 'Administrator',
   admin: 'Administrator',
   employee: 'Employee',

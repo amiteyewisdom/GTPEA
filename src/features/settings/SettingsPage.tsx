@@ -286,8 +286,7 @@ function RolesSettings() {
       
       <div className="space-y-4">
         {[
-          { name: 'Super Admin', count: 2, description: 'Full system access' },
-          { name: 'Administrator', count: 5, description: 'Operations management' },
+          { name: 'Administrator', count: 5, description: 'Full system access & operations management' },
           { name: 'Chairperson', count: 1, description: 'Executive oversight' },
           { name: 'Fund Manager', count: 3, description: 'Financial operations' },
           { name: 'Union Representative', count: 8, description: 'Loan reviews' },

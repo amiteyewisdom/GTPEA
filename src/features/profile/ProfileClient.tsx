@@ -59,14 +59,15 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
   };
 
   const roleColors: Record<string, { color: string; bg: string; border: string }> = {
-    super_admin:   { color: "#F87171", bg: "rgba(239,68,68,0.1)",    border: "rgba(239,68,68,0.25)"    },
+    super_admin:   { color: "#818CF8", bg: "rgba(99,102,241,0.1)",   border: "rgba(99,102,241,0.25)"   },
     administrator: { color: "#818CF8", bg: "rgba(99,102,241,0.1)",   border: "rgba(99,102,241,0.25)"   },
     fund_manager:  { color: "#22D3EE", bg: "rgba(6,182,212,0.1)",    border: "rgba(6,182,212,0.25)"    },
     chairperson:   { color: "#FCD34D", bg: "rgba(245,158,11,0.1)",   border: "rgba(245,158,11,0.25)"   },
     union_rep:     { color: "#34D399", bg: "rgba(16,185,129,0.1)",   border: "rgba(16,185,129,0.25)"   },
     employee:      { color: "#94A3B8", bg: "rgba(148,163,184,0.08)", border: "rgba(148,163,184,0.2)"   },
   };
-  const roleStyle = roleColors[profile?.role ?? "employee"] ?? roleColors.employee;
+  const displayRole = profile?.role === "super_admin" ? "administrator" : (profile?.role ?? "employee");
+  const roleStyle = roleColors[displayRole] ?? roleColors.employee;
 
   return (
     <Box sx={{ maxWidth: 720, display: "flex", flexDirection: "column", gap: 2.5 }}>
@@ -101,7 +102,7 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
             <Typography variant="body2" color="text.secondary">{email}</Typography>
             <Box sx={{ mt: 1 }}>
               <Chip
-                label={profile?.role?.replace("_", " ") ?? "employee"}
+                label={displayRole.replace("_", " ")}
                 size="small"
                 sx={{
                   height: 22, fontSize: "0.6875rem", fontWeight: 600,

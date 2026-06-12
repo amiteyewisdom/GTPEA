@@ -19,8 +19,17 @@ export function isNavItemActive(pathname: string, itemPath: string, allPaths: st
   return getActiveNavPath(pathname, allPaths) === itemPath;
 }
 
+const ROLE_LABEL_MAP: Record<string, string> = {
+  super_admin: "Administrator",
+  administrator: "Administrator",
+  fund_manager: "Fund Manager",
+  chairperson: "Chairperson",
+  union_rep: "Union Representative",
+  employee: "Employee",
+};
+
 export function formatRoleLabel(role: string): string {
-  return role
+  return ROLE_LABEL_MAP[role] ?? role
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");

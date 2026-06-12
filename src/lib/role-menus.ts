@@ -46,7 +46,7 @@ export interface MenuItem {
 }
 
 export const menuItems: MenuItem[] = [
-  // Super Admin
+  // Administrator
   {
     id: 'overview',
     label: 'Overview',

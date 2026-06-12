@@ -19,7 +19,7 @@ export default function RolesPage() {
               <Shield className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-brand-text font-semibold">Super Admin</h3>
+              <h3 className="text-brand-text font-semibold">Administrator</h3>
               <p className="text-brand-text-secondary text-xs">Full system access</p>
             </div>
           </div>
