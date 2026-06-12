@@ -74,13 +74,9 @@ export async function processApprovalAction(input: {
   if (action === "rejected") {
     approvalUpdates.status = "rejected";
     approvalUpdates.completed_at = new Date().toISOString();
-    approvalUpdates.final_reviewer = userId;
-    approvalUpdates.final_notes = notes || null;
   } else if (action === "approved" && isFinalStage) {
     approvalUpdates.status = "approved";
     approvalUpdates.completed_at = new Date().toISOString();
-    approvalUpdates.final_reviewer = userId;
-    approvalUpdates.final_notes = notes || null;
   }
 
   console.log("[processApprovalAction] updating approval:", approval.id, "with:", approvalUpdates);
