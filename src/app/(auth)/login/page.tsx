@@ -33,34 +33,29 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen w-full flex font-sans antialiased">
       
-      {/* LEFT SIDE: Image Section - Desktop Only */}
-      <div className="hidden lg:flex lg:w-[55%] xl:w-[60%] relative bg-gradient-to-br from-slate-50 to-slate-100 items-center justify-center overflow-hidden">
-        {/* Background subtle pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(45,122,77,0.05)_0%,transparent_50%)]" />
-        
-        {/* Centered Growth Image - Larger display */}
-        <div className="relative w-full h-full flex items-center justify-center p-8 xl:p-16">
-          <Image
-            src="/images/growth-coins.jpeg"
-            alt="Financial Growth"
-            fill
-            className="object-contain object-center p-8 xl:p-12"
-            priority
-            sizes="(max-width: 1280px) 55vw, 60vw"
-          />
-        </div>
+      {/* LEFT SIDE: Full Background Image - Desktop Only */}
+      <div className="hidden lg:flex lg:w-[55%] xl:w-[60%] relative items-center justify-center overflow-hidden">
+        {/* Full Background Image */}
+        <Image
+          src="/images/growth-coins.jpeg"
+          alt="Financial Growth"
+          fill
+          className="object-cover object-center"
+          priority
+          sizes="(max-width: 1280px) 55vw, 60vw"
+        />
 
         {/* Left Side Branding - Bottom Left */}
-        <div className="absolute bottom-8 left-8 text-slate-700">
+        <div className="absolute bottom-8 left-8 z-10">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 border-2 border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold bg-white shadow-sm">
+            <div className="w-8 h-8 border-2 border-[#b59a6d] rounded-full flex items-center justify-center text-[#b59a6d] font-bold bg-white/90 shadow-sm backdrop-blur-sm">
               <BadgeCent className="w-4 h-4" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-800">
-              GTPEA <span className="text-[#b59a6d]">Finance</span>
+            <span className="text-xl font-bold tracking-tight text-white drop-shadow-lg">
+              GTPEA <span className="text-[#e6c9a0]">Finance</span>
             </span>
           </div>
-          <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
+          <p className="text-sm text-white/90 max-w-xs leading-relaxed drop-shadow-md">
             Enterprise financial operations and lending platform
           </p>
         </div>
