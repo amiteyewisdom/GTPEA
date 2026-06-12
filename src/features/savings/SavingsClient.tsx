@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { DollarSign, Plus, X, CheckCircle, AlertCircle, Search, MoreVertical } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { DollarSign, Plus, X, CheckCircle, AlertCircle, Search, MoreVertical, Edit2, Lock } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
+import { useRouter } from "next/navigation";
 
 interface SavingsRow {
   id: string;
@@ -29,15 +30,54 @@ interface SavingsClientProps {
   totalBalance: number;
 }
 
+const LOCK_MONTHS = [1, 2, 3, 4];
+const currentMonth = new Date().getMonth() + 1;
+const isLockPeriod = LOCK_MONTHS.includes(currentMonth);
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 export function SavingsClient({ savings, total, totalBalance }: SavingsClientProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [showContributeForm, setShowContributeForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [formData, setFormData] = useState({
-    savings_id: "",
-    amount: "",
-  });
+  const [formData, setFormData] = useState({ savings_id: "", amount: "" });
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [updateContribModal, setUpdateContribModal] = useState<{ row: SavingsRow } | null>(null);
+  const [newContrib, setNewContrib] = useState("");
+  const [contribLoading, setContribLoading] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenuId(null);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const handleUpdateContrib = async () => {
+    if (!updateContribModal) return;
+    setContribLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/savings/update-contribution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ savings_id: updateContribModal.row.id, monthly_contribution: Number(newContrib) }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload?.error || "Update failed.");
+      setMessage({ type: "success", text: payload.message });
+      setUpdateContribModal(null);
+      setNewContrib("");
+      router.refresh();
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Update failed." });
+    } finally {
+      setContribLoading(false);
+    }
+  };
 
   const filtered = savings.filter((s) => {
     const q = search.toLowerCase();
@@ -269,9 +309,25 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button className="text-brand-text-secondary hover:text-brand-text">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        <div className="relative inline-block" ref={openMenuId === s.id ? menuRef : undefined}>
+                          <button
+                            onClick={() => setOpenMenuId(openMenuId === s.id ? null : s.id)}
+                            className="text-brand-text-secondary hover:text-brand-text p-1 rounded hover:bg-brand-hover"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                          {openMenuId === s.id && (
+                            <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-brand-card-border rounded-lg shadow-lg z-20 overflow-hidden">
+                              <button
+                                onClick={() => { setUpdateContribModal({ row: s }); setNewContrib(String(s.monthly_contribution)); setOpenMenuId(null); }}
+                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-text hover:bg-brand-hover transition-colors"
+                              >
+                                {isLockPeriod ? <Lock className="w-4 h-4 text-orange-500" /> : <Edit2 className="w-4 h-4" />}
+                                Change Monthly Amount
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -281,6 +337,64 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
           </table>
         </div>
       </GlassCard>
+
+      {/* Update monthly contribution modal */}
+      {updateContribModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-brand-text">Change Monthly Contribution</h3>
+              <button onClick={() => { setUpdateContribModal(null); setNewContrib(""); }} className="text-brand-text-secondary hover:text-brand-text">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-brand-text-secondary mb-1">
+              Account: <span className="font-semibold text-brand-text">{updateContribModal.row.account_number}</span>
+            </p>
+            <p className="text-sm text-brand-text-secondary mb-4">
+              Current: <span className="font-semibold text-brand-text">{formatCurrency(updateContribModal.row.monthly_contribution)}/month</span>
+            </p>
+            {isLockPeriod && (
+              <div className="flex items-start gap-2 p-3 mb-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <Lock className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-orange-700">
+                  <span className="font-semibold">Contribution changes are locked</span> during January–April (payroll processing period). Changes will be accepted from May onwards.
+                </p>
+              </div>
+            )}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-brand-text mb-1">New Monthly Amount (GHS)</label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-secondary" />
+                <input
+                  type="number"
+                  value={newContrib}
+                  onChange={(e) => setNewContrib(e.target.value)}
+                  min="1"
+                  disabled={isLockPeriod}
+                  className="w-full pl-9 pr-4 py-2.5 border border-brand-card-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  placeholder="e.g. 500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setUpdateContribModal(null); setNewContrib(""); }}
+                className="px-4 py-2 border border-brand-card-border text-brand-text rounded-lg hover:bg-brand-hover text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateContrib}
+                disabled={isLockPeriod || contribLoading || !newContrib}
+                className="px-4 py-2 bg-brand-green text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-brand-green/90 transition-all"
+              >
+                {contribLoading ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,6 +10,7 @@ export default async function EmployeesPage() {
   const { data: employees, count } = await supabase
     .from("employees")
     .select("*", { count: "exact" })
+    .not("email", "eq", "superadmin@gtpea.com")
     .order("created_at", { ascending: false });
 
   return <EmployeesClient employees={employees ?? []} total={count ?? 0} />;

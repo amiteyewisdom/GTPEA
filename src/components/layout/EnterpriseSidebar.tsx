@@ -7,6 +7,8 @@ import { getMenuItemsForRole, UserRole } from "@/lib/role-menus";
 import { formatRoleLabel, isNavItemActive } from "@/lib/navigation";
 import LogoutButton from "./LogoutButton";
 
+const BADGE_PATHS = ['/approvals', '/loan-reviews', '/final-approvals'];
+
 type EnterpriseSidebarProps = {
   currentRole: UserRole;
   userName?: string;
@@ -14,6 +16,7 @@ type EnterpriseSidebarProps = {
   onClose?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  pendingCount?: number;
 };
 
 export default function EnterpriseSidebar({
@@ -23,6 +26,7 @@ export default function EnterpriseSidebar({
   onClose,
   isCollapsed = false,
   onToggleCollapse,
+  pendingCount = 0,
 }: EnterpriseSidebarProps) {
   const pathname = usePathname();
   const menuItems = getMenuItemsForRole(currentRole);
@@ -96,9 +100,19 @@ export default function EnterpriseSidebar({
                     {isActive && (
                       <span className="absolute bottom-2 left-0 top-2 w-1 rounded-r-full bg-brand-green" />
                     )}
-                    <Icon className="h-5 w-5 shrink-0" />
+                    <span className="relative">
+                      <Icon className="h-5 w-5 shrink-0" />
+                      {isCollapsed && pendingCount > 0 && BADGE_PATHS.includes(item.path) && (
+                        <span className="absolute -right-1 -top-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white" />
+                      )}
+                    </span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
-                    {!isCollapsed && isActive && (
+                    {!isCollapsed && pendingCount > 0 && BADGE_PATHS.includes(item.path) && (
+                      <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                        {pendingCount > 99 ? "99+" : pendingCount}
+                      </span>
+                    )}
+                    {!isCollapsed && isActive && !BADGE_PATHS.includes(item.path) && (
                       <ChevronRight className="ml-auto h-4 w-4 text-brand-green" />
                     )}
                   </Link>

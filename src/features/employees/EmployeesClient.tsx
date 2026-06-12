@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useDownload } from "@/hooks/use-download";
+import { useRouter } from "next/navigation";
 import type { Employee } from "@/types/database";
 
 interface EmployeesClientProps {
@@ -13,11 +14,54 @@ interface EmployeesClientProps {
 }
 
 export function EmployeesClient({ employees, total }: EmployeesClientProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const { download, loading: exporting } = useDownload();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [suspendModal, setSuspendModal] = useState<{ employee: Employee; action: 'suspend' | 'unsuspend' } | null>(null);
+  const [suspendReason, setSuspendReason] = useState("");
+  const [suspendLoading, setSuspendLoading] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSuspendAction = async () => {
+    if (!suspendModal) return;
+    setSuspendLoading(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/employees/suspend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employee_id: suspendModal.employee.id,
+          action: suspendModal.action,
+          reason: suspendReason.trim(),
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Action failed.");
+      setMessage({ type: "success", text: payload.message });
+      setSuspendModal(null);
+      setSuspendReason("");
+      router.refresh();
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Action failed." });
+    } finally {
+      setSuspendLoading(false);
+    }
+  };
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -317,9 +361,35 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button className="text-brand-text-secondary hover:text-brand-text">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
+                        <div className="relative inline-block" ref={openMenuId === emp.id ? menuRef : undefined}>
+                          <button
+                            onClick={() => setOpenMenuId(openMenuId === emp.id ? null : emp.id)}
+                            className="text-brand-text-secondary hover:text-brand-text p-1 rounded hover:bg-brand-hover"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                          {openMenuId === emp.id && (
+                            <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-brand-card-border rounded-lg shadow-lg z-20 overflow-hidden">
+                              {emp.status !== "suspended" ? (
+                                <button
+                                  onClick={() => { setSuspendModal({ employee: emp, action: "suspend" }); setOpenMenuId(null); }}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  <ShieldOff className="w-4 h-4" />
+                                  Suspend Account
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => { setSuspendModal({ employee: emp, action: "unsuspend" }); setOpenMenuId(null); }}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 transition-colors"
+                                >
+                                  <ShieldCheck className="w-4 h-4" />
+                                  Reactivate Account
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -329,6 +399,57 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
           </table>
         </div>
       </GlassCard>
+
+      {/* Suspend / Unsuspend confirmation modal */}
+      {suspendModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-brand-text mb-2">
+              {suspendModal.action === "suspend" ? "Suspend Account" : "Reactivate Account"}
+            </h3>
+            <p className="text-sm text-brand-text-secondary mb-4">
+              {suspendModal.action === "suspend"
+                ? `Are you sure you want to suspend ${suspendModal.employee.first_name} ${suspendModal.employee.last_name}? They will not be able to apply for loans while suspended.`
+                : `Reactivate ${suspendModal.employee.first_name} ${suspendModal.employee.last_name}'s account?`}
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-brand-text mb-1">
+                Reason <span className="text-brand-text-secondary font-normal">(optional)</span>
+              </label>
+              <textarea
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                rows={2}
+                placeholder="Brief reason for this action…"
+                className="w-full px-3 py-2 border border-brand-card-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green resize-none"
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => { setSuspendModal(null); setSuspendReason(""); }}
+                className="px-4 py-2 border border-brand-card-border text-brand-text rounded-lg hover:bg-brand-hover text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSuspendAction}
+                disabled={suspendLoading}
+                className={`px-4 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-50 transition-all ${
+                  suspendModal.action === "suspend"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-brand-green hover:bg-brand-green/90"
+                }`}
+              >
+                {suspendLoading
+                  ? "Processing…"
+                  : suspendModal.action === "suspend"
+                  ? "Confirm Suspend"
+                  : "Confirm Reactivate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,7 +6,22 @@ import { getLoggedInEmployee } from "@/lib/loans/employee";
 import { calculateMonthlyRepayment, formatCurrency, generateReference } from "@/utils/formatters";
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  let body: any;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  try {
+    return await handleApply(body);
+  } catch (err: any) {
+    console.error("[/api/loans/apply] Unhandled error:", err?.message ?? err);
+    return NextResponse.json({ error: err?.message ?? "Internal server error." }, { status: 500 });
+  }
+}
+
+async function handleApply(body: any) {
   const principal = Number(body?.principal);
   const durationMonths = Number(body?.duration_months);
   const loanProductId = String(body?.loan_product_id || "");
@@ -30,19 +45,20 @@ export async function POST(request: Request) {
   if (!employee) {
     return NextResponse.json(
       { error: "Employee profile not found. Make sure your account is linked to an employee record." },
-      { status: 404 }
+      { status: 400 }
     );
   }
 
   const productRes = await supabase
     .from("loan_products")
-    .select("id, interest_rate, min_amount, max_amount, min_term_months, max_term_months, is_active")
+    .select("id, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, is_active")
     .eq("id", loanProductId)
     .single();
 
   const product = productRes.data as {
     id: string;
     interest_rate: number;
+    interest_calc_method: 'reducing_balance' | 'flat_rate';
     min_amount: number;
     max_amount: number;
     min_term_months: number;
@@ -79,10 +95,12 @@ export async function POST(request: Request) {
     );
   }
 
+  const calcMethod = product.interest_calc_method ?? 'reducing_balance';
   const monthlyRepayment = calculateMonthlyRepayment(
     principal,
     Number(product.interest_rate),
-    durationMonths
+    durationMonths,
+    calcMethod
   );
   const loanRef = generateReference("LOAN");
   const admin = createAdminClient();
@@ -97,6 +115,7 @@ export async function POST(request: Request) {
       amount_disbursed: null,
       outstanding_balance: 0,
       interest_rate: Number(product.interest_rate),
+      interest_calc_method: calcMethod,
       processing_fee: 0,
       term_months: durationMonths,
       monthly_repayment: monthlyRepayment,

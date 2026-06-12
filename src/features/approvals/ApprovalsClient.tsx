@@ -52,6 +52,8 @@ interface ApprovalRow {
     monthly_repayment: number;
     term_months: number;
     interest_rate: number;
+    interest_calc_method?: string | null;
+    product_name?: string | null;
   } | null;
   withdrawal_details?: {
     amount: number;
@@ -373,6 +375,20 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                       <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Interest Rate</Typography>
                       <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{selected.loan_details.interest_rate}%</Typography>
                     </Box>
+                    {selected.loan_details.product_name && (
+                      <Box>
+                        <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Loan Product</Typography>
+                        <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>{selected.loan_details.product_name}</Typography>
+                      </Box>
+                    )}
+                    {selected.loan_details.interest_calc_method && (
+                      <Box>
+                        <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Calc. Method</Typography>
+                        <Typography sx={{ fontSize: "0.875rem", fontWeight: 600 }}>
+                          {selected.loan_details.interest_calc_method === "flat_rate" ? "Flat Rate" : "Reducing Balance"}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               )}

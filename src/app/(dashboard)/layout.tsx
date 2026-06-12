@@ -4,6 +4,21 @@ import { redirect } from "next/navigation";
 import EnterpriseLayout from "@/components/layout/EnterpriseLayout";
 import { UserRole } from "@/lib/role-menus";
 
+const APPROVER_ROLES = ["union_rep", "fund_manager", "chairperson", "administrator"];
+
+async function fetchPendingCount(supabase: any, role: string): Promise<number> {
+  if (!APPROVER_ROLES.includes(role)) return 0;
+  try {
+    const { count } = await supabase
+      .from("approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending");
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -26,18 +41,15 @@ export default async function DashboardLayout({
       .eq("user_id", user.id)
       .single();
     const profile = profileRes.data as Profile | null;
+    const role = profile?.role ?? "employee";
 
-    const userInfo = {
-      full_name: profile?.full_name ?? user.email ?? "User",
-      role: profile?.role ?? "employee",
-      avatar_url: profile?.avatar_url ?? null,
-      email: user.email ?? "",
-    };
+    const pendingCount = await fetchPendingCount(supabase, role);
 
     return (
       <EnterpriseLayout
-        currentRole={(profile?.role as UserRole) || "employee"}
-        userName={userInfo.full_name}
+        currentRole={(role as UserRole) || "employee"}
+        userName={profile?.full_name ?? user.email ?? "User"}
+        pendingCount={pendingCount}
       >
         {children}
       </EnterpriseLayout>

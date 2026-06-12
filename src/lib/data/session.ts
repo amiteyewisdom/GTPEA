@@ -25,9 +25,17 @@ export async function getSessionProfile() {
 }
 
 export async function resolveEmployeeUuid(supabase: any, employeeRef: string) {
-  const byId = await supabase.from("employees").select("id").eq("id", employeeRef).maybeSingle();
-  if (byId.data?.id) return byId.data.id as string;
+  // Try by UUID (cast text to uuid safely)
+  try {
+    const byId = await supabase
+      .from("employees")
+      .select("id")
+      .filter("id", "eq", employeeRef)
+      .maybeSingle();
+    if (byId.data?.id) return byId.data.id as string;
+  } catch {}
 
+  // Fallback: try by employee_no
   const byNo = await supabase.from("employees").select("id").eq("employee_no", employeeRef).maybeSingle();
   return (byNo.data?.id as string) ?? null;
 }

@@ -11,17 +11,18 @@ export default async function SavingsPage() {
   const { data: savings, count } = await supabase
     .from("savings")
     .select(
-      `*, employees (first_name, last_name, employee_no, department)`,
+      `*, employees (first_name, last_name, employee_no, department, email)`,
       { count: "exact" }
     )
     .order("created_at", { ascending: false });
 
-  const typedSavings = savings as Savings[] | null;
+  const allSavings = (savings ?? []) as any[];
+  const filteredSavings = allSavings.filter((s) => s.employees?.email !== "superadmin@gtpea.com");
+  const typedSavings = filteredSavings as Savings[];
 
-  const totalBalance =
-    typedSavings
-      ?.filter((s) => s.status === "active")
-      .reduce((sum, s) => sum + (s.balance ?? 0), 0) ?? 0;
+  const totalBalance = typedSavings
+    .filter((s) => s.status === "active")
+    .reduce((sum, s) => sum + (s.balance ?? 0), 0);
 
   return <SavingsClient savings={typedSavings ?? []} total={count ?? 0} totalBalance={totalBalance} />;
 }

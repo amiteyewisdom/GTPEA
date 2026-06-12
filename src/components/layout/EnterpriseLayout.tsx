@@ -10,12 +10,14 @@ type EnterpriseLayoutProps = {
   children: React.ReactNode;
   currentRole: UserRole;
   userName?: string;
+  pendingCount?: number;
 };
 
 export default function EnterpriseLayout({
   children,
   currentRole,
   userName = "User",
+  pendingCount = 0,
 }: EnterpriseLayoutProps) {
   const { isOpen, isCollapsed, open, close, toggleCollapse } = useSidebarState();
   const sidebarWidth = isCollapsed ? "5rem" : "17.5rem";
@@ -29,6 +31,7 @@ export default function EnterpriseLayout({
         onClose={close}
         isCollapsed={isCollapsed}
         onToggleCollapse={toggleCollapse}
+        pendingCount={pendingCount}
       />
 
       <div
@@ -46,7 +49,7 @@ export default function EnterpriseLayout({
           <div className="p-4 md:p-6 lg:p-8">{children}</div>
         </main>
 
-        <MobileBottomNav currentRole={currentRole} onOpenMenu={open} />
+        <MobileBottomNav currentRole={currentRole} onOpenMenu={open} pendingCount={pendingCount} />
       </div>
     </div>
   );

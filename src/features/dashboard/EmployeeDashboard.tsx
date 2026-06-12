@@ -43,8 +43,8 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
             Manage your savings, loans, and financial goals
           </p>
           <div className="flex flex-wrap gap-4">
-            <button onClick={() => router.push('/loans')} className="flex items-center gap-2 px-6 py-3 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all">
-              <DollarSign className="w-5 h-5" />
+            <button onClick={() => router.push('/apply-loan')} className="flex items-center gap-2 px-6 py-3 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all">
+              <span className="text-base font-bold leading-none">GH₵</span>
               Apply for Loan
             </button>
             <button className="flex items-center gap-2 px-6 py-3 bg-brand-card-bg border border-brand-card-border text-brand-text font-semibold rounded-lg hover:bg-brand-hover transition-all">
@@ -95,24 +95,28 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
           description="Submit a new loan application"
           icon={DollarSign}
           color="bg-brand-accent/20 text-brand-accent"
+          href="/apply-loan"
         />
         <QuickActionCard
           title="View Savings"
           description="Check your savings history"
           icon={PiggyBank}
           color="bg-brand-success/20 text-brand-success"
+          href="/savings-history"
         />
         <QuickActionCard
           title="My Loans"
           description="View active and past loans"
           icon={Briefcase}
           color="bg-brand-warning/20 text-brand-warning"
+          href="/my-loans"
         />
         <QuickActionCard
           title="Withdrawals"
           description="Request savings withdrawal"
           icon={TrendingUp}
           color="bg-brand-accent/20 text-brand-accent"
+          href="/withdrawal-history"
         />
       </div>
 
@@ -198,11 +202,17 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
   );
 }
 
-function QuickActionCard({ title, description, icon: Icon, color }: any) {
+function QuickActionCard({ title, description, icon: Icon, color, href }: any) {
+  const router = useRouter();
   return (
-    <GlassCard className="p-5 hover:bg-brand-hover transition-all cursor-pointer group">
-      <div className={`p-3 rounded-lg ${color} mb-4 group-hover:scale-110 transition-transform`}>
-        <Icon className="w-6 h-6" />
+    <GlassCard
+      className="p-5 hover:bg-brand-hover transition-all cursor-pointer group"
+      onClick={() => href && router.push(href)}
+    >
+      <div className={`p-3 rounded-lg ${color} mb-4 group-hover:scale-110 transition-transform flex items-center justify-center w-12 h-12`}>
+        {title === "Apply Loan"
+          ? <span className="text-lg font-bold leading-none">GH₵</span>
+          : <Icon className="w-6 h-6" />}
       </div>
       <h4 className="text-brand-text font-semibold mb-1">{title}</h4>
       <p className="text-brand-text-secondary text-sm">{description}</p>

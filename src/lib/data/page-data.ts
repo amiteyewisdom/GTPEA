@@ -243,6 +243,7 @@ export async function fetchUsersData() {
   const { data } = await supabase
     .from("profiles")
     .select("id, full_name, role, employee_id, is_active, created_at, user_id")
+    .neq("role", "super_admin")
     .order("created_at", { ascending: false });
 
   return {
@@ -263,6 +264,7 @@ export async function fetchMembersData() {
     .from("employees")
     .select("id, first_name, last_name, employee_no, department, status, email")
     .eq("status", "active")
+    .not("email", "eq", "superadmin@gtpea.com")
     .order("last_name", { ascending: true });
 
   return {

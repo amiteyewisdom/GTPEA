@@ -25,6 +25,7 @@ interface LoanRow {
   outstanding_balance: number;
   monthly_repayment: number;
   interest_rate: number;
+  interest_calc_method?: "reducing_balance" | "flat_rate";
   term_months: number;
   disbursement_date: string | null;
   created_at: string;
@@ -36,10 +37,13 @@ interface LoanProductOption {
   id: string;
   name: string;
   interest_rate: number;
+  interest_calc_method: "reducing_balance" | "flat_rate";
   min_amount: number;
   max_amount: number;
   min_term_months: number;
   max_term_months: number;
+  account_code?: string | null;
+  description?: string | null;
 }
 
 interface LoansClientProps {
@@ -366,15 +370,16 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
                     {generateAmortizationSchedule(
                       selectedLoan.amount_requested,
                       selectedLoan.term_months,
-                      selectedLoan.interest_rate,
-                      selectedLoan.disbursement_date ? new Date(selectedLoan.disbursement_date) : undefined
+                      selectedLoan.interest_rate * 100,
+                      selectedLoan.disbursement_date ? new Date(selectedLoan.disbursement_date) : undefined,
+                      selectedLoan.interest_calc_method ?? 'reducing_balance'
                     ).map((payment, index) => (
                       <TableRow key={index} hover>
                         <TableCell>{payment.month}</TableCell>
                         <TableCell align="right">{formatCurrency(payment.principal)}</TableCell>
                         <TableCell align="right">{formatCurrency(payment.interest)}</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600 }}>{formatCurrency(payment.total)}</TableCell>
-                        <TableCell align="right">{formatCurrency(payment.balance)}</TableCell>
+                        <TableCell align="right">{formatCurrency(payment.closing_balance)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

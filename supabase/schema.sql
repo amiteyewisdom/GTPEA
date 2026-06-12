@@ -24,12 +24,12 @@ DO $$ BEGIN CREATE TYPE beneficiary_relation AS ENUM ('spouse','child','parent',
 DO $$ BEGIN CREATE TYPE statement_status AS ENUM ('pending','processing','ready','downloaded'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN CREATE TYPE statement_type AS ENUM ('savings','loan','dividend','full_account'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN CREATE TYPE ledger_account_type AS ENUM ('savings','loan','loan_repayment','withdrawal','interest','dividend','penalty','fee'); EXCEPTION WHEN duplicate_object THEN null; END $$;
-DO $$ BEGIN CREATE TYPE approval_stage_role AS ENUM ('union_rep','fund_manager','chairman'); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE TYPE approval_stage_role AS ENUM ('union_rep','fund_manager','chairperson'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 -- Add new role values to existing enums (safe for re-run)
 DO $$ BEGIN ALTER TYPE user_role ADD VALUE 'super_admin'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TYPE user_role ADD VALUE 'administrator'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TYPE user_role ADD VALUE 'chairperson'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN ALTER TYPE approval_stage_role ADD VALUE 'chairperson'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- chairperson already in approval_stage_role enum above
 
 
 -- =============================================================================
@@ -177,6 +177,7 @@ CREATE TABLE IF NOT EXISTS loan_products (
   interest_calc_method      interest_method NOT NULL DEFAULT 'reducing_balance',
   requires_guarantor        BOOLEAN NOT NULL DEFAULT FALSE,
   max_loan_to_salary_ratio  NUMERIC(5, 2) NOT NULL DEFAULT 3,
+  account_code              TEXT,
   is_active                 BOOLEAN NOT NULL DEFAULT TRUE,
   created_by                UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -207,6 +208,7 @@ CREATE TABLE IF NOT EXISTS loans (
   amount_disbursed          NUMERIC(15, 2),
   outstanding_balance       NUMERIC(15, 2) NOT NULL DEFAULT 0,
   interest_rate             NUMERIC(5, 4) NOT NULL,
+  interest_calc_method      interest_method NOT NULL DEFAULT 'reducing_balance',
   processing_fee            NUMERIC(15, 2) NOT NULL DEFAULT 0,
   term_months               INTEGER NOT NULL,
   monthly_repayment         NUMERIC(15, 2) NOT NULL DEFAULT 0,
@@ -1109,11 +1111,13 @@ CREATE POLICY "System can insert login events"
 -- 5. SEED: Default loan products (GHS amounts)
 -- =============================================================================
 
-INSERT INTO loan_products (name, description, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, processing_fee_percent, requires_guarantor, max_loan_to_salary_ratio)
+-- GTPEA Loan Products (correct products per business spec)
+INSERT INTO loan_products (name, description, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, processing_fee_percent, requires_guarantor, max_loan_to_salary_ratio, is_active)
 VALUES
-  ('Emergency Loan',   'Short-term emergency financial support', 0.05, 'flat_rate',         500,    5000,  1,  6,  0.01,  FALSE, 1),
-  ('Regular Loan',     'Standard staff cooperative loan',        0.10, 'reducing_balance',  1000,  20000,  3,  24, 0.02,  FALSE, 3),
-  ('Education Loan',   'For staff education and training',       0.08, 'reducing_balance',  1000,  10000,  6,  36, 0.015, TRUE,  2),
-  ('Housing Loan',     'For housing and home improvement',       0.12, 'reducing_balance', 10000, 100000, 12,  60, 0.025, TRUE,  5),
-  ('Business Loan',    'For staff business ventures',            0.15, 'reducing_balance',  2000,  50000,  6,  48, 0.03,  TRUE,  4)
+  ('Normal Loan',   'Standard reducing balance loan. Interest calculated monthly on remaining principal.',                              0.02,  'reducing_balance', 500,    100000, 1,  48, 0.00, FALSE, 3, TRUE),
+  ('Hire Purchase', 'Fixed asset / consumables financing. Flat rate interest calculated upfront on full principal divided across term.', 0.025, 'flat_rate',        200,    50000,  1,  12, 0.00, FALSE, 2, TRUE),
+  ('Quick Cash',    'Short-term emergency facility. 5% reducing balance monthly rate on remaining balance.',                            0.05,  'reducing_balance', 100,    10000,  1,  6,  0.00, FALSE, 1, TRUE),
+  ('Land',          'Long-term property/land support. 2% reducing balance or amortization over up to 4 years.',                        0.02,  'reducing_balance', 1000,   500000, 6,  48, 0.00, TRUE,  5, TRUE),
+  ('School Fees',   'Targeted tuition support. Fixed repayment aligned to academic calendar (up to 4 months).',                        0.025, 'flat_rate',        100,    30000,  1,  4,  0.00, FALSE, 2, TRUE),
+  ('Car Loan',      'Vehicle acquisition loan. Rates and terms set by fund manager.',                                                  0.02,  'reducing_balance', 5000,   300000, 12, 60, 0.00, TRUE,  4, TRUE)
 ON CONFLICT DO NOTHING;

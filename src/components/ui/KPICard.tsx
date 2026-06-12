@@ -73,12 +73,13 @@ export function KPICard({
   return (
     <Box
       sx={{
-        bgcolor: "#0E1117",
+        bgcolor: "#ffffff",
         border: `1px solid ${colors.border}`,
         borderRadius: 2,
         p: 2.5,
         position: "relative",
         overflow: "hidden",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
         transition: "border-color 0.2s ease, box-shadow 0.2s ease",
         "&:hover": {
           boxShadow: `0 0 0 1px ${colors.border}, 0 8px 32px ${colors.glow}`,
@@ -110,7 +111,7 @@ export function KPICard({
               fontWeight: 600,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#64748B",
+              color: "#6B7280",
             }}
           >
             {title}
@@ -143,7 +144,7 @@ export function KPICard({
           sx={{
             fontSize: "1.875rem",
             fontWeight: 700,
-            color: "#E2E8F0",
+            color: "#111827",
             lineHeight: 1,
             mb: 0.5,
             letterSpacing: "-0.02em",
@@ -164,7 +165,7 @@ export function KPICard({
           </Box>
         )}
         {subtitle && !loading && (
-          <Typography sx={{ fontSize: "0.75rem", color: "#475569" }}>
+          <Typography sx={{ fontSize: "0.75rem", color: "#6B7280" }}>
             {subtitle}
           </Typography>
         )}

@@ -28,7 +28,7 @@ export async function fetchApprovalsList() {
       ? supabase
           .from("loans")
           .select(
-            "id, employee_id, amount_requested, amount_approved, outstanding_balance, monthly_repayment, term_months, interest_rate"
+            "id, employee_id, amount_requested, amount_approved, outstanding_balance, monthly_repayment, term_months, interest_rate, interest_calc_method, loan_products (name, account_code)"
           )
           .in("id", loanIds)
       : Promise.resolve({ data: [] as any[] }),
@@ -40,8 +40,8 @@ export async function fetchApprovalsList() {
       : Promise.resolve({ data: [] as any[] }),
   ]);
 
-  const loanMap = new Map((loansRes.data ?? []).map((loan: any) => [loan.id, loan]));
-  const withdrawalMap = new Map(
+  const loanMap = new Map<string, any>((loansRes.data ?? []).map((loan: any) => [loan.id, loan]));
+  const withdrawalMap = new Map<string, any>(
     (withdrawalsRes.data ?? []).map((withdrawal: any) => [withdrawal.id, withdrawal])
   );
 
@@ -99,6 +99,8 @@ export async function fetchApprovalsList() {
             monthly_repayment: loan.monthly_repayment,
             term_months: loan.term_months,
             interest_rate: loan.interest_rate,
+            interest_calc_method: loan.interest_calc_method ?? null,
+            product_name: loan.loan_products?.name ?? null,
           }
         : null,
       withdrawal_details: withdrawal

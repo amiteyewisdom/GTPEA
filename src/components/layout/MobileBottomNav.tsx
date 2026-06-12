@@ -7,12 +7,15 @@ import { Menu } from "lucide-react";
 import { UserRole, getMenuItemsForRole } from "@/lib/role-menus";
 import { isNavItemActive } from "@/lib/navigation";
 
+const BADGE_PATHS = ['/approvals', '/loan-reviews', '/final-approvals'];
+
 interface MobileBottomNavProps {
   currentRole: UserRole;
   onOpenMenu: () => void;
+  pendingCount?: number;
 }
 
-export default function MobileBottomNav({ currentRole, onOpenMenu }: MobileBottomNavProps) {
+export default function MobileBottomNav({ currentRole, onOpenMenu, pendingCount = 0 }: MobileBottomNavProps) {
   const pathname = usePathname();
   const menuItems = getMenuItemsForRole(currentRole);
   const menuPaths = menuItems.map((item) => item.path);
@@ -38,7 +41,12 @@ export default function MobileBottomNav({ currentRole, onOpenMenu }: MobileBotto
                 isActive ? "text-brand-green" : "text-brand-text-secondary hover:text-brand-text"
               }`}
             >
-              <Icon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+              <span className="relative">
+                <Icon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+                {pendingCount > 0 && BADGE_PATHS.includes(item.path) && (
+                  <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500" />
+                )}
+              </span>
               <span className="w-full truncate text-[10px] font-medium">{item.label}</span>
             </Link>
           );
