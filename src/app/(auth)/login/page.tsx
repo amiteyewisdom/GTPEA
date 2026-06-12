@@ -36,7 +36,7 @@ export default function LoginPage() {
       {/* FULL PAGE BACKGROUND IMAGE */}
       <div className="fixed inset-0 z-0">
         <Image
-          src="/images/login-bg-new.jpg"
+          src="/images/login-bg-new.jpeg"
           alt="GTPEA Finance Background"
           fill
           className="object-cover object-center"
