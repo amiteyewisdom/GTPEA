@@ -38,15 +38,15 @@ export default function LoginPage() {
         {/* Background subtle pattern */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(45,122,77,0.05)_0%,transparent_50%)]" />
         
-        {/* Centered Growth Image */}
-        <div className="relative w-full max-w-lg xl:max-w-xl px-12">
+        {/* Centered Growth Image - Larger display */}
+        <div className="relative w-full h-full flex items-center justify-center p-8 xl:p-16">
           <Image
             src="/images/growth-coins.jpeg"
             alt="Financial Growth"
-            width={600}
-            height={600}
-            className="w-full h-auto object-contain drop-shadow-2xl"
+            fill
+            className="object-contain object-center p-8 xl:p-12"
             priority
+            sizes="(max-width: 1280px) 55vw, 60vw"
           />
         </div>
 
