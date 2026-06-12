@@ -3,7 +3,7 @@
 import GlassCard from "@/components/ui/GlassCard";
 import SearchableList from "@/components/data/SearchableList";
 import { formatCurrency, formatDate } from "@/utils/formatters";
-import { CheckCircle, Clock, DollarSign } from "lucide-react";
+import { CheckCircle, Clock, BadgeCent } from "lucide-react";
 
 export function MyLoansClient({
   pending,
@@ -26,7 +26,7 @@ export function MyLoansClient({
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <StatCard icon={Clock} label="Pending" value={String(pending)} color="text-brand-warning" />
           <StatCard icon={CheckCircle} label="Active" value={String(active)} color="text-brand-success" />
-          <StatCard icon={DollarSign} label="Total Borrowed" value={formatCurrency(totalBorrowed)} color="text-brand-accent" />
+          <StatCard icon={BadgeCent} label="Total Borrowed" value={formatCurrency(totalBorrowed)} color="text-brand-accent" />
         </div>
       }
       items={loans.map((loan) => ({
@@ -34,7 +34,7 @@ export function MyLoansClient({
         searchText: `${loan.loan_ref} ${loan.purpose ?? ""} ${loan.status}`,
         content: (
           <div className="flex items-center gap-4 rounded-lg bg-brand-card-bg p-4">
-            <DollarSign className="h-5 w-5 text-brand-accent" />
+            <BadgeCent className="h-5 w-5 text-brand-accent" />
             <div className="flex-1">
               <p className="text-sm font-medium text-brand-text">{loan.loan_ref}</p>
               <p className="text-xs text-brand-text-secondary">

@@ -11,7 +11,7 @@ import {
   XCircle,
   Star,
   ClipboardList,
-  DollarSign,
+  BadgeCent,
   PiggyBank,
   TrendingUp,
   UserCheck
@@ -214,7 +214,7 @@ function EmployeeEligibilityCard({
       {/* Financial Metrics */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <MetricItem icon={PiggyBank} label="Savings" value={currentSavings} />
-        <MetricItem icon={DollarSign} label="Loans" value={currentLoans} />
+        <MetricItem icon={BadgeCent} label="Loans" value={currentLoans} />
         <MetricItem icon={TrendingUp} label="Monthly Repayment" value={monthlyRepayments} />
         <MetricItem icon={Star} label="Eligibility Score" value={`${eligibilityScore}%`} highlight={eligibilityScore >= 80} />
       </div>

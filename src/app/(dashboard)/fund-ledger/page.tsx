@@ -3,7 +3,7 @@ import { LedgerClient } from "@/features/ledger/LedgerClient";
 import { fetchLedgerSummary } from "@/lib/data/page-data";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency } from "@/utils/formatters";
-import { Minus, Plus, DollarSign } from "lucide-react";
+import { Minus, Plus, BadgeCent } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Fund Ledger" };
@@ -50,7 +50,7 @@ export default async function FundLedgerPage() {
         <GlassCard className="p-6">
           <div className="mb-2 flex items-center gap-3">
             <div className="rounded-lg bg-brand-card-bg p-3 text-brand-accent">
-              <DollarSign className="h-5 w-5" />
+              <BadgeCent className="h-5 w-5" />
             </div>
             <span className="text-sm text-brand-text-secondary">Current Balance</span>
           </div>

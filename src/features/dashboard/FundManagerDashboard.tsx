@@ -6,7 +6,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
   Wallet,
-  DollarSign,
+  BadgeCent,
   CreditCard,
   TrendingUp,
   Calendar,
@@ -60,7 +60,7 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
           value={formatCurrency(
             stats.upcomingRepayments.reduce((acc, item) => acc + item.amountValue, 0)
           )}
-          icon={DollarSign}
+          icon={BadgeCent}
           color="text-brand-success"
         />
         <DashboardStatCard

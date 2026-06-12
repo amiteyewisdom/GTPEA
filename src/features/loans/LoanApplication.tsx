@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { addMonths, format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { DollarSign, Calendar, Percent, AlertCircle, CheckCircle, X, ChevronDown, ChevronUp, Info } from "lucide-react";
+import { BadgeCent, Calendar, Percent, AlertCircle, CheckCircle, X, ChevronDown, ChevronUp, Info } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import {
   formatCurrency,
@@ -315,11 +315,11 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
           <h4 className="text-lg font-semibold text-brand-text mb-4">Loan Summary</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Requested Amount", value: formatCurrency(principal), icon: DollarSign },
+              { label: "Requested Amount", value: formatCurrency(principal), icon: BadgeCent },
               { label: "Interest Rate", value: `${(selectedProduct.interest_rate * 100).toFixed(2)}% p.m.`, icon: Percent },
-              { label: "Total Interest", value: formatCurrency(interestAmount), icon: DollarSign },
-              { label: "Total Repayment", value: formatCurrency(totalRepayable), icon: DollarSign },
-              { label: "Monthly Repayment", value: formatCurrency(monthlyRepayment), icon: DollarSign },
+              { label: "Total Interest", value: formatCurrency(interestAmount), icon: BadgeCent },
+              { label: "Total Repayment", value: formatCurrency(totalRepayable), icon: BadgeCent },
+              { label: "Monthly Repayment", value: formatCurrency(monthlyRepayment), icon: BadgeCent },
               { label: "First Repayment", value: firstRepaymentDate, icon: Calendar },
               { label: "Completion Date", value: expectedCompletionDate, icon: Calendar },
               { label: "Method", value: calcMethod === "flat_rate" ? "Flat Rate" : "Reducing Balance", icon: Percent },

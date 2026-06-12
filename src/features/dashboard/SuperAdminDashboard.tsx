@@ -6,7 +6,7 @@ import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
   Users,
   PiggyBank,
-  DollarSign,
+  BadgeCent,
   Wallet,
   CheckCircle,
   TrendingUp,
@@ -64,7 +64,7 @@ export default function SuperAdminDashboard({ stats }: { stats: DashboardStats }
         <DashboardStatCard
           title="Total Loans"
           value={formatCurrency(stats.totalLoansOutstanding)}
-          icon={DollarSign}
+          icon={BadgeCent}
           color="text-brand-warning"
         />
         <DashboardStatCard

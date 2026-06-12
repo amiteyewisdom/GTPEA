@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Edit, CheckCircle, X, AlertCircle, DollarSign, Percent, Calendar, Shield } from "lucide-react";
+import { Plus, Edit, CheckCircle, X, AlertCircle, BadgeCent, Percent, Calendar, Shield } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency } from "@/utils/formatters";
 
@@ -294,11 +294,11 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Interest Rate", value: `${product.interest_rate}% p.a.`, color: "text-brand-accent", icon: Percent },
-                  { label: "Processing Fee", value: `${product.processing_fee_percent}%`, color: "text-brand-text-secondary", icon: DollarSign },
-                  { label: "Min Amount", value: formatCurrency(product.min_amount), color: "text-brand-success", icon: DollarSign },
-                  { label: "Max Amount", value: formatCurrency(product.max_amount), color: "text-brand-success", icon: DollarSign },
+                  { label: "Processing Fee", value: `${product.processing_fee_percent}%`, color: "text-brand-text-secondary", icon: BadgeCent },
+                  { label: "Min Amount", value: formatCurrency(product.min_amount), color: "text-brand-success", icon: BadgeCent },
+                  { label: "Max Amount", value: formatCurrency(product.max_amount), color: "text-brand-success", icon: BadgeCent },
                   { label: "Term Range", value: `${product.min_term_months}–${product.max_term_months} mo.`, color: "text-brand-accent", icon: Calendar },
-                  { label: "Max Loan/Salary", value: `${product.max_loan_to_salary_ratio}x`, color: "text-brand-warning", icon: DollarSign },
+                  { label: "Max Loan/Salary", value: `${product.max_loan_to_salary_ratio}x`, color: "text-brand-warning", icon: BadgeCent },
                 ].map(({ label, value, color, icon: Icon }) => (
                   <div key={label} className="bg-brand-card-bg/50 rounded-lg p-3 border border-brand-card-border">
                     <p className="text-xs text-brand-text-secondary font-medium mb-1">{label}</p>

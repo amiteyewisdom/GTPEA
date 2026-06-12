@@ -6,7 +6,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
   PiggyBank,
-  DollarSign,
+  BadgeCent,
   TrendingUp,
   Users,
   Calendar,
@@ -78,7 +78,7 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
           large
           title="Total Loans"
           value={formatCurrency(stats.totalLoansOutstanding)}
-          icon={DollarSign}
+          icon={BadgeCent}
           color="text-brand-warning"
         />
         <DashboardStatCard

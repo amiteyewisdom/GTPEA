@@ -9,7 +9,7 @@ import DataImportPanel from '@/components/data/DataImportPanel';
 import { useDownload } from '@/hooks/use-download';
 import {
   Users,
-  DollarSign,
+  BadgeCent,
   CheckCircle,
   PiggyBank,
   TrendingUp,
@@ -72,7 +72,7 @@ export default function AdministratorDashboard({ stats: initialStats }: { stats:
             <DashboardStatCard
               title="Pending Loans"
               value={formatNumber(stats.pendingLoans)}
-              icon={DollarSign}
+              icon={BadgeCent}
               color="text-brand-warning"
             />
             <DashboardStatCard

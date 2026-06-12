@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { DollarSign, Plus, X, CheckCircle, AlertCircle, Search, MoreVertical, Edit2, Lock } from "lucide-react";
+import { BadgeCent, Plus, X, CheckCircle, AlertCircle, Search, MoreVertical, Edit2, Lock } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useRouter } from "next/navigation";
@@ -137,7 +137,7 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-brand-text-secondary text-sm">Total Savings Pool</p>
-            <DollarSign className="w-5 h-5 text-brand-success" />
+            <BadgeCent className="w-5 h-5 text-brand-success" />
           </div>
           <p className="text-2xl font-bold text-brand-text">{formatCurrency(totalBalance)}</p>
           <p className="text-xs text-brand-text-secondary mt-1">All active accounts</p>
@@ -145,7 +145,7 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-brand-text-secondary text-sm">Total Accounts</p>
-            <DollarSign className="w-5 h-5 text-brand-accent" />
+            <BadgeCent className="w-5 h-5 text-brand-accent" />
           </div>
           <p className="text-2xl font-bold text-brand-text">{total}</p>
           <p className="text-xs text-brand-text-secondary mt-1">{savings.filter(s => s.status === "active").length} active</p>
@@ -153,7 +153,7 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-brand-text-secondary text-sm">Average Balance</p>
-            <DollarSign className="w-5 h-5 text-brand-accent" />
+            <BadgeCent className="w-5 h-5 text-brand-accent" />
           </div>
           <p className="text-2xl font-bold text-brand-text">{formatCurrency(avgBalance)}</p>
           <p className="text-xs text-brand-text-secondary mt-1">Per account</p>
@@ -217,7 +217,7 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
             <div>
               <label className="block text-sm font-medium text-brand-text mb-2">Amount</label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-text-secondary" />
+                <BadgeCent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-text-secondary" />
                 <input
                   type="number"
                   value={formData.amount}
@@ -365,7 +365,7 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
             <div className="mb-4">
               <label className="block text-sm font-medium text-brand-text mb-1">New Monthly Amount (GHS)</label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-secondary" />
+                <BadgeCent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-secondary" />
                 <input
                   type="number"
                   value={newContrib}

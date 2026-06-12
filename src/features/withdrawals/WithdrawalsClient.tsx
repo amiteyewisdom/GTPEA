@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DollarSign, Filter, Plus, X, CheckCircle, AlertCircle, Download, Upload } from "lucide-react";
+import { BadgeCent, Filter, Plus, X, CheckCircle, AlertCircle, Download, Upload } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 
@@ -229,7 +229,7 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
             <div>
               <label className="block text-sm font-medium text-brand-text mb-2">Amount</label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-text-secondary" />
+                <BadgeCent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-text-secondary" />
                 <input
                   type="number"
                   value={formData.amount}

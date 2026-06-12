@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
-  DollarSign,
+  BadgeCent,
   PiggyBank,
   Briefcase,
   ArrowRight,
@@ -93,7 +93,7 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
         <QuickActionCard
           title="Apply Loan"
           description="Submit a new loan application"
-          icon={DollarSign}
+          icon={BadgeCent}
           color="bg-brand-accent/20 text-brand-accent"
           href="/apply-loan"
         />
@@ -264,7 +264,7 @@ function LoanCard({ loanId, amount, remainingBalance, monthlyPayment, nextDueDat
 function ActivityRow({ type, description, amount, date, status }: any) {
   const typeIcons = {
     deposit: PiggyBank,
-    payment: DollarSign,
+    payment: BadgeCent,
     withdrawal: TrendingUp,
     dividend: CheckCircle,
   };

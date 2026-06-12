@@ -2,7 +2,7 @@
 
 import SearchableList from "@/components/data/SearchableList";
 import { formatCurrency, formatDate } from "@/utils/formatters";
-import { DollarSign } from "lucide-react";
+import { BadgeCent } from "lucide-react";
 
 export function RepaymentsClient({ repayments }: { repayments: any[] }) {
   return (
@@ -18,7 +18,7 @@ export function RepaymentsClient({ repayments }: { repayments: any[] }) {
           searchText: `${name} ${item.loans?.loan_ref ?? ""} ${item.status}`,
           content: (
             <div className="flex items-center gap-4 rounded-lg bg-brand-card-bg p-4">
-              <DollarSign className="h-5 w-5 text-brand-success" />
+              <BadgeCent className="h-5 w-5 text-brand-success" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-brand-text">
                   {name || "Unknown"} · {item.loans?.loan_ref ?? "Loan"}

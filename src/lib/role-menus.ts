@@ -2,7 +2,7 @@ import {
   LayoutDashboard, 
   Users, 
   Shield, 
-  DollarSign, 
+  BadgeCent, 
   PiggyBank, 
   TrendingUp, 
   FileText, 
@@ -71,7 +71,7 @@ export const menuItems: MenuItem[] = [
   {
     id: 'loans-sa',
     label: 'Loans',
-    icon: DollarSign,
+    icon: BadgeCent,
     path: '/loans',
     roles: ['super_admin'],
   },
@@ -129,7 +129,7 @@ export const menuItems: MenuItem[] = [
   {
     id: 'loans-admin',
     label: 'Loans',
-    icon: DollarSign,
+    icon: BadgeCent,
     path: '/loans',
     roles: ['administrator'],
   },
@@ -231,7 +231,7 @@ export const menuItems: MenuItem[] = [
   {
     id: 'repayments',
     label: 'Repayments',
-    icon: DollarSign,
+    icon: BadgeCent,
     path: '/repayments',
     roles: ['fund_manager'],
   },
@@ -298,7 +298,7 @@ export const menuItems: MenuItem[] = [
   {
     id: 'apply-loan',
     label: 'Apply Loan',
-    icon: DollarSign,
+    icon: BadgeCent,
     path: '/apply-loan',
     roles: ['employee'],
   },

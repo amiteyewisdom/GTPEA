@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import GlassCard from '@/components/ui/GlassCard';
 import { 
-  DollarSign, 
+  BadgeCent, 
   Calendar, 
   Calculator, 
   CheckCircle, 
@@ -186,7 +186,7 @@ function Step1({ principal, setPrincipal, onNext, canProceed }: any) {
     <GlassCard className="p-8">
       <div className="text-center mb-8">
         <div className="w-16 h-16 rounded-full bg-brand-accent/20 flex items-center justify-center mx-auto mb-4">
-          <DollarSign className="w-8 h-8 text-brand-accent" />
+          <BadgeCent className="w-8 h-8 text-brand-accent" />
         </div>
         <h2 className="text-2xl font-bold text-white mb-2">Enter Loan Amount</h2>
         <p className="text-brand-text-secondary">How much would you like to borrow?</p>
@@ -319,7 +319,7 @@ function Step3({ loanData, onNext, onBack }: any) {
         <CalculationCard
           label="Principal Amount"
           value={`₵${loanData.principal.toLocaleString()}`}
-          icon={DollarSign}
+          icon={BadgeCent}
           color="text-brand-accent"
         />
         <CalculationCard
@@ -343,7 +343,7 @@ function Step3({ loanData, onNext, onBack }: any) {
         <CalculationCard
           label="Total Payable"
           value={`₵${loanData.totalPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          icon={DollarSign}
+          icon={BadgeCent}
           color="text-brand-accent"
           highlight
         />

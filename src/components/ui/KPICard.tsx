@@ -1,44 +1,16 @@
 "use client";
 
-import { Box, Typography, Skeleton } from "@mui/material";
-import { TrendingUp, TrendingDown, TrendingFlat } from "@mui/icons-material";
-import { alpha } from "@mui/material/styles";
-import type { SvgIconComponent } from "@mui/icons-material";
+import { TrendingUp, TrendingDown, Minus, type LucideIcon } from "lucide-react";
 
 type Trend = "up" | "down" | "flat";
 type Accent = "primary" | "success" | "warning" | "danger" | "accent";
 
-const ACCENT_MAP: Record<Accent, { color: string; bg: string; border: string; glow: string }> = {
-  primary: {
-    color: "#818CF8",
-    bg: "rgba(99,102,241,0.08)",
-    border: "rgba(99,102,241,0.2)",
-    glow: "rgba(99,102,241,0.15)",
-  },
-  success: {
-    color: "#34D399",
-    bg: "rgba(16,185,129,0.08)",
-    border: "rgba(16,185,129,0.2)",
-    glow: "rgba(16,185,129,0.15)",
-  },
-  warning: {
-    color: "#FCD34D",
-    bg: "rgba(245,158,11,0.08)",
-    border: "rgba(245,158,11,0.2)",
-    glow: "rgba(245,158,11,0.15)",
-  },
-  danger: {
-    color: "#F87171",
-    bg: "rgba(239,68,68,0.08)",
-    border: "rgba(239,68,68,0.2)",
-    glow: "rgba(239,68,68,0.15)",
-  },
-  accent: {
-    color: "#22D3EE",
-    bg: "rgba(6,182,212,0.08)",
-    border: "rgba(6,182,212,0.2)",
-    glow: "rgba(6,182,212,0.15)",
-  },
+const ACCENT_CLASSES: Record<Accent, { icon: string; iconBg: string; border: string }> = {
+  primary:  { icon: "text-indigo-500",  iconBg: "bg-indigo-50 border-indigo-100",   border: "border-indigo-100" },
+  success:  { icon: "text-green-500",   iconBg: "bg-green-50 border-green-100",     border: "border-green-100"  },
+  warning:  { icon: "text-amber-500",   iconBg: "bg-amber-50 border-amber-100",     border: "border-amber-100"  },
+  danger:   { icon: "text-red-500",     iconBg: "bg-red-50 border-red-100",         border: "border-red-100"    },
+  accent:   { icon: "text-cyan-500",    iconBg: "bg-cyan-50 border-cyan-100",       border: "border-cyan-100"   },
 };
 
 interface KPICardProps {
@@ -47,7 +19,7 @@ interface KPICardProps {
   subtitle?: string;
   trend?: Trend;
   trendValue?: string;
-  icon: SvgIconComponent;
+  icon: LucideIcon;
   accent?: Accent;
   loading?: boolean;
 }
@@ -62,115 +34,45 @@ export function KPICard({
   accent = "primary",
   loading = false,
 }: KPICardProps) {
-  const colors = ACCENT_MAP[accent];
+  const cls = ACCENT_CLASSES[accent];
+  const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
+  const trendCls = trend === "up" ? "text-green-500" : trend === "down" ? "text-red-500" : "text-brand-text-secondary";
 
-  const TrendIcon =
-    trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : TrendingFlat;
-
-  const trendColor =
-    trend === "up" ? "#34D399" : trend === "down" ? "#F87171" : "#94A3B8";
+  if (loading) {
+    return (
+      <div className={`rounded-brand border bg-white p-5 shadow-sm ${cls.border}`}>
+        <div className="mb-4 flex items-start justify-between">
+          <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+          <div className="h-9 w-9 animate-pulse rounded-lg bg-gray-200" />
+        </div>
+        <div className="mb-1 h-8 w-32 animate-pulse rounded bg-gray-200" />
+        <div className="h-3 w-20 animate-pulse rounded bg-gray-200" />
+      </div>
+    );
+  }
 
   return (
-    <Box
-      sx={{
-        bgcolor: "#ffffff",
-        border: `1px solid ${colors.border}`,
-        borderRadius: 2,
-        p: 2.5,
-        position: "relative",
-        overflow: "hidden",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-        transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-        "&:hover": {
-          boxShadow: `0 0 0 1px ${colors.border}, 0 8px 32px ${colors.glow}`,
-        },
-      }}
-    >
-      {/* Subtle glow */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: -20,
-          right: -20,
-          width: 100,
-          height: 100,
-          borderRadius: "50%",
-          background: colors.glow,
-          filter: "blur(40px)",
-          pointerEvents: "none",
-        }}
-      />
+    <div className={`relative overflow-hidden rounded-brand border bg-white p-5 shadow-sm transition-shadow hover:shadow-md ${cls.border}`}>
+      <div className="mb-3 flex items-start justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-text-secondary">{title}</p>
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${cls.iconBg}`}>
+          <Icon className={`h-4.5 w-4.5 ${cls.icon}`} size={18} />
+        </div>
+      </div>
 
-      <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2, position: "relative" }}>
-        {loading ? (
-          <Skeleton variant="text" width={120} height={16} />
-        ) : (
-          <Typography
-            sx={{
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "#6B7280",
-            }}
-          >
-            {title}
-          </Typography>
+      <p className="mb-1 text-3xl font-bold tracking-tight text-brand-text">{value}</p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {trend && trendValue && (
+          <span className={`flex items-center gap-0.5 text-xs font-semibold ${trendCls}`}>
+            <TrendIcon size={12} />
+            {trendValue}
+          </span>
         )}
-
-        {/* Icon */}
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: 1.5,
-            bgcolor: colors.bg,
-            border: `1px solid ${colors.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <Icon sx={{ fontSize: 18, color: colors.color }} />
-        </Box>
-      </Box>
-
-      {/* Value */}
-      {loading ? (
-        <Skeleton variant="text" width={140} height={36} sx={{ mb: 0.5 }} />
-      ) : (
-        <Typography
-          sx={{
-            fontSize: "1.875rem",
-            fontWeight: 700,
-            color: "#111827",
-            lineHeight: 1,
-            mb: 0.5,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {value}
-        </Typography>
-      )}
-
-      {/* Trend + subtitle */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-        {trend && trendValue && !loading && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <TrendIcon sx={{ fontSize: 14, color: trendColor }} />
-            <Typography sx={{ fontSize: "0.75rem", fontWeight: 600, color: trendColor }}>
-              {trendValue}
-            </Typography>
-          </Box>
+        {subtitle && (
+          <span className="text-xs text-brand-text-secondary">{subtitle}</span>
         )}
-        {subtitle && !loading && (
-          <Typography sx={{ fontSize: "0.75rem", color: "#6B7280" }}>
-            {subtitle}
-          </Typography>
-        )}
-        {loading && <Skeleton variant="text" width={100} height={14} />}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }

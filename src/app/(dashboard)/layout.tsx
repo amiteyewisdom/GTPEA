@@ -6,13 +6,22 @@ import { UserRole } from "@/lib/role-menus";
 
 const APPROVER_ROLES = ["union_rep", "fund_manager", "chairperson", "administrator"];
 
+const STAGE_FOR_ROLE: Record<string, number> = {
+  union_rep: 1,
+  fund_manager: 2,
+  chairperson: 3,
+};
+
 async function fetchPendingCount(supabase: any, role: string): Promise<number> {
   if (!APPROVER_ROLES.includes(role)) return 0;
   try {
-    const { count } = await supabase
+    const query = supabase
       .from("approvals")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending");
+    const stage = STAGE_FOR_ROLE[role];
+    if (stage) query.eq("current_stage", stage);
+    const { count } = await query;
     return count ?? 0;
   } catch {
     return 0;

@@ -18,7 +18,7 @@ import {
   Eye,
   EyeOff,
   TrendingUp,
-  DollarSign
+  BadgeCent
 } from 'lucide-react';
 import { UserRole } from '@/lib/role-menus';
 
@@ -95,7 +95,7 @@ function getAvailableTabs(role: UserRole) {
       { id: 'roles', label: 'Roles', icon: UsersIcon },
       { id: 'permissions', label: 'Permissions', icon: Key },
       { id: 'interest', label: 'Interest Rates', icon: TrendingUp },
-      { id: 'dividends', label: 'Dividends', icon: DollarSign },
+      { id: 'dividends', label: 'Dividends', icon: BadgeCent },
       { id: 'system', label: 'System Rules', icon: SettingsIcon },
       { id: 'audit', label: 'Audit Configuration', icon: FileText },
     ],

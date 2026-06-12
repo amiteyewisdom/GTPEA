@@ -20,8 +20,9 @@ export function useApprovalAction() {
       });
 
       const payload = await response.json();
+      console.log("[useApprovalAction] response:", payload);
       if (!response.ok) {
-        throw new Error(payload?.error || "Could not process approval.");
+        throw new Error(payload?.error || payload?.details?.message || "Could not process approval.");
       }
 
       setMessage({ type: "success", text: payload.message || "Approval updated." });

@@ -7,17 +7,34 @@ function sum(rows: { [key: string]: unknown }[], field: string) {
 export async function fetchApprovalsList() {
   const supabase = await createClient();
 
-  const { data: approvals, count } = await supabase
+  const { data: approvals, count, error: approvalsError } = await supabase
     .from("approvals")
     .select(
       `*,
-       profiles!approvals_submitted_by_fkey (full_name),
        approval_actions (stage, required_role, action, notes, actioned_at)`,
       { count: "exact" }
     )
     .order("submitted_at", { ascending: false });
 
+  if (approvalsError) {
+    console.error("[fetchApprovalsList] approvals query error:", approvalsError.message);
+  }
+
   const rows = (approvals ?? []) as any[];
+
+  // Fetch submitter names separately (avoids FK name mismatch issues)
+  const submitterIds = [...new Set(rows.map((r) => r.submitted_by).filter(Boolean))] as string[];
+  const profilesMap = new Map<string, string>();
+  if (submitterIds.length) {
+    const profilesRes = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .in("user_id", submitterIds);
+    for (const p of profilesRes.data ?? []) {
+      profilesMap.set((p as any).user_id, (p as any).full_name);
+    }
+  }
+
   const loanIds = rows.filter((row) => row.entity_type === "loan").map((row) => row.entity_id);
   const withdrawalIds = rows
     .filter((row) => row.entity_type === "withdrawal")
@@ -28,7 +45,7 @@ export async function fetchApprovalsList() {
       ? supabase
           .from("loans")
           .select(
-            "id, employee_id, amount_requested, amount_approved, outstanding_balance, monthly_repayment, term_months, interest_rate, interest_calc_method, loan_products (name, account_code)"
+            "id, employee_id, amount_requested, amount_approved, outstanding_balance, monthly_repayment, term_months, interest_rate, interest_calc_method, loan_products (name)"
           )
           .in("id", loanIds)
       : Promise.resolve({ data: [] as any[] }),
@@ -91,6 +108,7 @@ export async function fetchApprovalsList() {
 
     return {
       ...row,
+      profiles: { full_name: profilesMap.get(row.submitted_by) ?? null },
       loan_details: loan
         ? {
             amount_requested: loan.amount_requested,

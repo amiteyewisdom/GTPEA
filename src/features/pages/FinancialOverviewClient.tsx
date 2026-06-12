@@ -2,7 +2,7 @@
 
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency } from "@/utils/formatters";
-import { DollarSign, PiggyBank, TrendingUp, Wallet } from "lucide-react";
+import { BadgeCent, PiggyBank, TrendingUp, Wallet } from "lucide-react";
 
 export function FinancialOverviewClient({
   totalAssets,
@@ -29,7 +29,7 @@ export function FinancialOverviewClient({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard icon={Wallet} label="Total Assets" value={formatCurrency(totalAssets)} />
         <MetricCard icon={PiggyBank} label="Total Liabilities" value={formatCurrency(totalLiabilities)} />
-        <MetricCard icon={DollarSign} label="Net Position" value={formatCurrency(netIncome)} />
+        <MetricCard icon={BadgeCent} label="Net Position" value={formatCurrency(netIncome)} />
         <MetricCard icon={TrendingUp} label="Savings Growth" value={`${growthRate.toFixed(1)}%`} />
       </div>
 

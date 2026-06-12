@@ -2,7 +2,7 @@
 
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency } from "@/utils/formatters";
-import { DollarSign, PieChart, TrendingUp, Wallet } from "lucide-react";
+import { BadgeCent, PieChart, TrendingUp, Wallet } from "lucide-react";
 
 export function FundsClient({
   totalFund,
@@ -29,7 +29,7 @@ export function FundsClient({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard icon={Wallet} label="Total Fund Balance" value={formatCurrency(totalFund)} />
         <MetricCard icon={TrendingUp} label="Dividend Returns" value={formatCurrency(investmentReturns)} />
-        <MetricCard icon={DollarSign} label="Available for Loans" value={formatCurrency(availableForLoans)} />
+        <MetricCard icon={BadgeCent} label="Available for Loans" value={formatCurrency(availableForLoans)} />
         <MetricCard icon={PieChart} label="Reserve Fund" value={formatCurrency(reserveFund)} />
       </div>
 
