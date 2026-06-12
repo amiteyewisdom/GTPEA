@@ -41,7 +41,7 @@ export default function LoginPage() {
         {/* Centered Growth Image */}
         <div className="relative w-full max-w-lg xl:max-w-xl px-12">
           <Image
-            src="/images/growth-coins.png"
+            src="/images/growth-coins.jpeg"
             alt="Financial Growth"
             width={600}
             height={600}
