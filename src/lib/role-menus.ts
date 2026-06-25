@@ -26,7 +26,8 @@ import {
   UserCheck,
   Award,
   ClipboardList,
-  ChevronRight
+  ChevronRight,
+  Receipt
 } from 'lucide-react';
 
 export type UserRole = 
@@ -247,6 +248,13 @@ export const menuItems: MenuItem[] = [
     label: 'Reports',
     icon: FileText,
     path: '/reports',
+    roles: ['fund_manager'],
+  },
+  {
+    id: 'expenses',
+    label: 'Expenses',
+    icon: Receipt,
+    path: '/expenses',
     roles: ['fund_manager'],
   },
 

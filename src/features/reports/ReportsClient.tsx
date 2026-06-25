@@ -23,6 +23,10 @@ import {
   Search,
   BarChart3,
   LayoutGrid,
+  Scale,
+  BookOpen,
+  Building2,
+  Receipt,
   type LucideIcon,
 } from "lucide-react";
 
@@ -49,7 +53,7 @@ interface ChartData {
 }
 
 type Tab = "overview" | "trends" | "export";
-type ReportCategory = "all" | "finance" | "people" | "compliance";
+type ReportCategory = "all" | "finance" | "people" | "compliance" | "accounting";
 
 const REPORTS: {
   type: ReportType;
@@ -100,12 +104,48 @@ const REPORTS: {
     icon: ClipboardCheck,
     category: "compliance",
   },
+  {
+    type: "profit_loss",
+    label: "Profit & Loss",
+    desc: "Income, expenditure and net surplus for the period",
+    icon: Scale,
+    category: "accounting",
+  },
+  {
+    type: "balance_sheet",
+    label: "Balance Sheet",
+    desc: "Assets, liabilities and members equity snapshot",
+    icon: BookOpen,
+    category: "accounting",
+  },
+  {
+    type: "trial_balance",
+    label: "Trial Balance",
+    desc: "Debit and credit totals across all accounts",
+    icon: BarChart3,
+    category: "accounting",
+  },
+  {
+    type: "bank_payment",
+    label: "Bank Payment Export",
+    desc: "Loan disbursements formatted for bank payment processing",
+    icon: Building2,
+    category: "finance",
+  },
+  {
+    type: "payroll",
+    label: "Payroll Export",
+    desc: "Savings and loan deductions per employee for payroll",
+    icon: Receipt,
+    category: "finance",
+  },
 ];
 
 const CATEGORY_LABELS: Record<Exclude<ReportCategory, "all">, string> = {
   finance: "Finance",
   people: "People",
   compliance: "Compliance",
+  accounting: "Accounting",
 };
 
 export function ReportsClient({
@@ -296,7 +336,7 @@ export function ReportsClient({
                 />
               </div>
               <div className="flex flex-wrap gap-2">
-                {(["all", "finance", "people", "compliance"] as ReportCategory[]).map((item) => (
+                {(["all", "finance", "accounting", "people", "compliance"] as ReportCategory[]).map((item) => (
                   <button
                     key={item}
                     onClick={() => setCategory(item)}

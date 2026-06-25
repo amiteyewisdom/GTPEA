@@ -62,7 +62,7 @@ export default function SuperAdminDashboard({ stats }: { stats: DashboardStats }
           color="text-brand-success"
         />
         <DashboardStatCard
-          title="Total Loans"
+          title="Total Loan Balance"
           value={formatCurrency(stats.totalLoansOutstanding)}
           icon={BadgeCent}
           color="text-brand-warning"

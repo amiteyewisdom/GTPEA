@@ -60,6 +60,9 @@ export interface Database {
           salary: number;
           bank_name: string | null;
           bank_account_no: string | null;
+          bank_branch: string | null;
+          sort_code: string | null;
+          monthly_savings: number | null;
           bvn: string | null;
           nin: string | null;
           next_of_kin_name: string | null;

@@ -88,6 +88,12 @@ export default function AdministratorDashboard({ stats: initialStats }: { stats:
               color="text-brand-success"
             />
             <DashboardStatCard
+              title="Total Loan Balance"
+              value={formatCurrency(stats.totalLoansOutstanding)}
+              icon={BadgeCent}
+              color="text-brand-danger"
+            />
+            <DashboardStatCard
               title="Withdrawals"
               value={formatCurrency(stats.totalWithdrawals)}
               icon={TrendingUp}

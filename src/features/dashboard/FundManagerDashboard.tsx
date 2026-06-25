@@ -70,7 +70,7 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
           color="text-brand-warning"
         />
         <DashboardStatCard
-          title="Loan Portfolio"
+          title="Total Loan Balance"
           value={formatCurrency(stats.totalLoansOutstanding)}
           icon={TrendingUp}
           color="text-brand-accent"

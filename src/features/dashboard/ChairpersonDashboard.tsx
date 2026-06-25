@@ -76,10 +76,10 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
         />
         <DashboardStatCard
           large
-          title="Total Loans"
+          title="Total Loan Balance"
           value={formatCurrency(stats.totalLoansOutstanding)}
           icon={BadgeCent}
-          color="text-brand-warning"
+          color="text-brand-danger"
         />
         <DashboardStatCard
           large

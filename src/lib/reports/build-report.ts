@@ -8,6 +8,11 @@ export const REPORT_TYPES = [
   "employees",
   "defaults",
   "approvals",
+  "profit_loss",
+  "balance_sheet",
+  "trial_balance",
+  "bank_payment",
+  "payroll",
 ] as const;
 
 export type ReportType = (typeof REPORT_TYPES)[number];
@@ -19,6 +24,11 @@ export const REPORT_LABELS: Record<ReportType, string> = {
   employees: "Employee Status Report",
   defaults: "Default and Risk Report",
   approvals: "Approval Audit Report",
+  profit_loss: "Profit & Loss Statement",
+  balance_sheet: "Balance Sheet",
+  trial_balance: "Trial Balance",
+  bank_payment: "Bank Payment Export",
+  payroll: "Payroll Export (Savings & Loans)",
 };
 
 export async function buildReportCsv(supabase: AppSupabase, type: ReportType): Promise<string> {
@@ -35,6 +45,16 @@ export async function buildReportCsv(supabase: AppSupabase, type: ReportType): P
       return buildDefaultsReport(supabase);
     case "approvals":
       return buildApprovalsReport(supabase);
+    case "profit_loss":
+      return buildProfitLossReport(supabase);
+    case "balance_sheet":
+      return buildBalanceSheetReport(supabase);
+    case "trial_balance":
+      return buildTrialBalanceReport(supabase);
+    case "bank_payment":
+      return buildBankPaymentReport(supabase);
+    case "payroll":
+      return buildPayrollReport(supabase);
     default:
       throw new Error("Unknown report type");
   }
@@ -356,6 +376,245 @@ async function buildApprovalsReport(supabase: AppSupabase) {
       ]);
     }
   }
+
+  return buildCsv(headers, rows);
+}
+
+async function buildProfitLossReport(supabase: AppSupabase) {
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
+
+  const [interestRes, savingsContribRes, dividendsRes, withdrawalsRes] = await Promise.all([
+    supabase.from("transactions").select("type, amount, created_at").in("type", ["interest_credit", "loan_repayment"]).gte("created_at", yearStart),
+    supabase.from("savings_contributions").select("amount, period_year, period_month").eq("period_year", now.getFullYear()),
+    supabase.from("dividends").select("dividend_amount, fiscal_year").eq("fiscal_year", now.getFullYear()),
+    supabase.from("withdrawal_requests").select("amount, status").in("status", ["approved", "disbursed"]).gte("created_at", yearStart),
+  ]);
+
+  const interestIncome = (interestRes.data ?? [])
+    .filter((t: any) => t.type === "interest_credit")
+    .reduce((s: number, t: any) => s + Number(t.amount), 0);
+
+  const loanRepayments = (interestRes.data ?? [])
+    .filter((t: any) => t.type === "loan_repayment")
+    .reduce((s: number, t: any) => s + Number(t.amount), 0);
+
+  const totalSavingsContributions = (savingsContribRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const totalDividendsPaid = (dividendsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.dividend_amount), 0);
+  const totalWithdrawals = (withdrawalsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
+
+  const grossIncome = interestIncome + loanRepayments;
+  const totalExpenses = totalDividendsPaid + totalWithdrawals;
+  const netSurplus = grossIncome - totalExpenses;
+
+  const reportDate = now.toLocaleDateString("en-GB");
+  const headers = ["Account", "Code", "Amount (GH₵)"];
+  const rows: (string | number)[][] = [
+    ["INCOME", "", ""],
+    ["Interest Income on Loans", "11101001", interestIncome.toFixed(2)],
+    ["Loan Repayments Received", "62101001", loanRepayments.toFixed(2)],
+    ["Total Savings Contributions", "63101001", totalSavingsContributions.toFixed(2)],
+    ["TOTAL INCOME", "", grossIncome.toFixed(2)],
+    ["", "", ""],
+    ["EXPENDITURE", "", ""],
+    ["Dividends Paid to Members", "63101003", totalDividendsPaid.toFixed(2)],
+    ["Savings Withdrawals Disbursed", "63101001", totalWithdrawals.toFixed(2)],
+    ["TOTAL EXPENDITURE", "", totalExpenses.toFixed(2)],
+    ["", "", ""],
+    ["NET SURPLUS / (DEFICIT)", "", netSurplus.toFixed(2)],
+    ["", "", ""],
+    [`Report Date: ${reportDate}`, `Period: ${now.getFullYear()}`, ""],
+  ];
+
+  return buildCsv(headers, rows);
+}
+
+async function buildBalanceSheetReport(supabase: AppSupabase) {
+  const [savingsRes, loansRes, withdrawalsRes, dividendsRes] = await Promise.all([
+    supabase.from("savings").select("balance, status").eq("status", "active"),
+    supabase.from("loans").select("outstanding_balance, amount_disbursed, status").in("status", ["disbursed", "repaying", "approved"]),
+    supabase.from("withdrawal_requests").select("amount, status").in("status", ["approved", "disbursed"]),
+    supabase.from("dividends").select("dividend_amount").not("credited_at", "is", null),
+  ]);
+
+  const totalSavings = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance), 0);
+  const totalLoanPortfolio = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.outstanding_balance), 0);
+  const totalDisbursed = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount_disbursed || 0), 0);
+  const totalWithdrawalsLiability = (withdrawalsRes.data ?? []).filter((r: any) => r.status === "approved").reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const totalDividendsLiability = (dividendsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.dividend_amount), 0);
+
+  const totalAssets = totalLoanPortfolio + totalSavings;
+  const totalLiabilities = totalWithdrawalsLiability + totalDividendsLiability;
+  const membersEquity = totalAssets - totalLiabilities;
+
+  const reportDate = new Date().toLocaleDateString("en-GB");
+  const headers = ["Item", "Code", "Amount (GH₵)"];
+  const rows: (string | number)[][] = [
+    ["ASSETS", "", ""],
+    ["Loan Portfolio (Outstanding)", "62101001", totalLoanPortfolio.toFixed(2)],
+    ["Total Loan Disbursed", "62101001", totalDisbursed.toFixed(2)],
+    ["Members Savings Balance", "63101001", totalSavings.toFixed(2)],
+    ["TOTAL ASSETS", "", totalAssets.toFixed(2)],
+    ["", "", ""],
+    ["LIABILITIES", "", ""],
+    ["Approved Pending Withdrawals", "63101001", totalWithdrawalsLiability.toFixed(2)],
+    ["Dividends Payable", "63101003", totalDividendsLiability.toFixed(2)],
+    ["TOTAL LIABILITIES", "", totalLiabilities.toFixed(2)],
+    ["", "", ""],
+    ["MEMBERS EQUITY", "", membersEquity.toFixed(2)],
+    ["", "", ""],
+    [`Report Date: ${reportDate}`, "", ""],
+  ];
+
+  return buildCsv(headers, rows);
+}
+
+async function buildTrialBalanceReport(supabase: AppSupabase) {
+  const [savingsRes, loansRes, repaymentRes, withdrawalRes, dividendRes, transactionRes] = await Promise.all([
+    supabase.from("savings").select("balance").eq("status", "active"),
+    supabase.from("loans").select("outstanding_balance, amount_disbursed").in("status", ["disbursed", "repaying", "approved"]),
+    supabase.from("repayments").select("amount_paid, interest_component").eq("status", "paid"),
+    supabase.from("withdrawal_requests").select("amount").in("status", ["approved", "disbursed"]),
+    supabase.from("dividends").select("dividend_amount").not("credited_at", "is", null),
+    supabase.from("transactions").select("type, amount").in("type", ["interest_credit", "fee", "penalty"]),
+  ]);
+
+  const membersSavings = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance), 0);
+  const loansOutstanding = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.outstanding_balance), 0);
+  const loansDisbursed = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount_disbursed || 0), 0);
+  const repaymentReceived = (repaymentRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount_paid), 0);
+  const interestReceived = (repaymentRes.data ?? []).reduce((s: number, r: any) => s + Number(r.interest_component), 0);
+  const withdrawalsDisbursed = (withdrawalRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const dividendsPaid = (dividendRes.data ?? []).reduce((s: number, r: any) => s + Number(r.dividend_amount), 0);
+  const feesAndPenalties = (transactionRes.data ?? []).filter((t: any) => ["fee", "penalty"].includes(t.type)).reduce((s: number, t: any) => s + Number(t.amount), 0);
+
+  const totalDebits = loansOutstanding + withdrawalsDisbursed + dividendsPaid;
+  const totalCredits = membersSavings + repaymentReceived + interestReceived + feesAndPenalties;
+
+  const reportDate = new Date().toLocaleDateString("en-GB");
+  const headers = ["Account Name", "Code", "Debit (GH₵)", "Credit (GH₵)"];
+  const rows: (string | number)[][] = [
+    ["Members Savings", "63101001", "", membersSavings.toFixed(2)],
+    ["Loans Outstanding", "62101001", loansOutstanding.toFixed(2), ""],
+    ["Total Loans Disbursed", "62101001", loansDisbursed.toFixed(2), ""],
+    ["Repayments Received", "62101001", "", repaymentReceived.toFixed(2)],
+    ["Interest on Loans", "11101001", "", interestReceived.toFixed(2)],
+    ["Withdrawals Disbursed", "63101001", withdrawalsDisbursed.toFixed(2), ""],
+    ["Dividends Paid", "63101003", dividendsPaid.toFixed(2), ""],
+    ["Fees & Penalties", "11101001", "", feesAndPenalties.toFixed(2)],
+    ["", "", "", ""],
+    ["TOTALS", "", totalDebits.toFixed(2), totalCredits.toFixed(2)],
+    ["", "", "", ""],
+    [`Report Date: ${reportDate}`, "", "", ""],
+  ];
+
+  return buildCsv(headers, rows);
+}
+
+async function buildBankPaymentReport(supabase: AppSupabase) {
+  const { data } = await supabase
+    .from("loans")
+    .select(`
+      loan_ref,
+      amount_disbursed,
+      disbursement_date,
+      status,
+      employees (employee_no, first_name, last_name, bank_name, bank_account_no)
+    `)
+    .in("status", ["disbursed", "repaying"])
+    .order("disbursement_date", { ascending: false });
+
+  const headers = [
+    "Employee No",
+    "Employee Name",
+    "Bank Name",
+    "Account Number",
+    "Loan Reference",
+    "Amount (GH₵)",
+    "Disbursement Date",
+    "Payment Type",
+  ];
+
+  const rows = (data ?? []).map((row: any) => {
+    const emp = row.employees;
+    return [
+      emp?.employee_no ?? "",
+      emp ? `${emp.first_name} ${emp.last_name}` : "",
+      emp?.bank_name ?? "",
+      emp?.bank_account_no ?? "",
+      row.loan_ref,
+      row.amount_disbursed ?? 0,
+      row.disbursement_date ?? "",
+      "LOAN DISBURSEMENT",
+    ];
+  });
+
+  return buildCsv(headers, rows);
+}
+
+async function buildPayrollReport(supabase: AppSupabase) {
+  const { data: employees } = await supabase
+    .from("employees")
+    .select("id, employee_no, first_name, last_name, department, salary")
+    .eq("status", "active")
+    .order("employee_no", { ascending: true });
+
+  const empIds = (employees ?? []).map((e: any) => e.id);
+
+  const [savingsRes, loansRes] = await Promise.all([
+    empIds.length > 0
+      ? supabase.from("savings").select("employee_id, balance, monthly_contribution").eq("status", "active").in("employee_id", empIds)
+      : Promise.resolve({ data: [] }),
+    empIds.length > 0
+      ? supabase.from("loans").select("employee_id, monthly_repayment, outstanding_balance").in("status", ["disbursed", "repaying"]).in("employee_id", empIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const savingsByEmp: Record<string, { balance: number; monthly: number }> = {};
+  for (const s of (savingsRes.data ?? []) as any[]) {
+    if (!savingsByEmp[s.employee_id]) savingsByEmp[s.employee_id] = { balance: 0, monthly: 0 };
+    savingsByEmp[s.employee_id].balance += Number(s.balance);
+    savingsByEmp[s.employee_id].monthly += Number(s.monthly_contribution);
+  }
+
+  const loansByEmp: Record<string, { monthly: number; outstanding: number }> = {};
+  for (const l of (loansRes.data ?? []) as any[]) {
+    if (!loansByEmp[l.employee_id]) loansByEmp[l.employee_id] = { monthly: 0, outstanding: 0 };
+    loansByEmp[l.employee_id].monthly += Number(l.monthly_repayment);
+    loansByEmp[l.employee_id].outstanding += Number(l.outstanding_balance);
+  }
+
+  const headers = [
+    "Employee No",
+    "Employee Name",
+    "Department",
+    "Gross Salary (GH₵)",
+    "Monthly Savings Deduction (GH₵)",
+    "Savings Balance (GH₵)",
+    "Monthly Loan Deduction (GH₵)",
+    "Loan Outstanding (GH₵)",
+    "Total Deductions (GH₵)",
+    "Net Pay (GH₵)",
+  ];
+
+  const rows = (employees ?? []).map((emp: any) => {
+    const sav = savingsByEmp[emp.id] || { balance: 0, monthly: 0 };
+    const loan = loansByEmp[emp.id] || { monthly: 0, outstanding: 0 };
+    const totalDeductions = sav.monthly + loan.monthly;
+    const netPay = Number(emp.salary) - totalDeductions;
+    return [
+      emp.employee_no,
+      `${emp.first_name} ${emp.last_name}`,
+      emp.department,
+      Number(emp.salary).toFixed(2),
+      sav.monthly.toFixed(2),
+      sav.balance.toFixed(2),
+      loan.monthly.toFixed(2),
+      loan.outstanding.toFixed(2),
+      totalDeductions.toFixed(2),
+      netPay.toFixed(2),
+    ];
+  });
 
   return buildCsv(headers, rows);
 }

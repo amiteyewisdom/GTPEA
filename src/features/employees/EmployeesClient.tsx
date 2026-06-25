@@ -70,6 +70,11 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
     department: "",
     position: "",
     salary: "",
+    bank_name: "",
+    bank_account_no: "",
+    bank_branch: "",
+    sort_code: "",
+    monthly_savings: "",
   });
 
   const filtered = employees.filter((emp) => {
@@ -130,6 +135,11 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
         department: "",
         position: "",
         salary: "",
+        bank_name: "",
+        bank_account_no: "",
+        bank_branch: "",
+        sort_code: "",
+        monthly_savings: "",
       });
       setShowForm(false);
     } catch (error) {
@@ -265,6 +275,61 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                   min="0"
                   className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
                   required
+                />
+              </div>
+              <div className="md:col-span-2 mt-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-brand-text-secondary mb-3 border-t border-brand-card-border pt-3">Bank & Savings Details</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-text mb-2">Bank Name</label>
+                <input
+                  type="text"
+                  value={formData.bank_name}
+                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                  placeholder="e.g. GCB Bank"
+                  className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-text mb-2">Bank Account No.</label>
+                <input
+                  type="text"
+                  value={formData.bank_account_no}
+                  onChange={(e) => setFormData({ ...formData, bank_account_no: e.target.value })}
+                  placeholder="Account number"
+                  className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-text mb-2">Bank Branch</label>
+                <input
+                  type="text"
+                  value={formData.bank_branch}
+                  onChange={(e) => setFormData({ ...formData, bank_branch: e.target.value })}
+                  placeholder="e.g. Accra Main Branch"
+                  className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-text mb-2">Sort Code</label>
+                <input
+                  type="text"
+                  value={formData.sort_code}
+                  onChange={(e) => setFormData({ ...formData, sort_code: e.target.value })}
+                  placeholder="e.g. 030100"
+                  className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-brand-text mb-2">Monthly Savings (GH₵)</label>
+                <input
+                  type="number"
+                  value={formData.monthly_savings}
+                  onChange={(e) => setFormData({ ...formData, monthly_savings: e.target.value })}
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
                 />
               </div>
             </div>

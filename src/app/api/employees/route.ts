@@ -11,6 +11,11 @@ export async function POST(request: Request) {
   const department = String(body?.department || "");
   const position = String(body?.position || "");
   const salary = Number(body?.salary);
+  const bankName = body?.bank_name ? String(body.bank_name) : null;
+  const bankAccountNo = body?.bank_account_no ? String(body.bank_account_no) : null;
+  const bankBranch = body?.bank_branch ? String(body.bank_branch) : null;
+  const sortCode = body?.sort_code ? String(body.sort_code) : null;
+  const monthlySavings = body?.monthly_savings ? Number(body.monthly_savings) : 0;
 
   if (!firstName || !lastName || !email || !employeeNo || !department || !position) {
     return NextResponse.json({ error: "All fields are required." }, { status: 400 });
@@ -52,6 +57,11 @@ export async function POST(request: Request) {
         department: department,
         position: position,
         salary: salary,
+        bank_name: bankName,
+        bank_account_no: bankAccountNo,
+        bank_branch: bankBranch,
+        sort_code: sortCode,
+        monthly_savings: monthlySavings,
         status: "active",
         date_joined: new Date().toISOString(),
       },
