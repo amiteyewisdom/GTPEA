@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Loans" };
 export default async function LoansPage() {
   const supabase = await createClient();
 
-  const [loanProductsRes, loansRes] = await Promise.all([
+  const [loanProductsRes, loansRes, employeeProfilesRes] = await Promise.all([
     supabase
       .from("loan_products")
       .select("id, name, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, account_code, description, is_active")
@@ -20,10 +20,18 @@ export default async function LoansPage() {
         { count: "exact" }
       )
       .order("created_at", { ascending: false }),
+    supabase.from("profiles").select("employee_id").eq("role", "employee").not("employee_id", "is", null),
   ]);
 
+  const employeeOnlyIds = new Set(
+    (employeeProfilesRes.data ?? []).map((p: any) => p.employee_id)
+  );
+
   const allLoans = (loansRes.data ?? []) as any[];
-  const filteredLoans = allLoans.filter((l) => (l.employees as any)?.email !== "superadmin@gtpea.com");
+  // Only show loans belonging to actual employee-role members (exclude admin/manager/rep accounts)
+  const filteredLoans = allLoans.filter((l) =>
+    employeeOnlyIds.size === 0 || employeeOnlyIds.has(l.employee_id)
+  );
   const typedLoans = filteredLoans as Loan[];
   const loanProducts = loanProductsRes.data ?? [];
 

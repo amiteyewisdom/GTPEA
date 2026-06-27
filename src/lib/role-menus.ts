@@ -192,13 +192,14 @@ export const menuItems: MenuItem[] = [
     path: '/financial-overview',
     roles: ['chairperson'],
   },
-  {
-    id: 'meetings',
-    label: 'Meetings',
-    icon: Calendar,
-    path: '/meetings',
-    roles: ['chairperson'],
-  },
+  // TODO: Future upgrade — Meetings module
+  // {
+  //   id: 'meetings',
+  //   label: 'Meetings',
+  //   icon: Calendar,
+  //   path: '/meetings',
+  //   roles: ['chairperson'],
+  // },
   {
     id: 'members',
     label: 'Members',
@@ -257,6 +258,13 @@ export const menuItems: MenuItem[] = [
     path: '/expenses',
     roles: ['fund_manager'],
   },
+  {
+    id: 'charges',
+    label: 'Member Charges',
+    icon: BadgeCent,
+    path: '/charges',
+    roles: ['fund_manager'],
+  },
 
   // Union Representative
   {
@@ -271,13 +279,6 @@ export const menuItems: MenuItem[] = [
     label: 'Loan Reviews',
     icon: ClipboardList,
     path: '/loan-reviews',
-    roles: ['union_rep'],
-  },
-  {
-    id: 'employees-ur',
-    label: 'Employees',
-    icon: Users,
-    path: '/employees',
     roles: ['union_rep'],
   },
   {

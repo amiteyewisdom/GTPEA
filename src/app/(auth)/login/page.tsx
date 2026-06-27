@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Mail, Lock, EyeOff, Eye } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +17,10 @@ export default function LoginPage() {
     setError('');
 
     const supabase = createClient();
+
+    // Always sign out any existing session first to prevent stale role/profile bleedover
+    await supabase.auth.signOut();
+
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (signInError) {
@@ -26,7 +28,9 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    router.push('/dashboard');
+
+    // Hard navigate (not router.push) to force a full server-side session refresh
+    window.location.href = '/dashboard';
   };
 
   return (

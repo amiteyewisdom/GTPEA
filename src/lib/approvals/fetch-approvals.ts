@@ -28,8 +28,9 @@ export async function fetchApprovalsList() {
   if (submitterIds.length) {
     const profilesRes = await supabase
       .from("profiles")
-      .select("user_id, full_name")
-      .in("user_id", submitterIds);
+      .select("user_id, full_name, role")
+      .in("user_id", submitterIds)
+      .neq("role", "super_admin");
     for (const p of profilesRes.data ?? []) {
       profilesMap.set((p as any).user_id, (p as any).full_name);
     }

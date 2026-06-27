@@ -251,19 +251,7 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
         </div>
       </GlassCard>
 
-      {/* Upcoming Meetings */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-brand-text">Upcoming Meetings</h3>
-            <p className="text-brand-text-secondary text-sm">Scheduled board and committee meetings</p>
-          </div>
-          <Calendar className="w-5 h-5 text-brand-accent" />
-        </div>
-        <p className="py-8 text-center text-sm text-brand-text-secondary">
-          No meetings scheduled. Meetings will appear here once added to the system.
-        </p>
-      </GlassCard>
+      {/* TODO: Future upgrade — Upcoming Meetings section */}
     </div>
   );
 }

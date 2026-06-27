@@ -141,9 +141,10 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     approvalActionsRes,
     auditCountRes,
     transactionsTodayRes,
+    employeeProfilesRes,
   ] = await Promise.all([
     supabase.from("employees").select("id, first_name, last_name, status"),
-    supabase.from("savings").select("id, employee_id, balance, status").eq("status", "active"),
+    supabase.from("savings").select("id, employee_id, balance, status"),
     supabase
       .from("loans")
       .select(
@@ -180,14 +181,15 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
       .gte("created_at", subMonths(new Date(), 6).toISOString()),
     supabase
       .from("approval_actions")
-      .select("id, action, actioned_at, approval_id, approvals(entity_type, entity_id)")
+      .select("id, action, stage, actioned_at, approval_id, required_role, approvals(entity_type, entity_id)")
       .order("actioned_at", { ascending: false })
-      .limit(20),
+      .limit(100),
     supabase.from("audit_logs").select("id", { count: "exact", head: true }),
     supabase
       .from("transactions")
       .select("id", { count: "exact", head: true })
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+    supabase.from("profiles").select("employee_id").eq("role", "employee").not("employee_id", "is", null),
   ]);
 
   for (const [label, result] of [
@@ -214,18 +216,44 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   const approvalActions = (approvalActionsRes.data || []) as any[];
 
   const activeEmployees = employees.filter((e) => e.status === "active");
-  const totalSavings = sum(savings, "balance");
-  const totalLoansOutstanding = sum(
-    loans.filter((l) => ["disbursed", "repaying", "approved"].includes(l.status)),
-    "outstanding_balance"
+
+  // Build set of employee_ids that belong to actual 'employee' role — used to exclude admin/rep/manager
+  const employeeOnlyIds = new Set(
+    ((employeeProfilesRes as any).data ?? []).map((p: any) => p.employee_id)
   );
-  const totalLoansDisbursed = sum(loans, "amount_disbursed");
+
+  // Sum all savings regardless of status; balance may be null for some rows so coerce
+  const totalSavingsFromBalances = savings.reduce((acc, s) => acc + (Number(s.balance) || 0), 0);
+  // Fall back to contributions total if savings balances haven't been populated
+  const totalContributionsSum = contributions.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
+  const totalSavings = totalSavingsFromBalances > 0 ? totalSavingsFromBalances : totalContributionsSum;
+  const activeLoans = loans.filter((l) =>
+    ["approved", "disbursed", "repaying"].includes(l.status)
+  );
+  const totalLoansOutstanding = activeLoans.reduce((acc, l) => {
+    // outstanding_balance is authoritative; fall back to amount_approved or amount_requested
+    const outstanding =
+      Number(l.outstanding_balance) ||
+      Number(l.amount_approved) ||
+      Number(l.amount_requested) ||
+      0;
+    return acc + outstanding;
+  }, 0);
+  const totalLoansDisbursed = loans.reduce((acc, l) => {
+    // amount_disbursed is set after disbursement; fall back to amount_approved for approved loans
+    const disbursed =
+      Number(l.amount_disbursed) ||
+      (["approved", "disbursed", "repaying", "completed"].includes(l.status)
+        ? Number(l.amount_approved) || Number(l.amount_requested) || 0
+        : 0);
+    return acc + disbursed;
+  }, 0);
   const pendingLoans = loans.filter((l) => l.status === "pending").length;
   const approvedLoans = loans.filter((l) =>
     ["approved", "disbursed", "repaying", "completed"].includes(l.status)
   ).length;
   const totalWithdrawals = sum(
-    withdrawals.filter((w) => ["approved", "disbursed"].includes(w.status)),
+    withdrawals.filter((w) => ["approved", "disbursed", "pending"].includes(w.status)),
     "amount"
   );
   const totalDividends = sum(dividends, "dividend_amount");
@@ -297,7 +325,12 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     return { month: label, disbursements, repayments: monthRepayments };
   });
 
-  const loanMap = new Map(loans.map((loan) => [loan.id, loan]));
+  // Build member-only loan set — exclude any loan whose employee_id belongs to a non-employee role
+  const memberOnlyLoans = employeeOnlyIds.size > 0
+    ? loans.filter((l) => employeeOnlyIds.has(l.employee_id))
+    : loans;
+
+  const loanMap = new Map(memberOnlyLoans.map((loan) => [loan.id, loan]));
   const withdrawalMap = new Map(withdrawals.map((withdrawal) => [withdrawal.id, withdrawal]));
   const employeeName = (loan: any) =>
     `${loan.employees?.first_name || ""} ${loan.employees?.last_name || ""}`.trim() || "Unknown";
@@ -355,7 +388,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     totalStages: item.totalStages,
   }));
 
-  const recentDisbursements = loans
+  const recentDisbursements = memberOnlyLoans
     .filter((loan) => loan.amount_disbursed && loan.disbursement_date)
     .slice(0, 4)
     .map((loan) => ({
@@ -389,7 +422,10 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     };
   });
 
-  const employeeSummaries = activeEmployees.slice(0, 5).map((employee) => {
+  // Filter employees shown in summaries to actual members only
+  const memberEmployees = activeEmployees.filter((e) => employeeOnlyIds.size === 0 || employeeOnlyIds.has(e.id));
+
+  const employeeSummaries = memberEmployees.slice(0, 10).map((employee) => {
     const empLoans = loansByEmployee[employee.id] || { total: 0, outstanding: 0, count: 0 };
     return {
       id: employee.id,
@@ -434,11 +470,18 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
   const unionRepStats = {
     pendingReviews: unionRepQueue.length,
-    approvedReviews: approvalActions.filter((action) => action.action === "approved").length,
-    rejectedReviews: approvalActions.filter((action) => action.action === "rejected").length,
+    approvedReviews: approvalActions.filter(
+      (a) => a.action === "approved" && (a.stage === 1 || a.required_role === "union_rep")
+    ).length,
+    rejectedReviews: approvalActions.filter(
+      (a) => a.action === "rejected" && (a.stage === 1 || a.required_role === "union_rep")
+    ).length,
   };
 
-  const recentRecommendations = approvalActions.slice(0, 4).map((action) => {
+  const recentRecommendations = approvalActions
+    .filter((a) => a.stage === 1 || a.required_role === "union_rep")
+    .slice(0, 4)
+    .map((action) => {
     const approval = action.approvals;
     const loan =
       approval?.entity_type === "loan" ? loanMap.get(approval.entity_id) : null;
@@ -505,9 +548,15 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   employee_id: string | null;
 }) {
   const supabase = await createClient();
-  const employeeUuid = profile.employee_id
+  let employeeUuid = profile.employee_id
     ? await resolveEmployeeUuid(supabase, profile.employee_id)
     : null;
+
+  // Last resort: look up employee by matching user_id directly on employees table
+  if (!employeeUuid) {
+    const byUser = await supabase.from("employees").select("id").eq("user_id", userId).maybeSingle();
+    employeeUuid = (byUser.data as any)?.id ?? null;
+  }
 
   if (!employeeUuid) {
     return {
@@ -523,30 +572,66 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     };
   }
 
-  const [savingsRes, loansRes, approvalsRes, transactionsRes, allLoansRes, contributionsRes] =
+  const [savingsRes, loansRes, approvalsRes, transactionsRes, allLoansRes, contributionsRes, repaymentsRes] =
     await Promise.all([
       supabase.from("savings").select("balance, account_number, type").eq("employee_id", employeeUuid),
-      supabase.from("loans").select("*").eq("employee_id", employeeUuid).in("status", ["disbursed", "repaying"]),
-      supabase.from("approvals").select("*").eq("submitted_by", userId).eq("status", "pending"),
+      // Include 'approved' so loans awaiting disbursement still show as active
+      supabase.from("loans").select("*").eq("employee_id", employeeUuid).in("status", ["approved", "disbursed", "repaying"]),
+      // Match approvals by loans belonging to this employee (not just submitted_by)
+      supabase.from("approvals").select("*").eq("status", "pending"),
       supabase
         .from("transactions")
         .select("*")
         .eq("employee_id", employeeUuid)
         .order("created_at", { ascending: false })
-        .limit(5),
-      supabase.from("loans").select("outstanding_balance").eq("employee_id", employeeUuid),
+        .limit(10),
+      supabase.from("loans").select("outstanding_balance, amount_approved, amount_requested").eq("employee_id", employeeUuid),
       supabase
         .from("savings_contributions")
-        .select("amount, period_year, period_month")
-        .eq("employee_id", employeeUuid),
+        .select("amount, period_year, period_month, created_at")
+        .eq("employee_id", employeeUuid)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("repayments")
+        .select("id, amount_paid, amount_due, status, due_date, created_at")
+        .eq("employee_id", employeeUuid)
+        .order("created_at", { ascending: false })
+        .limit(10),
     ]);
 
-  const savingsData = savingsRes.data || [];
-  const loansData = loansRes.data || [];
-  const approvalsData = (approvalsRes.data || []) as any[];
-  const transactionsData = transactionsRes.data || [];
+  const savingsData = (savingsRes.data || []) as any[];
+  const loansData = (loansRes.data || []) as any[];
+  const transactionsData = (transactionsRes.data || []) as any[];
+  const repaymentsData = (repaymentsRes.data || []) as any[];
 
-  const loanIds = approvalsData.map((a) => a.entity_id).filter(Boolean);
+  // Filter approvals to only those whose entity is a loan belonging to this employee
+  const employeeLoanIds = new Set((allLoansRes.data || []).map((l: any) => l.id));
+  const allApprovals = (approvalsRes.data || []) as any[];
+  const approvalsData = allApprovals.filter(
+    (a) => a.submitted_by === userId || (a.entity_type === "loan" && employeeLoanIds.has(a.entity_id))
+  );
+
+  // Build recent activity from transactions; fall back to contributions + repayments if empty
+  const rawActivity: any[] = transactionsData.length > 0
+    ? transactionsData
+    : [
+        ...((contributionsRes.data || []) as any[]).map((c: any) => ({
+          id: c.id || `contrib-${c.period_year}-${c.period_month}`,
+          type: "savings_deposit",
+          description: `Savings contribution — ${c.period_month}/${c.period_year}`,
+          amount: c.amount,
+          created_at: c.created_at,
+        })),
+        ...repaymentsData.map((r: any) => ({
+          id: r.id,
+          type: "loan_repayment",
+          description: `Loan repayment — ${r.status}`,
+          amount: r.amount_paid || r.amount_due,
+          created_at: r.created_at,
+        })),
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+
+  const loanIds = approvalsData.map((a: any) => a.entity_id).filter(Boolean);
   const pendingLoanDetailsRes =
     loanIds.length > 0
       ? await supabase.from("loans").select("id, loan_ref, amount_requested, purpose, created_at").in("id", loanIds)
@@ -569,15 +654,23 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     )
     .reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
 
-  const totalLoanBalance = sum(allLoansRes.data || [], "outstanding_balance");
+  // Savings: use balance; fall back to sum of contributions if balance is zero/null
+  const savingsBalance = savingsData.reduce((s: number, r: any) => s + (Number(r.balance) || 0), 0);
+  const contributionsTotal = (contributionsRes.data || []).reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0);
+  const totalSavings = savingsBalance > 0 ? savingsBalance : contributionsTotal;
+
+  // Loan balance: use outstanding_balance; fall back to amount_approved / amount_requested
+  const totalLoanBalance = ((allLoansRes.data || []) as any[]).reduce((s: number, l: any) => {
+    return s + (Number(l.outstanding_balance) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
+  }, 0);
 
   return {
     fullName: profile.full_name,
-    totalSavings: sum(savingsData, "balance"),
+    totalSavings,
     totalLoanBalance,
     pendingRequests: approvalsData.length,
     activeLoans: loansData,
-    recentActivity: transactionsData,
+    recentActivity: rawActivity,
     pendingApplications: approvalsData.map((approval) => {
       const loan = pendingLoanMap.get(approval.entity_id);
       return {

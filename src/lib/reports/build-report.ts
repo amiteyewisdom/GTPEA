@@ -470,40 +470,54 @@ async function buildBalanceSheetReport(supabase: AppSupabase) {
 }
 
 async function buildTrialBalanceReport(supabase: AppSupabase) {
-  const [savingsRes, loansRes, repaymentRes, withdrawalRes, dividendRes, transactionRes] = await Promise.all([
+  const [savingsRes, loansRes, repaymentRes, withdrawalRes, dividendRes, transactionRes, contributionsRes, expensesRes] = await Promise.all([
     supabase.from("savings").select("balance").eq("status", "active"),
-    supabase.from("loans").select("outstanding_balance, amount_disbursed").in("status", ["disbursed", "repaying", "approved"]),
+    supabase.from("loans").select("outstanding_balance, amount_approved, amount_requested, amount_disbursed, status").in("status", ["disbursed", "repaying", "approved"]),
     supabase.from("repayments").select("amount_paid, interest_component").eq("status", "paid"),
     supabase.from("withdrawal_requests").select("amount").in("status", ["approved", "disbursed"]),
     supabase.from("dividends").select("dividend_amount").not("credited_at", "is", null),
     supabase.from("transactions").select("type, amount").in("type", ["interest_credit", "fee", "penalty"]),
+    supabase.from("savings_contributions").select("amount"),
+    supabase.from("expenses").select("amount"),
   ]);
 
   const membersSavings = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance), 0);
-  const loansOutstanding = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.outstanding_balance), 0);
-  const loansDisbursed = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount_disbursed || 0), 0);
+  const totalContributions = (contributionsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
+
+  // Use fallbacks for loans that haven't been formally disbursed yet
+  const loansOutstanding = (loansRes.data ?? []).reduce((s: number, r: any) => {
+    return s + (Number(r.outstanding_balance) || Number(r.amount_approved) || Number(r.amount_requested) || 0);
+  }, 0);
+  const loansDisbursed = (loansRes.data ?? []).reduce((s: number, r: any) => {
+    return s + (Number(r.amount_disbursed) || Number(r.amount_approved) || Number(r.amount_requested) || 0);
+  }, 0);
+
   const repaymentReceived = (repaymentRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount_paid), 0);
   const interestReceived = (repaymentRes.data ?? []).reduce((s: number, r: any) => s + Number(r.interest_component), 0);
   const withdrawalsDisbursed = (withdrawalRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
   const dividendsPaid = (dividendRes.data ?? []).reduce((s: number, r: any) => s + Number(r.dividend_amount), 0);
   const feesAndPenalties = (transactionRes.data ?? []).filter((t: any) => ["fee", "penalty"].includes(t.type)).reduce((s: number, t: any) => s + Number(t.amount), 0);
+  const totalExpenses = (expensesRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
 
-  const totalDebits = loansOutstanding + withdrawalsDisbursed + dividendsPaid;
-  const totalCredits = membersSavings + repaymentReceived + interestReceived + feesAndPenalties;
+  const totalDebits = loansDisbursed + withdrawalsDisbursed + dividendsPaid + totalExpenses;
+  const totalCredits = membersSavings + totalContributions + repaymentReceived + interestReceived + feesAndPenalties;
 
   const reportDate = new Date().toLocaleDateString("en-GB");
   const headers = ["Account Name", "Code", "Debit (GH₵)", "Credit (GH₵)"];
   const rows: (string | number)[][] = [
-    ["Members Savings", "63101001", "", membersSavings.toFixed(2)],
+    ["Members Savings (Balances)", "63101001", "", membersSavings.toFixed(2)],
+    ["Total Savings Contributions", "63101001", "", totalContributions.toFixed(2)],
+    ["Loans Disbursed (Total)", "62101001", loansDisbursed.toFixed(2), ""],
     ["Loans Outstanding", "62101001", loansOutstanding.toFixed(2), ""],
-    ["Total Loans Disbursed", "62101001", loansDisbursed.toFixed(2), ""],
     ["Repayments Received", "62101001", "", repaymentReceived.toFixed(2)],
     ["Interest on Loans", "11101001", "", interestReceived.toFixed(2)],
     ["Withdrawals Disbursed", "63101001", withdrawalsDisbursed.toFixed(2), ""],
     ["Dividends Paid", "63101003", dividendsPaid.toFixed(2), ""],
     ["Fees & Penalties", "11101001", "", feesAndPenalties.toFixed(2)],
+    ["Fund Expenses", "63101001", totalExpenses.toFixed(2), ""],
     ["", "", "", ""],
     ["TOTALS", "", totalDebits.toFixed(2), totalCredits.toFixed(2)],
+    ["NET BALANCE (Credits - Debits)", "", "", (totalCredits - totalDebits).toFixed(2)],
     ["", "", "", ""],
     [`Report Date: ${reportDate}`, "", "", ""],
   ];

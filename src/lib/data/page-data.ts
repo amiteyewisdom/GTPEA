@@ -11,29 +11,39 @@ export async function fetchFinancialOverview() {
   const stats = await fetchDashboardStats();
 
   const supabase = await createClient();
-  const { data: transactions } = await supabase
-    .from("transactions")
-    .select("amount, type")
-    .in("type", ["loan_repayment", "interest_credit", "fee", "loan_disbursement"]);
 
-  const rows = (transactions ?? []) as any[];
-  const loanInterest = sum(rows.filter((r) => r.type === "loan_repayment" || r.type === "interest_credit"), "amount");
-  const fees = sum(rows.filter((r) => r.type === "fee"), "amount");
-  const investments = sum(rows.filter((r) => r.type === "interest_credit"), "amount");
-  const revenueTotal = loanInterest + fees + investments;
+  // Pull real repayments, savings contributions, and member charges
+  const [repaymentsRes, contributionsRes, chargesRes] = await Promise.all([
+    supabase.from("repayments").select("amount_paid, interest_component, status").eq("status", "paid"),
+    supabase.from("savings_contributions").select("amount"),
+    supabase.from("transactions").select("amount, type").in("type", ["fee", "penalty"]),
+  ]);
+
+  const repayments = (repaymentsRes.data ?? []) as any[];
+  const contributions = (contributionsRes.data ?? []) as any[];
+  const chargeRows = (chargesRes.data ?? []) as any[];
+
+  // Revenue: total repayments received + interest component + fees & penalties collected
+  const loanRepayments = repayments.reduce((s, r) => s + (Number(r.amount_paid) || 0), 0);
+  const interestCredits = repayments.reduce((s, r) => s + (Number(r.interest_component) || 0), 0);
+  const fees = chargeRows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const revenueTotal = loanRepayments + interestCredits + fees;
 
   const breakdown = [
-    { label: "Loan Repayments", amount: loanInterest, color: "bg-brand-success" },
-    { label: "Interest Credits", amount: investments, color: "bg-brand-accent" },
-    { label: "Fees", amount: fees, color: "bg-brand-warning" },
+    { label: "Loan Repayments", amount: loanRepayments, color: "bg-brand-success" },
+    { label: "Interest Credits", amount: interestCredits, color: "bg-brand-accent" },
+    { label: "Fees & Penalties", amount: fees, color: "bg-brand-warning" },
   ].map((item) => ({
     ...item,
     percent: revenueTotal > 0 ? Math.round((item.amount / revenueTotal) * 100) : 0,
   }));
 
-  const totalAssets = stats.totalSavings;
+  // Total Assets = member savings (fall back to contributions if balances not set)
+  const contributionsTotal = contributions.reduce((s, c) => s + (Number(c.amount) || 0), 0);
+  const totalAssets = stats.totalSavings > 0 ? stats.totalSavings : contributionsTotal;
   const totalLiabilities = stats.totalLoansOutstanding;
   const netIncome = Math.max(totalAssets - totalLiabilities, 0);
+
   const growthRate =
     stats.savingsTrend.length >= 2
       ? ((stats.savingsTrend.at(-1)?.savings ?? 0) /
@@ -86,15 +96,18 @@ export async function fetchMyLoansData() {
 
   const { data: loans } = await supabase
     .from("loans")
-    .select("id, loan_ref, status, amount_requested, amount_disbursed, outstanding_balance, purpose, created_at, term_months, loan_products(name)")
+    .select("id, loan_ref, status, amount_requested, amount_approved, amount_disbursed, outstanding_balance, purpose, created_at, term_months, loan_products(name)")
     .eq("employee_id", employeeUuid)
     .order("created_at", { ascending: false });
 
   const rows = (loans ?? []) as any[];
+  const totalBorrowed = rows.reduce((s, l) => {
+    return s + (Number(l.amount_disbursed) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
+  }, 0);
   return {
     pending: rows.filter((l) => l.status === "pending").length,
     active: rows.filter((l) => ["disbursed", "repaying", "approved"].includes(l.status)).length,
-    totalBorrowed: sum(rows, "amount_disbursed"),
+    totalBorrowed,
     loans: rows,
   };
 }
@@ -124,8 +137,12 @@ export async function fetchSavingsHistoryData() {
     )
     .reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
 
+  const savingsBalance = (savingsRes.data ?? []).reduce((s, r: any) => s + (Number(r.balance) || 0), 0);
+  const contributionsTotal = contributions.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
+  const totalSavings = savingsBalance > 0 ? savingsBalance : contributionsTotal;
+
   return {
-    totalSavings: sum(savingsRes.data ?? [], "balance"),
+    totalSavings,
     thisMonth,
     contributions,
   };
@@ -281,16 +298,39 @@ export async function fetchMembersData() {
 
 export async function fetchLedgerSummary() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("ledger_entries")
-    .select("debit, credit, running_balance")
-    .order("posted_at", { ascending: false })
-    .limit(500);
 
-  const rows = (data ?? []) as any[];
-  const totalCredits = sum(rows, "credit");
-  const totalDebits = sum(rows, "debit");
-  const currentBalance = rows[0]?.running_balance ?? 0;
+  const [savingsRes, loansRes, repaymentsRes, contributionsRes] = await Promise.all([
+    supabase.from("savings").select("balance, status"),
+    supabase.from("loans").select("amount_approved, amount_requested, outstanding_balance, amount_disbursed, status"),
+    supabase.from("repayments").select("amount_paid, status"),
+    supabase.from("savings_contributions").select("amount"),
+  ]);
+
+  const savings = (savingsRes.data ?? []) as any[];
+  const loans = (loansRes.data ?? []) as any[];
+  const repayments = (repaymentsRes.data ?? []) as any[];
+  const contributions = (contributionsRes.data ?? []) as any[];
+
+  // Credits = money coming INTO the fund: savings deposits + loan repayments paid
+  const totalSavingsDeposited = sum(savings, "balance");
+  const totalRepaymentsPaid = sum(
+    repayments.filter((r) => r.status === "paid"),
+    "amount_paid"
+  );
+  const totalCredits = totalSavingsDeposited + totalRepaymentsPaid;
+
+  // Debits = money going OUT of the fund: loan disbursements
+  const totalDebits = loans.reduce((acc, l) => {
+    if (!["approved", "disbursed", "repaying", "completed"].includes(l.status)) return acc;
+    return acc + (Number(l.amount_disbursed) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
+  }, 0);
+
+  // Current balance = total savings in fund minus outstanding loans
+  const totalOutstanding = loans.reduce((acc, l) => {
+    if (!["approved", "disbursed", "repaying"].includes(l.status)) return acc;
+    return acc + (Number(l.outstanding_balance) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
+  }, 0);
+  const currentBalance = Math.max(totalSavingsDeposited - totalOutstanding, 0);
 
   return { totalCredits, totalDebits, currentBalance };
 }

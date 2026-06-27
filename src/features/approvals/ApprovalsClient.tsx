@@ -75,7 +75,8 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [view, setView] = useState<"action" | "all">("action");
+  const isApproverRole = ["union_rep", "fund_manager", "chairperson"].includes(userRole);
+  const [view, setView] = useState<"action" | "all">(isApproverRole ? "action" : "all");
 
   const STAGE_ROLE_MAP: Record<number, string> = Object.fromEntries(
     APPROVAL_STAGES.map((s) => [s.stage, s.role])
@@ -161,7 +162,10 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
 
       {/* KPIs */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard title="Needs My Action" value={myActionCount} icon={Clock} accent={myActionCount > 0 ? "warning" : "primary"} subtitle="Ready for your review" />
+        {isApproverRole
+          ? <KPICard title="Needs My Action" value={myActionCount} icon={Clock} accent={myActionCount > 0 ? "warning" : "primary"} subtitle="Ready for your review" />
+          : <KPICard title="All Approvals" value={approvals.length} icon={Clock} accent="primary" subtitle="In the system" />
+        }
         <KPICard title="Pending Review" value={pending} icon={Clock} accent="primary" subtitle="All pending" />
         <KPICard title="Approved" value={approved} icon={CheckCircle} accent="success" subtitle="This period" />
         <KPICard title="Rejected" value={rejected} icon={XCircle} accent="danger" subtitle="This period" />
@@ -170,17 +174,19 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
       {/* View toggle + Search */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2">
-          <button
-            onClick={() => { setView("action"); setPage(0); }}
-            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${view === "action" ? "bg-brand-green text-white" : "border border-brand-card-border bg-white text-brand-text-secondary hover:bg-brand-hover"}`}
-          >
-            Needs My Action ({myActionCount})
-          </button>
+          {isApproverRole && (
+            <button
+              onClick={() => { setView("action"); setPage(0); }}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${view === "action" ? "bg-brand-green text-white" : "border border-brand-card-border bg-white text-brand-text-secondary hover:bg-brand-hover"}`}
+            >
+              Needs My Action ({myActionCount})
+            </button>
+          )}
           <button
             onClick={() => { setView("all"); setPage(0); }}
             className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${view === "all" ? "bg-brand-green text-white" : "border border-brand-card-border bg-white text-brand-text-secondary hover:bg-brand-hover"}`}
           >
-            All Relevant
+            {isApproverRole ? "All Relevant" : "All Approvals"}
           </button>
         </div>
         <div className="relative max-w-xs w-full">
@@ -237,7 +243,9 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-semibold text-brand-text">{approval.current_stage ?? 1}/{approval.total_stages ?? 3}</span>
-                      <p className="text-xs text-brand-text-secondary">{labelForStage(approval.current_stage ?? 1)}</p>
+                      {(approval.current_stage ?? 1) < (approval.total_stages ?? 3) && (
+                        <p className="text-xs text-brand-text-secondary">{labelForStage(approval.current_stage ?? 1)}</p>
+                      )}
                       {approval.status === "pending" && needsMyAction(approval) && (
                         <span className="mt-1 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">Your turn</span>
                       )}

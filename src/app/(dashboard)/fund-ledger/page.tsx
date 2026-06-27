@@ -7,17 +7,84 @@ import { Minus, Plus, BadgeCent } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Fund Ledger" };
+export const dynamic = "force-dynamic";
 
 export default async function FundLedgerPage() {
   const supabase = await createClient();
-  const [summary, ledgerRes] = await Promise.all([
+
+  const [summary, loansRes, contributionsRes, repaymentsRes] = await Promise.all([
     fetchLedgerSummary(),
     supabase
-      .from("ledger_entries")
-      .select(`*, employees (first_name, last_name, employee_no)`, { count: "exact" })
-      .order("posted_at", { ascending: false })
-      .limit(100),
+      .from("loans")
+      .select("id, loan_ref, amount_approved, amount_requested, amount_disbursed, status, created_at, employees(first_name, last_name, employee_no)")
+      .in("status", ["approved", "disbursed", "repaying", "completed"])
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("savings_contributions")
+      .select("id, amount, period_year, period_month, created_at, employees(first_name, last_name, employee_no)")
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase
+      .from("repayments")
+      .select("id, amount_paid, amount_due, due_date, status, created_at, employees(first_name, last_name, employee_no)")
+      .eq("status", "paid")
+      .order("created_at", { ascending: false })
+      .limit(50),
   ]);
+
+  // Build synthetic ledger rows from real data
+  type SyntheticRow = {
+    id: string; account_type: string; debit: number; credit: number;
+    running_balance: number; narration: string; reference: string;
+    period_year: number; period_month: number; posted_at: string;
+    employees?: { first_name: string; last_name: string; employee_no: string } | null;
+  };
+
+  const loanRows: SyntheticRow[] = (loansRes.data ?? []).map((l: any) => {
+    const amount = Number(l.amount_disbursed) || Number(l.amount_approved) || Number(l.amount_requested) || 0;
+    const d = new Date(l.created_at);
+    return {
+      id: l.id, account_type: "loan", debit: amount, credit: 0, running_balance: 0,
+      narration: `Loan disbursement — ${l.loan_ref || l.id.slice(0, 8)}`,
+      reference: l.loan_ref || l.id.slice(0, 8).toUpperCase(),
+      period_year: d.getFullYear(), period_month: d.getMonth() + 1,
+      posted_at: l.created_at, employees: l.employees ?? null,
+    };
+  });
+
+  const savingsRows: SyntheticRow[] = (contributionsRes.data ?? []).map((c: any) => {
+    const d = new Date(c.created_at);
+    return {
+      id: c.id, account_type: "savings", debit: 0, credit: Number(c.amount) || 0, running_balance: 0,
+      narration: `Savings contribution — ${c.period_year}-${String(c.period_month).padStart(2, "0")}`,
+      reference: `SAV-${c.id.slice(0, 8).toUpperCase()}`,
+      period_year: c.period_year, period_month: c.period_month,
+      posted_at: c.created_at, employees: c.employees ?? null,
+    };
+  });
+
+  const repaymentRows: SyntheticRow[] = (repaymentsRes.data ?? []).map((r: any) => {
+    const d = new Date(r.created_at || r.due_date);
+    return {
+      id: r.id, account_type: "loan_repayment", debit: 0, credit: Number(r.amount_paid) || Number(r.amount_due) || 0, running_balance: 0,
+      narration: `Loan repayment`,
+      reference: `REP-${r.id.slice(0, 8).toUpperCase()}`,
+      period_year: d.getFullYear(), period_month: d.getMonth() + 1,
+      posted_at: r.created_at || r.due_date, employees: r.employees ?? null,
+    };
+  });
+
+  // Sort all entries by date descending and compute running balance
+  const allRows = [...loanRows, ...savingsRows, ...repaymentRows]
+    .sort((a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime());
+
+  let running = summary.currentBalance;
+  const ledgerEntries = allRows.map((row) => {
+    const entry = { ...row, running_balance: running };
+    running -= (row.credit - row.debit);
+    return entry;
+  });
 
   return (
     <div className="space-y-6">
@@ -58,7 +125,7 @@ export default async function FundLedgerPage() {
         </GlassCard>
       </div>
 
-      <LedgerClient ledgerEntries={ledgerRes.data ?? []} total={ledgerRes.count ?? 0} />
+      <LedgerClient ledgerEntries={ledgerEntries} total={ledgerEntries.length} />
     </div>
   );
 }

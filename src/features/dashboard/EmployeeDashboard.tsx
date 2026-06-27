@@ -47,7 +47,7 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
               <span className="text-base font-bold leading-none">GH₵</span>
               Apply for Loan
             </button>
-            <button className="flex items-center gap-2 px-6 py-3 bg-brand-card-bg border border-brand-card-border text-brand-text font-semibold rounded-lg hover:bg-brand-hover transition-all">
+            <button onClick={() => router.push('/savings-history')} className="flex items-center gap-2 px-6 py-3 bg-brand-card-bg border border-brand-card-border text-brand-text font-semibold rounded-lg hover:bg-brand-hover transition-all">
               <PiggyBank className="w-5 h-5" />
               View Savings
             </button>
