@@ -593,10 +593,10 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
         .order("created_at", { ascending: false }),
       supabase
         .from("repayments")
-        .select("id, amount_paid, amount_due, status, due_date, created_at")
+        .select("id, loan_id, amount_paid, amount_due, status, due_date, created_at")
         .eq("employee_id", employeeUuid)
         .order("created_at", { ascending: false })
-        .limit(10),
+        .limit(50),
     ]);
 
   const savingsData = (savingsRes.data || []) as any[];
@@ -664,12 +664,30 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     return s + (Number(l.outstanding_balance) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
   }, 0);
 
+  // Enrich active loans with monthly payment and next due date from repayments
+  const repaymentsByLoan = repaymentsData.reduce((acc: Record<string, any[]>, r: any) => {
+    (acc[r.loan_id] ||= []).push(r);
+    return acc;
+  }, {});
+  const activeLoansWithSchedule = loansData.map((loan: any) => {
+    const loanRepayments = repaymentsByLoan[loan.id] ?? [];
+    const nextPending = loanRepayments
+      .filter((r) => ["pending", "overdue"].includes(r.status))
+      .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
+    return {
+      ...loan,
+      monthly_payment: loan.monthly_repayment || loan.monthly_payment || 0,
+      outstanding_balance: loan.outstanding_balance || loan.amount_approved || loan.amount_requested || 0,
+      next_payment_date: nextPending?.due_date ?? loan.disbursement_date,
+    };
+  });
+
   return {
     fullName: profile.full_name,
     totalSavings,
     totalLoanBalance,
     pendingRequests: approvalsData.length,
-    activeLoans: loansData,
+    activeLoans: activeLoansWithSchedule,
     recentActivity: rawActivity,
     pendingApplications: approvalsData.map((approval) => {
       const loan = pendingLoanMap.get(approval.entity_id);

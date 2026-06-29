@@ -127,7 +127,7 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
             <h3 className="text-xl font-semibold text-brand-text">Active Loans</h3>
             <p className="text-brand-text-secondary text-sm">Your current loan portfolio</p>
           </div>
-          <button className="flex items-center gap-2 text-brand-accent text-sm font-medium hover:text-brand-accent/80 transition-all">
+          <button onClick={() => router.push('/my-loans')} className="flex items-center gap-2 text-brand-accent text-sm font-medium hover:text-brand-accent/80 transition-all">
             View All
             <ArrowRight className="w-4 h-4" />
           </button>
@@ -137,7 +137,7 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
             <LoanCard
               key={loan.id}
               loanId={loan.loan_ref || 'N/A'}
-              amount={formatCurrency(loan.amount_approved || 0)}
+              amount={formatCurrency(loan.amount_approved || loan.amount_requested || 0)}
               remainingBalance={formatCurrency(loan.outstanding_balance || 0)}
               monthlyPayment={formatCurrency(loan.monthly_payment || 0)}
               nextDueDate={loan.next_payment_date ? formatDate(loan.next_payment_date) : 'N/A'}
@@ -149,12 +149,12 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
         </div>
       </GlassCard>
 
-      {/* Recent Activity */}
+      {/* Recent Activities */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-xl font-semibold text-brand-text">Recent Activity</h3>
-            <p className="text-brand-text-secondary text-sm">Your latest transactions</p>
+            <h3 className="text-xl font-semibold text-brand-text">Recent Activities</h3>
+            <p className="text-brand-text-secondary text-sm">Your latest contributions, repayments, and transactions</p>
           </div>
         </div>
         <div className="space-y-3">
@@ -225,6 +225,9 @@ function LoanCard({ loanId, amount, remainingBalance, monthlyPayment, nextDueDat
     active: 'text-brand-success',
     overdue: 'text-brand-danger',
     pending: 'text-brand-warning',
+    approved: 'text-brand-accent',
+    disbursed: 'text-brand-success',
+    repaying: 'text-brand-success',
   };
 
   return (
