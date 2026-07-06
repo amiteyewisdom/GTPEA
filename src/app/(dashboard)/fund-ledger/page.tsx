@@ -16,18 +16,18 @@ export default async function FundLedgerPage() {
     fetchLedgerSummary(),
     supabase
       .from("loans")
-      .select("id, loan_ref, amount_approved, amount_requested, amount_disbursed, status, created_at, employees(first_name, last_name, employee_no)")
+      .select("id, loan_ref, amount_approved, amount_requested, amount_disbursed, status, created_at, employees!employee_id(first_name, last_name, employee_no)")
       .in("status", ["approved", "disbursed", "repaying", "completed"])
       .order("created_at", { ascending: false })
       .limit(50),
     supabase
       .from("savings_contributions")
-      .select("id, amount, period_year, period_month, created_at, employees(first_name, last_name, employee_no)")
+      .select("id, amount, period_year, period_month, created_at, employees!employee_id(first_name, last_name, employee_no)")
       .order("created_at", { ascending: false })
       .limit(50),
     supabase
       .from("repayments")
-      .select("id, amount_paid, amount_due, due_date, status, created_at, employees(first_name, last_name, employee_no)")
+      .select("id, amount_paid, amount_due, due_date, status, created_at, employees!employee_id(first_name, last_name, employee_no)")
       .eq("status", "paid")
       .order("created_at", { ascending: false })
       .limit(50),

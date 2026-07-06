@@ -44,7 +44,20 @@ export function LedgerClient({ ledgerEntries, total }: LedgerClientProps) {
     ? ledgerEntries.filter((e) => e.account_type === selectedAccount)
     : ledgerEntries;
 
-  const presentTypes = Array.from(new Set(ledgerEntries.map((e) => e.account_type)));
+  const allAccountTypes = [
+    { key: "savings", label: "Savings" },
+    { key: "loan", label: "Loans" },
+    { key: "loan_repayment", label: "Repayments" },
+    { key: "withdrawal", label: "Withdrawals" },
+    { key: "interest", label: "Interest" },
+    { key: "dividend", label: "Dividends" },
+    { key: "penalty", label: "Penalties" },
+    { key: "fee", label: "Fees" },
+  ];
+
+  const visibleTypes = allAccountTypes.filter((t) =>
+    selectedAccount === t.key || ledgerEntries.some((e) => e.account_type === t.key)
+  );
 
   return (
     <div className="space-y-4">
@@ -53,7 +66,7 @@ export function LedgerClient({ ledgerEntries, total }: LedgerClientProps) {
         <span className="text-sm text-brand-text-secondary">{total} entries</span>
       </div>
 
-      {/* Filter chips */}
+      {/* Filter tabs */}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setSelectedAccount(null)}
@@ -61,13 +74,13 @@ export function LedgerClient({ ledgerEntries, total }: LedgerClientProps) {
         >
           All
         </button>
-        {presentTypes.map((k) => (
+        {visibleTypes.map((t) => (
           <button
-            key={k}
-            onClick={() => setSelectedAccount(k)}
-            className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${selectedAccount === k ? FILTER_ACTIVE : FILTER_IDLE}`}
+            key={t.key}
+            onClick={() => setSelectedAccount(t.key)}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${selectedAccount === t.key ? FILTER_ACTIVE : FILTER_IDLE}`}
           >
-            {k.replace(/_/g, " ")}
+            {t.label}
           </button>
         ))}
       </div>
