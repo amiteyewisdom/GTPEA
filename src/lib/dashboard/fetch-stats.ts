@@ -427,18 +427,33 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   // Filter employees shown in summaries to actual members only
   const memberEmployees = activeEmployees.filter((e) => employeeOnlyIds.size === 0 || employeeOnlyIds.has(e.id));
 
-  const employeeSummaries = memberEmployees.slice(0, 10).map((employee) => {
-    const empLoans = loansByEmployee[employee.id] || { total: 0, outstanding: 0, count: 0 };
-    return {
-      id: employee.id,
-      name: `${employee.first_name} ${employee.last_name}`,
-      savings: formatCurrency(savingsByEmployee[employee.id] || 0),
-      loans: formatCurrency(empLoans.total),
-      balance: formatCurrency(empLoans.outstanding),
-      dividends: formatCurrency(dividendsByEmployee[employee.id] || 0),
-      withdrawals: formatCurrency(withdrawalsByEmployee[employee.id] || 0),
-    };
-  });
+  const employeeSummaries = memberEmployees
+    .map((employee) => {
+      const empLoans = loansByEmployee[employee.id] || { total: 0, outstanding: 0, count: 0 };
+      const savings = savingsByEmployee[employee.id] || 0;
+      const dividends = dividendsByEmployee[employee.id] || 0;
+      const withdrawals = withdrawalsByEmployee[employee.id] || 0;
+      return {
+        id: employee.id,
+        name: `${employee.first_name} ${employee.last_name}`,
+        savings,
+        loans: empLoans.total,
+        balance: empLoans.outstanding,
+        dividends,
+        withdrawals,
+      };
+    })
+    .filter((e) => e.savings > 0 || e.loans > 0 || e.balance > 0 || e.dividends > 0 || e.withdrawals > 0)
+    .slice(0, 10)
+    .map((e) => ({
+      id: e.id,
+      name: e.name,
+      savings: formatCurrency(e.savings),
+      loans: formatCurrency(e.loans),
+      balance: formatCurrency(e.balance),
+      dividends: formatCurrency(e.dividends),
+      withdrawals: formatCurrency(e.withdrawals),
+    }));
 
   const unionRepLoans = unionRepQueue.slice(0, 6).map((item) => {
     const loan = loanMap.get(item.loanId);
