@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatCurrency } from "@/utils/formatters";
+import { Minus, Plus } from "lucide-react";
 
 const ACCOUNT_BADGE: Record<string, string> = {
   savings:        "bg-indigo-100 text-indigo-700",
@@ -71,8 +72,8 @@ export function LedgerClient({ ledgerEntries, total }: LedgerClientProps) {
         ))}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-brand border border-brand-card-border bg-white">
+      {/* Desktop table */}
+      <div className="hidden lg:block overflow-x-auto rounded-brand border border-brand-card-border bg-white">
         <table className="min-w-full text-sm">
           <thead>
             <tr className="border-b border-brand-card-border bg-brand-card-bg">
@@ -115,6 +116,54 @@ export function LedgerClient({ ledgerEntries, total }: LedgerClientProps) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="lg:hidden space-y-3">
+        {filteredEntries.length === 0 ? (
+          <div className="rounded-brand border border-brand-card-border bg-white p-8 text-center text-sm text-brand-text-secondary">
+            No ledger entries found
+          </div>
+        ) : filteredEntries.map((r) => (
+          <div
+            key={r.id}
+            className="rounded-brand border border-brand-card-border bg-white p-4 space-y-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-brand-text">{r.reference}</span>
+              <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${ACCOUNT_BADGE[r.account_type] ?? "bg-slate-100 text-slate-600"}`}>
+                {r.account_type.replace(/_/g, " ")}
+              </span>
+            </div>
+
+            <p className="text-sm text-brand-text-secondary">{r.narration}</p>
+
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              <div className="rounded-lg bg-brand-card-bg p-2">
+                <p className="text-xs text-brand-text-secondary mb-1">Debit</p>
+                <p className="font-medium text-red-600 flex items-center gap-1">
+                  <Minus className="w-3 h-3" />
+                  {r.debit > 0 ? formatCurrency(r.debit) : "—"}
+                </p>
+              </div>
+              <div className="rounded-lg bg-brand-card-bg p-2">
+                <p className="text-xs text-brand-text-secondary mb-1">Credit</p>
+                <p className="font-medium text-green-600 flex items-center gap-1">
+                  <Plus className="w-3 h-3" />
+                  {r.credit > 0 ? formatCurrency(r.credit) : "—"}
+                </p>
+              </div>
+              <div className="rounded-lg bg-brand-card-bg p-2">
+                <p className="text-xs text-brand-text-secondary mb-1">Balance</p>
+                <p className="font-semibold text-brand-text">{formatCurrency(r.running_balance)}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-brand-text-secondary">
+              Period: {r.period_year}-{String(r.period_month).padStart(2, "0")}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );
