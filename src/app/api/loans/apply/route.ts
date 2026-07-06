@@ -49,6 +49,13 @@ async function handleApply(body: any) {
     );
   }
 
+  if (employee.role !== "employee") {
+    return NextResponse.json(
+      { error: "Only employees can apply for loans." },
+      { status: 403 }
+    );
+  }
+
   const productRes = await supabase
     .from("loan_products")
     .select("id, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, is_active")

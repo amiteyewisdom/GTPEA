@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LoanApplication } from "@/features/loans/LoanApplication";
 import { getLoggedInEmployee } from "@/lib/loans/employee";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Apply for Loan" };
@@ -16,6 +17,10 @@ export default async function ApplyLoanPage() {
       .eq("is_active", true),
     getLoggedInEmployee(supabase),
   ]);
+
+  if (!employee || employee.role !== "employee") {
+    redirect("/dashboard");
+  }
 
   let savingsBalance = 0;
   let activeLoanBalance = 0;

@@ -46,6 +46,7 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
   const [updateContribModal, setUpdateContribModal] = useState<{ row: SavingsRow } | null>(null);
   const [newContrib, setNewContrib] = useState("");
   const [contribLoading, setContribLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -92,6 +93,22 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
   });
 
   const avgBalance = total > 0 ? totalBalance / total : 0;
+
+  const handleCreateAccounts = async () => {
+    setCreateLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/savings/create-accounts", { method: "POST" });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload?.error || "Failed to create accounts.");
+      setMessage({ type: "success", text: payload.message });
+      router.refresh();
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to create accounts." });
+    } finally {
+      setCreateLoading(false);
+    }
+  };
 
   const handleContribute = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,13 +196,23 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
             className="pl-10 pr-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent w-72"
           />
         </div>
-        <button
-          onClick={() => setShowContributeForm(!showContributeForm)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Contribute
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleCreateAccounts}
+            disabled={createLoading}
+            className="flex items-center gap-2 px-4 py-2.5 border border-brand-card-border text-brand-text font-semibold rounded-lg hover:bg-brand-hover transition-all disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+            {createLoading ? "Creating..." : "Create Accounts"}
+          </button>
+          <button
+            onClick={() => setShowContributeForm(!showContributeForm)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Contribute
+          </button>
+        </div>
       </div>
 
       {/* Contribute Form */}

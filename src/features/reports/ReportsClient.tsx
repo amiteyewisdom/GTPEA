@@ -32,7 +32,7 @@ import {
 
 interface ReportSummary {
   totalEmployees: number;
-  activeLoans: number;
+  totalLoans: number;
   totalApprovals: number;
   totalSavings: number;
   totalOutstanding: number;
@@ -231,8 +231,8 @@ export function ReportsClient({
               color="text-brand-success"
             />
             <DashboardStatCard
-              title="Active Loans"
-              value={formatNumber(summary.activeLoans)}
+              title="Total Loans"
+              value={formatNumber(summary.totalLoans)}
               icon={Landmark}
               color="text-brand-accent"
             />

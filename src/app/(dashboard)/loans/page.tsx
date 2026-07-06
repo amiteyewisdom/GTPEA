@@ -8,6 +8,13 @@ export const metadata: Metadata = { title: "Loans" };
 export default async function LoansPage() {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: currentProfile } = user
+    ? await supabase.from("profiles").select("role").eq("user_id", user.id).single()
+    : { data: null };
+
   const [loanProductsRes, loansRes, employeeProfilesRes] = await Promise.all([
     supabase
       .from("loan_products")
@@ -35,16 +42,21 @@ export default async function LoansPage() {
   const typedLoans = filteredLoans as Loan[];
   const loanProducts = loanProductsRes.data ?? [];
 
-  const totalDisbursed = typedLoans.filter((l) => l.amount_disbursed).reduce((sum, l) => sum + (l.amount_disbursed ?? 0), 0);
-  const totalOutstanding = typedLoans.reduce((sum, l) => sum + (l.outstanding_balance ?? 0), 0);
+  const totalDisbursed = typedLoans.reduce((sum, l) => {
+    return sum + (Number(l.amount_disbursed) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
+  }, 0);
+  const totalOutstanding = typedLoans.reduce((sum, l) => {
+    return sum + (Number(l.outstanding_balance) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
+  }, 0);
 
   return (
     <LoansClient
       loans={typedLoans ?? []}
       loanProducts={loanProducts}
-      total={loansRes.count ?? 0}
+      total={typedLoans.length}
       totalDisbursed={totalDisbursed}
       totalOutstanding={totalOutstanding}
+      userRole={(currentProfile?.role as string) ?? "employee"}
     />
   );
 }

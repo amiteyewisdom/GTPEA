@@ -512,8 +512,10 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     status: "success",
   }));
 
+  const activeEmployeeOnly = activeEmployees.filter((e) => employeeOnlyIds.has(e.id));
+
   return {
-    totalEmployees: activeEmployees.length,
+    totalEmployees: activeEmployeeOnly.length,
     totalSavings,
     totalLoansOutstanding,
     totalLoansDisbursed,

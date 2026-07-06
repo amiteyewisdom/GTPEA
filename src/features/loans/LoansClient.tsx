@@ -12,6 +12,7 @@ interface LoanRow {
   loan_ref: string;
   status: string;
   amount_requested: number;
+  amount_approved: number | null;
   amount_disbursed: number | null;
   outstanding_balance: number;
   monthly_repayment: number;
@@ -43,11 +44,13 @@ interface LoansClientProps {
   total: number;
   totalDisbursed: number;
   totalOutstanding: number;
+  userRole?: string;
 }
 
 const ALL_TABS = ["all", "pending", "approved", "disbursed", "repaying", "completed", "rejected", "defaulted"];
 
-export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalOutstanding }: LoansClientProps) {
+export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalOutstanding, userRole }: LoansClientProps) {
+  const isEmployee = userRole === "employee";
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [page, setPage] = useState(0);
@@ -139,7 +142,7 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
         <KPICard title="Defaulted" value={defaulted} icon={AlertTriangle} accent={defaulted > 0 ? "danger" : "primary"} subtitle={`${((defaulted / Math.max(total, 1)) * 100).toFixed(1)}% default rate`} />
       </div>
 
-      <LoanApplication loanProducts={loanProducts} />
+      {isEmployee && <LoanApplication loanProducts={loanProducts} />}
 
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -218,6 +221,9 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
               ) : (
                 paginated.map((loan) => {
                   const progress = repaymentProgress(loan);
+                  const displayedAmount = Number(loan.amount_approved) || Number(loan.amount_requested) || 0;
+                  const outstandingBalance = Number(loan.outstanding_balance) || displayedAmount;
+                  const disbursedAmount = Number(loan.amount_disbursed) || displayedAmount;
                   return (
                     <tr key={loan.id} className="hover:bg-brand-hover/50 transition-colors">
                       <td className="px-4 py-3">
@@ -229,8 +235,8 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
                       <td className="hidden px-4 py-3 font-mono text-xs text-indigo-500 sm:table-cell">{loan.loan_ref}</td>
                       <td className="hidden px-4 py-3 text-sm text-brand-text-secondary md:table-cell">{loan.loan_products?.name ?? "—"}</td>
                       <td className="px-4 py-3 font-semibold text-brand-text">{formatCurrency(loan.amount_requested)}</td>
-                      <td className={`px-4 py-3 font-semibold ${loan.outstanding_balance > 0 ? "text-red-500" : "text-green-500"}`}>
-                        {formatCurrency(loan.outstanding_balance)}
+                      <td className={`px-4 py-3 font-semibold ${outstandingBalance > 0 ? "text-red-500" : "text-green-500"}`}>
+                        {formatCurrency(outstandingBalance)}
                       </td>
                       <td className="hidden px-4 py-3 lg:table-cell">
                         {progress !== null ? (
@@ -245,7 +251,7 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
                       <td className="hidden px-4 py-3 text-sm text-brand-text-secondary md:table-cell">{formatCurrency(loan.monthly_repayment)}</td>
                       <td className="hidden px-4 py-3 font-semibold text-indigo-500 sm:table-cell">{loan.interest_rate}%</td>
                       <td className="hidden px-4 py-3 text-sm text-brand-text-secondary sm:table-cell">
-                        {loan.disbursement_date ? formatDate(loan.disbursement_date) : "—"}
+                        {formatCurrency(disbursedAmount)}
                       </td>
                       <td className="px-4 py-3"><StatusChip status={loan.status} /></td>
                       <td className="px-4 py-3 text-right">

@@ -10,6 +10,7 @@ export default async function ReportsPage() {
 
   const [
     totalEmployeesRes,
+    employeeProfilesRes,
     activeLoansRes,
     totalApprovalsRes,
     savingsRes,
@@ -20,10 +21,11 @@ export default async function ReportsPage() {
     dividendsRes,
   ] = await Promise.all([
     supabase.from("employees").select("id", { count: "exact", head: true }),
-    supabase.from("loans").select("id", { count: "exact", head: true }).in("status", ["disbursed", "repaying"]),
-    supabase.from("approvals").select("id", { count: "exact", head: true }),
+    supabase.from("profiles").select("employee_id").eq("role", "employee").not("employee_id", "is", null),
+    supabase.from("loans").select("id", { count: "exact", head: true }).in("status", ["pending", "approved", "disbursed", "repaying"]),
+    supabase.from("approvals").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("savings").select("balance, type, status"),
-    supabase.from("loans").select("outstanding_balance, amount_disbursed, status, interest_rate"),
+    supabase.from("loans").select("outstanding_balance, amount_approved, amount_requested, amount_disbursed, status, interest_rate"),
     supabase.from("savings_contributions").select("amount, period_year, period_month, created_at").order("created_at", { ascending: true }).limit(100),
     supabase.from("transactions").select("amount, type, created_at").order("created_at", { ascending: true }).limit(100),
     supabase.from("withdrawal_requests").select("amount, status, requested_at").order("requested_at", { ascending: true }).limit(100),
@@ -37,9 +39,24 @@ export default async function ReportsPage() {
   const withdrawalsData = withdrawalsRes.data as any[] | null;
   const dividendsData = dividendsRes.data as any[] | null;
 
-  const totalSavings = savingsData?.reduce((s, r) => s + (r.balance ?? 0), 0) ?? 0;
-  const totalOutstanding = loanData?.reduce((s, r) => s + (r.outstanding_balance ?? 0), 0) ?? 0;
-  const totalDisbursed = loanData?.reduce((s, r) => s + (r.amount_disbursed ?? 0), 0) ?? 0;
+  const employeeOnlyIds = new Set(
+    ((employeeProfilesRes as any).data ?? []).map((p: any) => p.employee_id)
+  );
+
+  const totalEmployeeCount = employeeOnlyIds.size;
+
+  const savingsBalanceTotal = savingsData?.reduce((s, r) => s + (r.balance ?? 0), 0) ?? 0;
+  const contributionsTotal = contributionsData?.reduce((s, r) => s + (Number(r.amount) || 0), 0) ?? 0;
+  const totalSavings = savingsBalanceTotal > 0 ? savingsBalanceTotal : contributionsTotal;
+
+  const totalOutstanding = loanData?.reduce((s, r) => {
+    return s + (Number(r.outstanding_balance) || Number(r.amount_approved) || Number(r.amount_requested) || 0);
+  }, 0) ?? 0;
+
+  const totalDisbursed = loanData?.reduce((s, r) => {
+    return s + (Number(r.amount_disbursed) || Number(r.amount_approved) || Number(r.amount_requested) || 0);
+  }, 0) ?? 0;
+
   const totalWithdrawals = withdrawalsData?.reduce((s, r) => s + (r.amount ?? 0), 0) ?? 0;
   const totalDividends = dividendsData?.reduce((s, r) => s + (r.dividend_amount ?? 0), 0) ?? 0;
 
@@ -133,17 +150,21 @@ export default async function ReportsPage() {
     return acc;
   }, loanChartData);
 
+  const activeLoanRows = loanData?.filter((l) =>
+    ["approved", "disbursed", "repaying"].includes(l.status)
+  ) ?? [];
+
   const summary = {
-    totalEmployees: totalEmployeesRes.count ?? 0,
-    activeLoans: activeLoansRes.count ?? 0,
+    totalEmployees: totalEmployeeCount,
+    totalLoans: activeLoansRes.count ?? 0,
     totalApprovals: totalApprovalsRes.count ?? 0,
     totalSavings,
     totalOutstanding,
     totalDisbursed,
     totalWithdrawals,
     totalDividends,
-    defaultRate: loanData
-      ? ((loanData.filter((l) => l.status === "defaulted").length / Math.max(loanData.length, 1)) * 100)
+    defaultRate: activeLoanRows.length
+      ? ((activeLoanRows.filter((l) => l.status === "defaulted").length / Math.max(activeLoanRows.length, 1)) * 100)
       : 0,
   };
 
