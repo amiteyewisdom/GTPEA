@@ -162,6 +162,12 @@ export function ReportsClient({
   const [activeReport, setActiveReport] = useState<ReportType | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<ReportCategory>("all");
+  const now = new Date();
+  const [payrollOptions, setPayrollOptions] = useState({
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
+    sortBy: "name",
+  });
 
   const filteredReports = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -175,14 +181,30 @@ export function ReportsClient({
     });
   }, [search, category]);
 
+  const payrollQueryString = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("month", String(payrollOptions.month));
+    params.set("year", String(payrollOptions.year));
+    if (payrollOptions.sortBy) params.set("sortBy", payrollOptions.sortBy);
+    return params.toString();
+  }, [payrollOptions]);
+
   async function handleCsvExport(type: ReportType) {
     setActiveReport(type);
-    await download(`/api/reports/${type}`, `gtpea_${type}_report.csv`);
+    const url =
+      type === "payroll"
+        ? `/api/reports/${type}?${payrollQueryString}`
+        : `/api/reports/${type}`;
+    await download(url, `gtpea_${type}_report.csv`);
     setActiveReport(null);
   }
 
   function handlePdfExport(type: ReportType) {
-    openPrintView(`/api/reports/${type}?format=print`);
+    const url =
+      type === "payroll"
+        ? `/api/reports/${type}?format=print&${payrollQueryString}`
+        : `/api/reports/${type}?format=print`;
+    openPrintView(url);
   }
 
   return (
@@ -366,6 +388,8 @@ export function ReportsClient({
                   loading={loading && activeReport === report.type}
                   onCsv={() => handleCsvExport(report.type)}
                   onPdf={() => handlePdfExport(report.type)}
+                  payrollOptions={report.type === "payroll" ? payrollOptions : undefined}
+                  onPayrollOptionsChange={report.type === "payroll" ? setPayrollOptions : undefined}
                 />
               ))}
             </div>
@@ -407,13 +431,41 @@ function ReportCard({
   loading,
   onCsv,
   onPdf,
+  payrollOptions,
+  onPayrollOptionsChange,
 }: {
   report: (typeof REPORTS)[number];
   loading: boolean;
   onCsv: () => void;
   onPdf: () => void;
+  payrollOptions?: { month: number; year: number; sortBy: string };
+  onPayrollOptionsChange?: (options: { month: number; year: number; sortBy: string }) => void;
 }) {
   const Icon = report.icon;
+  const isPayroll = report.type === "payroll";
+  const months = [
+    { value: 1, label: "January" },
+    { value: 2, label: "February" },
+    { value: 3, label: "March" },
+    { value: 4, label: "April" },
+    { value: 5, label: "May" },
+    { value: 6, label: "June" },
+    { value: 7, label: "July" },
+    { value: 8, label: "August" },
+    { value: 9, label: "September" },
+    { value: 10, label: "October" },
+    { value: 11, label: "November" },
+    { value: 12, label: "December" },
+  ];
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
+  const sortOptions = [
+    { value: "name", label: "Name" },
+    { value: "employee_no", label: "Employee No." },
+    { value: "department", label: "Department" },
+    { value: "total_deductions", label: "Total Deductions" },
+    { value: "net_pay", label: "Net Pay" },
+  ];
 
   return (
     <GlassCard className="flex h-full flex-col p-5 transition-all hover:border-brand-accent/40">
@@ -427,7 +479,69 @@ function ReportCard({
       </div>
 
       <h3 className="mb-1 font-semibold text-brand-text">{report.label}</h3>
-      <p className="mb-5 flex-1 text-sm text-brand-text-secondary">{report.desc}</p>
+      <p className={`flex-1 text-sm text-brand-text-secondary ${isPayroll ? "mb-3" : "mb-5"}`}>{report.desc}</p>
+
+      {isPayroll && payrollOptions && onPayrollOptionsChange && (
+        <div className="mb-4 grid grid-cols-3 gap-2">
+          <div>
+            <label className="block text-[10px] font-medium text-brand-text-secondary mb-1">Month</label>
+            <select
+              value={payrollOptions.month}
+              onChange={(e) =>
+                onPayrollOptionsChange({
+                  ...payrollOptions,
+                  month: Number(e.target.value),
+                })
+              }
+              className="w-full rounded-lg border border-brand-card-border bg-white px-2 py-1.5 text-xs text-brand-text outline-none focus:border-brand-accent"
+            >
+              {months.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-brand-text-secondary mb-1">Year</label>
+            <select
+              value={payrollOptions.year}
+              onChange={(e) =>
+                onPayrollOptionsChange({
+                  ...payrollOptions,
+                  year: Number(e.target.value),
+                })
+              }
+              className="w-full rounded-lg border border-brand-card-border bg-white px-2 py-1.5 text-xs text-brand-text outline-none focus:border-brand-accent"
+            >
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-medium text-brand-text-secondary mb-1">Sort By</label>
+            <select
+              value={payrollOptions.sortBy}
+              onChange={(e) =>
+                onPayrollOptionsChange({
+                  ...payrollOptions,
+                  sortBy: e.target.value,
+                })
+              }
+              className="w-full rounded-lg border border-brand-card-border bg-white px-2 py-1.5 text-xs text-brand-text outline-none focus:border-brand-accent"
+            >
+              {sortOptions.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <button

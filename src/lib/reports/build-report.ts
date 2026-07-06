@@ -31,7 +31,13 @@ export const REPORT_LABELS: Record<ReportType, string> = {
   payroll: "Payroll Export (Savings & Loans)",
 };
 
-export async function buildReportCsv(supabase: AppSupabase, type: ReportType): Promise<string> {
+export interface ReportOptions {
+  year?: number;
+  month?: number;
+  sortBy?: string;
+}
+
+export async function buildReportCsv(supabase: AppSupabase, type: ReportType, options?: ReportOptions): Promise<string> {
   switch (type) {
     case "savings":
       return buildSavingsReport(supabase);
@@ -54,7 +60,7 @@ export async function buildReportCsv(supabase: AppSupabase, type: ReportType): P
     case "bank_payment":
       return buildBankPaymentReport(supabase);
     case "payroll":
-      return buildPayrollReport(supabase);
+      return buildPayrollReport(supabase, options);
     default:
       throw new Error("Unknown report type");
   }
@@ -566,7 +572,14 @@ async function buildBankPaymentReport(supabase: AppSupabase) {
   return buildCsv(headers, rows);
 }
 
-async function buildPayrollReport(supabase: AppSupabase) {
+async function buildPayrollReport(supabase: AppSupabase, options?: ReportOptions) {
+  const now = new Date();
+  const year = options?.year ?? now.getFullYear();
+  const month = options?.month ?? now.getMonth() + 1;
+  const sortBy = options?.sortBy ?? "name";
+  const startOfMonth = new Date(year, month - 1, 1).toISOString();
+  const endOfMonth = new Date(year, month, 1).toISOString();
+
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no, first_name, last_name, department, salary")
@@ -577,18 +590,27 @@ async function buildPayrollReport(supabase: AppSupabase) {
 
   const [savingsRes, loansRes] = await Promise.all([
     empIds.length > 0
-      ? supabase.from("savings").select("employee_id, balance, monthly_contribution").eq("status", "active").in("employee_id", empIds)
+      ? supabase
+          .from("savings_contributions")
+          .select("employee_id, amount")
+          .eq("period_year", year)
+          .eq("period_month", month)
+          .in("employee_id", empIds)
       : Promise.resolve({ data: [] }),
     empIds.length > 0
-      ? supabase.from("loans").select("employee_id, monthly_repayment, outstanding_balance").in("status", ["disbursed", "repaying"]).in("employee_id", empIds)
+      ? supabase
+          .from("loans")
+          .select("employee_id, monthly_repayment, outstanding_balance")
+          .gte("created_at", startOfMonth)
+          .lt("created_at", endOfMonth)
+          .in("employee_id", empIds)
       : Promise.resolve({ data: [] }),
   ]);
 
-  const savingsByEmp: Record<string, { balance: number; monthly: number }> = {};
+  const savingsByEmp: Record<string, { monthly: number }> = {};
   for (const s of (savingsRes.data ?? []) as any[]) {
-    if (!savingsByEmp[s.employee_id]) savingsByEmp[s.employee_id] = { balance: 0, monthly: 0 };
-    savingsByEmp[s.employee_id].balance += Number(s.balance);
-    savingsByEmp[s.employee_id].monthly += Number(s.monthly_contribution);
+    if (!savingsByEmp[s.employee_id]) savingsByEmp[s.employee_id] = { monthly: 0 };
+    savingsByEmp[s.employee_id].monthly += Number(s.amount);
   }
 
   const loansByEmp: Record<string, { monthly: number; outstanding: number }> = {};
@@ -604,31 +626,58 @@ async function buildPayrollReport(supabase: AppSupabase) {
     "Department",
     "Gross Salary (GH₵)",
     "Monthly Savings Deduction (GH₵)",
-    "Savings Balance (GH₵)",
     "Monthly Loan Deduction (GH₵)",
     "Loan Outstanding (GH₵)",
     "Total Deductions (GH₵)",
     "Net Pay (GH₵)",
   ];
 
-  const rows = (employees ?? []).map((emp: any) => {
-    const sav = savingsByEmp[emp.id] || { balance: 0, monthly: 0 };
-    const loan = loansByEmp[emp.id] || { monthly: 0, outstanding: 0 };
-    const totalDeductions = sav.monthly + loan.monthly;
-    const netPay = Number(emp.salary) - totalDeductions;
-    return [
-      emp.employee_no,
-      `${emp.first_name} ${emp.last_name}`,
-      emp.department,
-      Number(emp.salary).toFixed(2),
-      sav.monthly.toFixed(2),
-      sav.balance.toFixed(2),
-      loan.monthly.toFixed(2),
-      loan.outstanding.toFixed(2),
-      totalDeductions.toFixed(2),
-      netPay.toFixed(2),
-    ];
-  });
+  const rows = (employees ?? [])
+    .map((emp: any) => {
+      const sav = savingsByEmp[emp.id] || { monthly: 0 };
+      const loan = loansByEmp[emp.id] || { monthly: 0, outstanding: 0 };
+      if (sav.monthly === 0 && loan.monthly === 0) return null;
+      const totalDeductions = sav.monthly + loan.monthly;
+      const netPay = Number(emp.salary) - totalDeductions;
+      return {
+        employeeNo: emp.employee_no,
+        name: `${emp.first_name} ${emp.last_name}`,
+        department: emp.department,
+        salary: Number(emp.salary),
+        savingsDeduction: sav.monthly,
+        loanDeduction: loan.monthly,
+        loanOutstanding: loan.outstanding,
+        totalDeductions,
+        netPay,
+      };
+    })
+    .filter(Boolean)
+    .sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "employee_no":
+          return a.employeeNo.localeCompare(b.employeeNo);
+        case "department":
+          return a.department.localeCompare(b.department);
+        case "total_deductions":
+          return b.totalDeductions - a.totalDeductions;
+        case "net_pay":
+          return b.netPay - a.netPay;
+        case "name":
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    })
+    .map((row: any) => [
+      row.employeeNo,
+      row.name,
+      row.department,
+      row.salary.toFixed(2),
+      row.savingsDeduction.toFixed(2),
+      row.loanDeduction.toFixed(2),
+      row.loanOutstanding.toFixed(2),
+      row.totalDeductions.toFixed(2),
+      row.netPay.toFixed(2),
+    ]);
 
   return buildCsv(headers, rows);
 }

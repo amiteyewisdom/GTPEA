@@ -26,6 +26,7 @@ interface LoanProductsClientProps {
 
 export function LoanProductsClient({ products }: LoanProductsClientProps) {
   const [showForm, setShowForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [formData, setFormData] = useState({
@@ -39,50 +40,94 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
     processing_fee_percent: "",
     requires_guarantor: false,
     max_loan_to_salary_ratio: "",
+    is_active: true,
   });
 
-  const handleAddProduct = async (e: React.FormEvent) => {
+  const resetForm = () => {
+    setEditingProduct(null);
+    setFormData({
+      name: "",
+      description: "",
+      interest_rate: "",
+      min_amount: "",
+      max_amount: "",
+      min_term_months: "",
+      max_term_months: "",
+      processing_fee_percent: "",
+      requires_guarantor: false,
+      max_loan_to_salary_ratio: "",
+      is_active: true,
+    });
+  };
+
+  const startEditing = (product: Product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      description: product.description || "",
+      interest_rate: String(product.interest_rate),
+      min_amount: String(product.min_amount),
+      max_amount: String(product.max_amount),
+      min_term_months: String(product.min_term_months),
+      max_term_months: String(product.max_term_months),
+      processing_fee_percent: String(product.processing_fee_percent),
+      requires_guarantor: product.requires_guarantor,
+      max_loan_to_salary_ratio: String(product.max_loan_to_salary_ratio),
+      is_active: product.is_active,
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
-    try {
-      const response = await fetch("/api/loan-products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          interest_rate: Number(formData.interest_rate),
-          min_amount: Number(formData.min_amount),
-          max_amount: Number(formData.max_amount),
-          min_term_months: Number(formData.min_term_months),
-          max_term_months: Number(formData.max_term_months),
-          processing_fee_percent: Number(formData.processing_fee_percent),
-          max_loan_to_salary_ratio: Number(formData.max_loan_to_salary_ratio),
-        }),
-      });
+    const payload = {
+      ...formData,
+      interest_rate: Number(formData.interest_rate),
+      min_amount: Number(formData.min_amount),
+      max_amount: Number(formData.max_amount),
+      min_term_months: Number(formData.min_term_months),
+      max_term_months: Number(formData.max_term_months),
+      processing_fee_percent: Number(formData.processing_fee_percent),
+      max_loan_to_salary_ratio: Number(formData.max_loan_to_salary_ratio),
+    };
 
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error || "Failed to add loan product");
+    try {
+      if (editingProduct) {
+        const response = await fetch("/api/loan-products", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editingProduct.id, ...payload }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result?.error || "Failed to update loan product");
+        }
+
+        setMessage({ type: "success", text: "Loan product updated successfully" });
+      } else {
+        const response = await fetch("/api/loan-products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result?.error || "Failed to add loan product");
+        }
+
+        setMessage({ type: "success", text: "Loan product added successfully" });
       }
 
-      setMessage({ type: "success", text: "Loan product added successfully" });
-      setFormData({
-        name: "",
-        description: "",
-        interest_rate: "",
-        min_amount: "",
-        max_amount: "",
-        min_term_months: "",
-        max_term_months: "",
-        processing_fee_percent: "",
-        requires_guarantor: false,
-        max_loan_to_salary_ratio: "",
-      });
+      resetForm();
       setShowForm(false);
+      window.location.reload();
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to add loan product" });
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to save loan product" });
     } finally {
       setLoading(false);
     }
@@ -92,7 +137,10 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
     <div className="space-y-6">
       <div className="flex justify-end">
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            resetForm();
+            setShowForm(true);
+          }}
           className="flex items-center gap-2 px-4 py-2.5 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -110,12 +158,20 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
       {showForm && (
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-brand-text">Add New Loan Product</h2>
-            <button onClick={() => setShowForm(false)} className="text-brand-text-secondary hover:text-brand-text">
+            <h2 className="text-lg font-bold text-brand-text">
+              {editingProduct ? "Edit Loan Product" : "Add New Loan Product"}
+            </h2>
+            <button
+              onClick={() => {
+                setShowForm(false);
+                resetForm();
+              }}
+              className="text-brand-text-secondary hover:text-brand-text"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
-          <form onSubmit={handleAddProduct} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-brand-text mb-2">Product Name</label>
@@ -228,11 +284,26 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
                   Requires Guarantor
                 </label>
               </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="is_active"
+                  checked={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                  className="w-4 h-4 rounded border-brand-card-border text-brand-green focus:ring-brand-green"
+                />
+                <label htmlFor="is_active" className="text-sm font-medium text-brand-text">
+                  Active
+                </label>
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => {
+                  setShowForm(false);
+                  resetForm();
+                }}
                 className="px-4 py-2 border border-brand-card-border text-brand-text rounded-lg hover:bg-brand-hover transition-all"
               >
                 Cancel
@@ -242,7 +313,7 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
                 disabled={loading}
                 className="px-4 py-2 bg-brand-green text-white rounded-lg hover:bg-brand-green/90 disabled:opacity-50 transition-all"
               >
-                {loading ? "Adding..." : "Add Product"}
+                {loading ? "Saving..." : editingProduct ? "Update Product" : "Add Product"}
               </button>
             </div>
           </form>
@@ -283,7 +354,10 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
                       Inactive
                     </span>
                   )}
-                  <button className="text-brand-text-secondary hover:text-brand-text">
+                  <button
+                    onClick={() => startEditing(product)}
+                    className="text-brand-text-secondary hover:text-brand-text"
+                  >
                     <Edit className="w-4 h-4" />
                   </button>
                 </div>

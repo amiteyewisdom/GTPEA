@@ -294,12 +294,26 @@ export async function fetchUsersData() {
 
 export async function fetchMembersData() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("employees")
-    .select("id, first_name, last_name, employee_no, department, status, email")
-    .eq("status", "active")
-    .not("email", "eq", "superadmin@gtpea.com")
-    .order("last_name", { ascending: true });
+
+  // Only show real members (profile role = employee), hide admin/management accounts
+  const { data: employeeProfiles } = await supabase
+    .from("profiles")
+    .select("employee_id")
+    .eq("role", "employee");
+
+  const employeeIds = (employeeProfiles ?? [])
+    .map((p: any) => p.employee_id)
+    .filter(Boolean) as string[];
+
+  const { data } =
+    employeeIds.length > 0
+      ? await supabase
+          .from("employees")
+          .select("id, first_name, last_name, employee_no, department, status, email")
+          .eq("status", "active")
+          .in("id", employeeIds)
+          .order("last_name", { ascending: true })
+      : { data: [] };
 
   return {
     members: (data ?? []).map((member: any) => ({

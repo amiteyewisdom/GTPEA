@@ -23,6 +23,7 @@ import {
   Home,
   Briefcase,
   History,
+  Package,
   UserCheck,
   Award,
   ClipboardList,
@@ -163,6 +164,13 @@ export const menuItems: MenuItem[] = [
     roles: ['administrator'],
   },
   {
+    id: 'loan-products-admin',
+    label: 'Loan Products',
+    icon: Package,
+    path: '/loan-products',
+    roles: ['administrator'],
+  },
+  {
     id: 'settings-admin',
     label: 'Settings',
     icon: Settings,
@@ -263,6 +271,13 @@ export const menuItems: MenuItem[] = [
     label: 'Member Charges',
     icon: BadgeCent,
     path: '/charges',
+    roles: ['fund_manager'],
+  },
+  {
+    id: 'loan-products-fm',
+    label: 'Loan Products',
+    icon: Package,
+    path: '/loan-products',
     roles: ['fund_manager'],
   },
 

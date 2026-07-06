@@ -6,6 +6,7 @@ import {
   buildPrintableHtml,
   buildReportCsv,
   type ReportType,
+  type ReportOptions,
 } from "@/lib/reports/build-report";
 
 export async function GET(
@@ -15,6 +16,9 @@ export async function GET(
   const { type } = await params;
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format") ?? "csv";
+  const monthParam = searchParams.get("month");
+  const yearParam = searchParams.get("year");
+  const sortBy = searchParams.get("sortBy") ?? undefined;
 
   if (!REPORT_TYPES.includes(type as ReportType)) {
     return NextResponse.json({ error: "Unknown report type." }, { status: 400 });
@@ -26,8 +30,17 @@ export async function GET(
     return NextResponse.json({ error: "You do not have permission to export reports." }, { status: 403 });
   }
 
+  const options: ReportOptions | undefined =
+    type === "payroll"
+      ? {
+          month: monthParam ? Number(monthParam) : undefined,
+          year: yearParam ? Number(yearParam) : undefined,
+          sortBy: sortBy || undefined,
+        }
+      : undefined;
+
   try {
-    const csv = await buildReportCsv(supabase, type as ReportType);
+    const csv = await buildReportCsv(supabase, type as ReportType, options);
     const title = REPORT_LABELS[type as ReportType];
     const date = new Date().toISOString().split("T")[0];
 
