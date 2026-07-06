@@ -5,6 +5,6 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Repayments" };
 
 export default async function RepaymentsPage() {
-  const { repayments } = await fetchRepaymentsData();
-  return <RepaymentsClient repayments={repayments} />;
+  const { repayments, loans } = await fetchRepaymentsData();
+  return <RepaymentsClient repayments={repayments} loans={loans} />;
 }

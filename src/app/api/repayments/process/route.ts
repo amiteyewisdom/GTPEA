@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateReference } from "@/utils/formatters";
+import { getOrCreateNextRepaymentInstallment } from "@/lib/loans/repayment-schedule";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -55,18 +56,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Payment amount is less than interest due." }, { status: 400 });
   }
 
-  // Find pending repayment installment
-  const { data: pendingRepayment, error: repaymentError } = await supabase
-    .from("repayments")
-    .select("*")
-    .eq("loan_id", loanId)
-    .eq("status", "pending")
-    .order("due_date", { ascending: true })
-    .limit(1)
-    .single() as any;
-
-  if (repaymentError || !pendingRepayment) {
-    return NextResponse.json({ error: "No pending repayment installment found." }, { status: 400 });
+  // Find or create a pending repayment installment
+  let pendingRepayment: any;
+  try {
+    pendingRepayment = await getOrCreateNextRepaymentInstallment(loanId);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || "Unable to create repayment installment." }, { status: 400 });
   }
 
   // Update repayment record

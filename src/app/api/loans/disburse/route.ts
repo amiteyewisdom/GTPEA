@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createRepaymentSchedule } from "@/lib/loans/repayment-schedule";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -74,6 +75,22 @@ export async function POST(request: Request) {
 
   if (transactionError) {
     console.error("Failed to create transaction record:", transactionError);
+  }
+
+  // Create repayment schedule for the disbursed loan
+  try {
+    await createRepaymentSchedule({
+      loan_id: loanId,
+      employee_id: loan.employee_id,
+      principal: Number(loan.amount_approved) || Number(loan.amount_requested) || 0,
+      monthly_repayment: Number(loan.monthly_repayment) || 0,
+      term_months: Number(loan.term_months) || 1,
+      interest_rate: Number(loan.interest_rate) || 0,
+      start_date: updatedLoan.disbursement_date || new Date().toISOString().split("T")[0],
+      interest_calc_method: null,
+    });
+  } catch (scheduleError) {
+    console.error("Failed to create repayment schedule:", scheduleError);
   }
 
   return NextResponse.json({ message: "Loan disbursed successfully", loan: updatedLoan });

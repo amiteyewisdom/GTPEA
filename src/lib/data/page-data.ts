@@ -178,7 +178,7 @@ export async function fetchWithdrawalHistoryData() {
 
 export async function fetchRepaymentsData() {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data: repayments } = await supabase
     .from("repayments")
     .select(`
       id,
@@ -194,7 +194,21 @@ export async function fetchRepaymentsData() {
     .order("due_date", { ascending: true })
     .limit(200);
 
-  return { repayments: data ?? [] };
+  const { data: loans } = await supabase
+    .from("loans")
+    .select(`
+      id,
+      loan_ref,
+      outstanding_balance,
+      monthly_repayment,
+      status,
+      employees!employee_id (first_name, last_name, employee_no)
+    `)
+    .in("status", ["disbursed", "repaying"])
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  return { repayments: repayments ?? [], loans: loans ?? [] };
 }
 
 export async function fetchDisbursementsData() {
