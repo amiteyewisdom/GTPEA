@@ -82,12 +82,15 @@ export async function createRepaymentSchedule(input: RepaymentScheduleInput) {
     });
   }
 
-  const { data, error } = await supabase.from("repayments").insert(installments).select();
+  const { data, error } = (await supabase
+    .from("repayments")
+    .insert(installments as any)
+    .select()) as any;
   if (error) {
     console.error("[createRepaymentSchedule] failed to insert schedule:", error.message);
     throw new Error(error.message);
   }
-  return data ?? [];
+  return (data ?? []) as any[];
 }
 
 export async function getOrCreateNextRepaymentInstallment(loanId: string) {
@@ -149,7 +152,7 @@ export async function getOrCreateNextRepaymentInstallment(loanId: string) {
   const monthlyRepayment = Number(loan.monthly_repayment) || outstanding;
   const amountDue = Math.min(monthlyRepayment, outstanding);
 
-  const { data: newInstallment, error: insertError } = await supabase
+  const { data: newInstallment, error: insertError } = (await supabase
     .from("repayments")
     .insert({
       loan_id: loanId,
@@ -164,9 +167,9 @@ export async function getOrCreateNextRepaymentInstallment(loanId: string) {
       payment_method: null,
       reference: null,
       notes: null,
-    })
+    } as any)
     .select()
-    .single();
+    .single()) as any;
 
   if (insertError || !newInstallment) {
     throw new Error(insertError?.message || "Failed to create repayment installment.");
