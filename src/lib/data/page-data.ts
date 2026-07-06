@@ -33,10 +33,12 @@ export async function fetchFinancialOverview() {
     { label: "Loan Repayments", amount: loanRepayments, color: "bg-brand-success" },
     { label: "Interest Credits", amount: interestCredits, color: "bg-brand-accent" },
     { label: "Fees & Penalties", amount: fees, color: "bg-brand-warning" },
-  ].map((item) => ({
-    ...item,
-    percent: revenueTotal > 0 ? Math.round((item.amount / revenueTotal) * 100) : 0,
-  }));
+  ]
+    .filter((item) => item.amount > 0)
+    .map((item) => ({
+      ...item,
+      percent: revenueTotal > 0 ? Math.round((item.amount / revenueTotal) * 100) : 0,
+    }));
 
   // Total Assets = member savings (fall back to contributions if balances not set)
   const contributionsTotal = contributions.reduce((s, c) => s + (Number(c.amount) || 0), 0);
