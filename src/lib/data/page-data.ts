@@ -204,14 +204,15 @@ export async function fetchDisbursementsData() {
     .select(`
       id,
       loan_ref,
+      amount_approved,
       amount_disbursed,
       disbursement_date,
       status,
       employees!employee_id (first_name, last_name, employee_no),
       loan_products (name)
     `)
-    .not("amount_disbursed", "is", null)
-    .gt("amount_disbursed", 0)
+    .in("status", ["approved", "disbursed", "repaying", "completed"])
+    .order("status", { ascending: true })
     .order("disbursement_date", { ascending: false })
     .limit(200);
 
