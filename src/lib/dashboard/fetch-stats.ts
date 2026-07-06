@@ -309,14 +309,16 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     const [year, month] = key.split("-").map(Number);
     const disbursements = loans
       .filter((loan) => {
-        if (!loan.disbursement_date) return false;
-        const date = new Date(loan.disbursement_date);
+        const dateStr = loan.disbursement_date || loan.created_at;
+        if (!dateStr) return false;
+        const date = new Date(dateStr);
         return date.getFullYear() === year && date.getMonth() + 1 === month;
       })
-      .reduce((acc, loan) => acc + (Number(loan.amount_disbursed) || 0), 0);
+      .reduce((acc, loan) => acc + (Number(loan.amount_disbursed || loan.amount_approved || loan.amount_requested) || 0), 0);
 
     const monthRepayments = repayments
       .filter((r) => {
+        if (!r.due_date) return false;
         const date = new Date(r.due_date);
         return date.getFullYear() === year && date.getMonth() + 1 === month;
       })
