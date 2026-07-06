@@ -178,30 +178,6 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
         emptyText="No applications waiting for Fund Manager approval."
       />
 
-      {/* Recent Disbursements */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-brand-text">Recent Disbursements</h3>
-            <p className="text-brand-text-secondary text-sm">Latest loan payouts</p>
-          </div>
-          <CreditCard className="w-5 h-5 text-brand-accent" />
-        </div>
-        <div className="space-y-3">
-          {stats.recentDisbursements.length > 0 ? stats.recentDisbursements.map((item) => (
-            <DisbursementRow
-              key={item.id}
-              recipient={item.recipient}
-              amount={item.amount}
-              loanId={item.loanId}
-              date={item.date}
-              status={item.status}
-            />
-          )) : (
-            <p className="text-brand-text-secondary text-sm">No recent disbursements</p>
-          )}
-        </div>
-      </GlassCard>
     </div>
   );
 }
@@ -251,30 +227,3 @@ function ForecastMonth({ month, amount, percentage }: any) {
   );
 }
 
-function DisbursementRow({ recipient, amount, loanId, date, status }: any) {
-  const statusColors = {
-    completed: 'text-brand-success',
-    pending: 'text-brand-warning',
-    failed: 'text-brand-danger',
-  };
-
-  return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-brand-card-bg hover:bg-brand-hover transition-all">
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold">
-          {recipient.charAt(0)}
-        </div>
-        <div>
-          <p className="text-brand-text font-medium">{recipient}</p>
-          <p className="text-brand-text-secondary text-xs">{loanId} • {date}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-4">
-        <span className="text-brand-text font-bold">{amount}</span>
-        <span className={`text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
-      </div>
-    </div>
-  );
-}
