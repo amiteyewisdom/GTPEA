@@ -11,9 +11,10 @@ export default async function LoansPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: currentProfile } = user
+  const profileRes = user
     ? await supabase.from("profiles").select("role").eq("user_id", user.id).single()
     : { data: null };
+  const currentProfile = (profileRes?.data ?? null) as { role: string } | null;
 
   const [loanProductsRes, loansRes, employeeProfilesRes] = await Promise.all([
     supabase
