@@ -50,6 +50,12 @@ export interface DashboardStats {
     dueDate: string;
     status: string;
   }[];
+  collectionForecast: {
+    month: string;
+    amount: string;
+    amountValue: number;
+    percentage: string;
+  }[];
   pendingLoanReviews: {
     approvalId: string;
     id: string;
@@ -175,7 +181,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
       .select("id, amount_due, due_date, status, employees(first_name, last_name)")
       .in("status", ["pending", "overdue"])
       .order("due_date", { ascending: true })
-      .limit(6),
+      .limit(50),
     supabase
       .from("savings_contributions")
       .select("amount, period_year, period_month, created_at")
@@ -426,7 +432,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     time: tx.created_at ? formatRelativeTime(tx.created_at) : "—",
   }));
 
-  const upcomingRepayments = repayments.map((repayment) => {
+  const upcomingRepayments = repayments.slice(0, 6).map((repayment) => {
     const amountValue = Number(repayment.amount_due) || 0;
     return {
       id: repayment.id,
@@ -438,11 +444,76 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     };
   });
 
-  const expectedCollections = upcomingRepayments.length > 0
-    ? upcomingRepayments.reduce((acc, r) => acc + r.amountValue, 0)
+  // Fallback calendar entries from active loans if no repayment schedule exists yet
+  const calendarRepayments = upcomingRepayments.length > 0
+    ? upcomingRepayments
     : loans
         .filter((l) => ["disbursed", "repaying"].includes(l.status))
-        .reduce((acc, l) => acc + (Number(l.monthly_repayment) || 0), 0);
+        .slice(0, 6)
+        .map((loan) => {
+          const start = loan.disbursement_date ? new Date(loan.disbursement_date) : new Date();
+          const nextDue = new Date(start);
+          nextDue.setMonth(nextDue.getMonth() + 1);
+          const amountValue = Number(loan.monthly_repayment) || 0;
+          return {
+            id: `${loan.id}-next`,
+            borrower: `${loan.employees?.first_name || ""} ${loan.employees?.last_name || ""}`.trim() || "—",
+            amount: formatCurrency(amountValue),
+            amountValue,
+            dueDate: formatDate(nextDue.toISOString().split("T")[0]),
+            status: "pending" as const,
+          };
+        });
+
+  // Aggregate collection forecast by month from repayments or from active loans
+  let forecastSource = repayments.map((r) => ({
+    dueDate: r.due_date as string | null,
+    amountValue: Number(r.amount_due) || 0,
+  }));
+
+  if (forecastSource.length === 0) {
+    const now = new Date();
+    forecastSource = loans
+      .filter((l) => ["disbursed", "repaying"].includes(l.status))
+      .flatMap((loan) => {
+        const start = loan.disbursement_date ? new Date(loan.disbursement_date) : now;
+        const nextDue = new Date(start);
+        nextDue.setMonth(nextDue.getMonth() + 1);
+        const monthly = Number(loan.monthly_repayment) || 0;
+        return Array.from({ length: 3 }).map((_, i) => {
+          const due = new Date(nextDue);
+          due.setMonth(due.getMonth() + i);
+          return { dueDate: due.toISOString().split("T")[0], amountValue: monthly };
+        });
+      });
+  }
+
+  const forecastByMonth = new Map<string, number>();
+  forecastSource.forEach((item) => {
+    if (!item.dueDate) return;
+    const label = formatDate(item.dueDate, "MMM yyyy");
+    forecastByMonth.set(label, (forecastByMonth.get(label) || 0) + item.amountValue);
+  });
+
+  const sortedForecast = Array.from(forecastByMonth.entries()).sort((a, b) => {
+    const parse = (label: string) => {
+      const [monthStr, yearStr] = label.split(" ");
+      const monthIndex = new Date(`${monthStr} 1, ${yearStr}`).getMonth();
+      return new Date(Number(yearStr), monthIndex, 1).getTime();
+    };
+    return parse(a[0]) - parse(b[0]);
+  });
+
+  const forecastTotal = sortedForecast.slice(0, 3).reduce((acc, [, amount]) => acc + amount, 0);
+
+  const collectionForecast = sortedForecast.slice(0, 3).map(([month, amountValue]) => ({
+    month,
+    amount: formatCurrency(amountValue),
+    amountValue,
+    percentage: forecastTotal > 0 ? `${Math.round((amountValue / forecastTotal) * 100)}%` : "0%",
+  }));
+
+  const expectedCollections = forecastSource.reduce((acc, r) => acc + r.amountValue, 0);
 
   // Filter employees shown in summaries to actual members only
   const memberEmployees = activeEmployees.filter((e) => employeeOnlyIds.size === 0 || employeeOnlyIds.has(e.id));
@@ -563,7 +634,8 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     loanTrend,
     recentActivity,
     approvalQueue,
-    upcomingRepayments,
+    upcomingRepayments: calendarRepayments,
+    collectionForecast,
     expectedCollections,
     pendingLoanReviews,
     chairpersonQueue,

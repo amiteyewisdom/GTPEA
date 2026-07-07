@@ -137,14 +137,16 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
             <TrendingUp className="w-5 h-5 text-brand-success" />
           </div>
           <div className="space-y-4">
-            {stats.upcomingRepayments.slice(0, 3).map((repayment) => (
+            {stats.collectionForecast.length > 0 ? stats.collectionForecast.map((item) => (
               <ForecastMonth
-                key={repayment.id}
-                month={repayment.dueDate}
-                amount={repayment.amount}
-                percentage={forecastTotal > 0 ? `${Math.round((repayment.amountValue / forecastTotal) * 100)}%` : "0%"}
+                key={item.month}
+                month={item.month}
+                amount={item.amount}
+                percentage={item.percentage}
               />
-            ))}
+            )) : (
+              <p className="text-sm text-brand-text-secondary">No collection forecast data.</p>
+            )}
           </div>
           <div className="mt-6 p-4 bg-brand-card-bg rounded-lg">
             <div className="flex items-center justify-between">

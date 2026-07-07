@@ -215,22 +215,40 @@ export async function fetchRepaymentsData() {
 
 export async function fetchDisbursementsData() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("loans")
-    .select(`
-      id,
-      loan_ref,
-      amount_approved,
-      amount_disbursed,
-      disbursement_date,
-      status,
-      employees!employee_id (first_name, last_name, employee_no),
-      loan_products (name)
-    `)
-    .in("status", ["approved", "disbursed", "repaying", "completed"])
-    .order("status", { ascending: true })
-    .order("disbursement_date", { ascending: false })
-    .limit(200);
+
+  // Only show loans tied to real employee-role accounts, not admin/manager test accounts
+  const { data: employeeProfiles } = await supabase
+    .from("profiles")
+    .select("employee_id")
+    .eq("role", "employee")
+    .not("employee_id", "is", null);
+
+  const employeeIds = ((employeeProfiles ?? []) as any[])
+    .map((p) => p.employee_id)
+    .filter(Boolean) as string[];
+
+  const query =
+    employeeIds.length > 0
+      ? supabase
+          .from("loans")
+          .select(`
+            id,
+            loan_ref,
+            amount_approved,
+            amount_disbursed,
+            disbursement_date,
+            status,
+            employees!employee_id (first_name, last_name, employee_no),
+            loan_products (name)
+          `)
+          .in("status", ["approved", "disbursed", "repaying", "completed"])
+          .in("employee_id", employeeIds)
+          .order("status", { ascending: true })
+          .order("disbursement_date", { ascending: false })
+          .limit(200)
+      : supabase.from("loans").select("id").eq("id", "no-match");
+
+  const { data } = await query;
 
   return { disbursements: data ?? [] };
 }
