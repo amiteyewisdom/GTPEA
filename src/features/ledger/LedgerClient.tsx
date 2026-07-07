@@ -55,9 +55,7 @@ export function LedgerClient({ ledgerEntries, total }: LedgerClientProps) {
     { key: "fee", label: "Fees" },
   ];
 
-  const visibleTypes = allAccountTypes.filter((t) =>
-    selectedAccount === t.key || ledgerEntries.some((e) => e.account_type === t.key)
-  );
+  const visibleTypes = allAccountTypes;
 
   return (
     <div className="space-y-4">
