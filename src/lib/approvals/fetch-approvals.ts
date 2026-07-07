@@ -76,24 +76,16 @@ export async function fetchApprovalsList() {
   // Determine which employees are actual employee-role members; exclude board/management accounts
   const employeeIdToRole = new Map<string, string>();
   if (employeeIds.length) {
-    const { data: employeesRes } = await supabase
-      .from("employees")
-      .select("id, user_id")
-      .in("id", employeeIds);
+    const { data: employeeProfiles } = await supabase
+      .from("profiles")
+      .select("employee_id, role")
+      .in("employee_id", employeeIds)
+      .not("employee_id", "is", null);
 
-    const employeeUserIds = [...new Set(((employeesRes ?? []) as any[]).map((e) => e.user_id).filter(Boolean))] as string[];
-    if (employeeUserIds.length) {
-      const { data: employeeProfiles } = await supabase
-        .from("profiles")
-        .select("user_id, role")
-        .in("user_id", employeeUserIds);
-
-      const userIdToRole = new Map<string, string>();
-      for (const p of employeeProfiles ?? []) {
-        userIdToRole.set((p as any).user_id, (p as any).role);
-      }
-      for (const e of employeesRes ?? []) {
-        employeeIdToRole.set((e as any).id, userIdToRole.get((e as any).user_id) ?? "employee");
+    for (const p of employeeProfiles ?? []) {
+      const employeeId = (p as any).employee_id;
+      if (employeeId) {
+        employeeIdToRole.set(employeeId, (p as any).role);
       }
     }
   }
