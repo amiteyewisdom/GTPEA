@@ -81,7 +81,7 @@ export async function fetchApprovalsList() {
       .select("id, user_id")
       .in("id", employeeIds);
 
-    const employeeUserIds = [...new Set((employeesRes ?? []).map((e) => e.user_id).filter(Boolean))] as string[];
+    const employeeUserIds = [...new Set(((employeesRes ?? []) as any[]).map((e) => e.user_id).filter(Boolean))] as string[];
     if (employeeUserIds.length) {
       const { data: employeeProfiles } = await supabase
         .from("profiles")
