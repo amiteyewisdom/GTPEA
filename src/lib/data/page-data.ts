@@ -12,21 +12,35 @@ export async function fetchFinancialOverview() {
 
   const supabase = await createClient();
 
-  // Pull real repayments, savings contributions, and member charges
-  const [repaymentsRes, contributionsRes, chargesRes] = await Promise.all([
+  // Pull real repayments, savings contributions, and revenue transactions
+  const [repaymentsRes, contributionsRes, revenueTxRes] = await Promise.all([
     supabase.from("repayments").select("amount_paid, interest_component, status").eq("status", "paid"),
     supabase.from("savings_contributions").select("amount"),
-    supabase.from("transactions").select("amount, type").in("type", ["fee", "penalty"]),
+    supabase
+      .from("transactions")
+      .select("amount, type")
+      .in("type", ["loan_repayment", "interest_credit", "fee", "penalty"]),
   ]);
 
   const repayments = (repaymentsRes.data ?? []) as any[];
   const contributions = (contributionsRes.data ?? []) as any[];
-  const chargeRows = (chargesRes.data ?? []) as any[];
+  const revenueTx = (revenueTxRes.data ?? []) as any[];
 
   // Revenue: total repayments received + interest component + fees & penalties collected
-  const loanRepayments = repayments.reduce((s, r) => s + (Number(r.amount_paid) || 0), 0);
-  const interestCredits = repayments.reduce((s, r) => s + (Number(r.interest_component) || 0), 0);
-  const fees = chargeRows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const repaymentsFromTable = repayments.reduce((s, r) => s + (Number(r.amount_paid) || 0), 0);
+  const interestFromTable = repayments.reduce((s, r) => s + (Number(r.interest_component) || 0), 0);
+  const repaymentsFromTx = revenueTx
+    .filter((t) => t.type === "loan_repayment")
+    .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const interestFromTx = revenueTx
+    .filter((t) => t.type === "interest_credit")
+    .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const fees = revenueTx
+    .filter((t) => t.type === "fee" || t.type === "penalty")
+    .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+
+  const loanRepayments = repaymentsFromTable + repaymentsFromTx;
+  const interestCredits = interestFromTable + interestFromTx;
   const revenueTotal = loanRepayments + interestCredits + fees;
 
   const breakdown = [
