@@ -148,6 +148,13 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
         </button>
       </div>
 
+      <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+        <p className="text-sm font-bold">
+          Warning: Changing interest rates will affect all new loan applications. Existing loans will continue with their original rates.
+        </p>
+      </div>
+
       {message && (
         <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
           {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}

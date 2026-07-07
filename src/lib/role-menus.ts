@@ -170,13 +170,6 @@ export const menuItems: MenuItem[] = [
     path: '/loan-products',
     roles: ['administrator'],
   },
-  {
-    id: 'settings-admin',
-    label: 'Settings',
-    icon: Settings,
-    path: '/settings',
-    roles: ['administrator'],
-  },
 
   // Chairperson
   {
