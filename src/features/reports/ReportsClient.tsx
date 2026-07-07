@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import GlassCard from "@/components/ui/GlassCard";
 import DashboardStatCard from "@/components/ui/DashboardStatCard";
 import { SavingsAreaChart } from "@/components/charts/SavingsAreaChart";
@@ -164,6 +164,15 @@ export function ReportsClient({
   const [activeReport, setActiveReport] = useState<ReportType | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<ReportCategory>("all");
+
+  const showTrends = !["fund_manager", "union_rep", "chairperson"].includes(userRole ?? "");
+
+  useEffect(() => {
+    if (!showTrends && activeTab === "trends") {
+      setActiveTab("overview");
+    }
+  }, [showTrends, activeTab]);
+
   const now = new Date();
   const [payrollOptions, setPayrollOptions] = useState({
     month: now.getMonth() + 1,
@@ -231,7 +240,7 @@ export function ReportsClient({
         <TabButton active={activeTab === "overview"} onClick={() => setActiveTab("overview")} icon={LayoutGrid}>
           Overview
         </TabButton>
-        {userRole !== "union_rep" && (
+        {showTrends && (
           <TabButton active={activeTab === "trends"} onClick={() => setActiveTab("trends")} icon={BarChart3}>
             Trends
           </TabButton>
