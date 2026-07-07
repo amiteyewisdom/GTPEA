@@ -73,20 +73,65 @@ export async function fetchApprovalsList() {
     ),
   ] as string[];
 
+  // Determine which employees are actual employee-role members; exclude board/management accounts
+  const employeeIdToRole = new Map<string, string>();
+  if (employeeIds.length) {
+    const { data: employeesRes } = await supabase
+      .from("employees")
+      .select("id, user_id")
+      .in("id", employeeIds);
+
+    const employeeUserIds = [...new Set((employeesRes ?? []).map((e) => e.user_id).filter(Boolean))] as string[];
+    if (employeeUserIds.length) {
+      const { data: employeeProfiles } = await supabase
+        .from("profiles")
+        .select("user_id, role")
+        .in("user_id", employeeUserIds);
+
+      const userIdToRole = new Map<string, string>();
+      for (const p of employeeProfiles ?? []) {
+        userIdToRole.set((p as any).user_id, (p as any).role);
+      }
+      for (const e of employeesRes ?? []) {
+        employeeIdToRole.set((e as any).id, userIdToRole.get((e as any).user_id) ?? "employee");
+      }
+    }
+  }
+
+  const allowedRows = rows.filter((row) => {
+    const employeeId =
+      row.entity_type === "loan"
+        ? loanMap.get(row.entity_id)?.employee_id
+        : row.entity_type === "withdrawal"
+          ? withdrawalMap.get(row.entity_id)?.employee_id
+          : null;
+    return employeeId ? employeeIdToRole.get(employeeId) === "employee" : false;
+  });
+
+  const filteredEmployeeIds = [
+    ...new Set(
+      allowedRows.flatMap((row) => {
+        if (row.entity_type === "loan") return loanMap.get(row.entity_id)?.employee_id;
+        if (row.entity_type === "withdrawal") return withdrawalMap.get(row.entity_id)?.employee_id;
+        return null;
+      }).filter(Boolean)
+    ),
+  ] as string[];
+
   const employeeSummaries = new Map<string, { total_savings: number; total_loan_balance: number; monthly_savings: number }>();
 
-  if (employeeIds.length) {
+  if (filteredEmployeeIds.length) {
     const [savingsRes, loansBalanceRes, contributionsRes] = await Promise.all([
-      supabase.from("savings").select("employee_id, balance").in("employee_id", employeeIds),
-      supabase.from("loans").select("employee_id, outstanding_balance").in("employee_id", employeeIds),
-      supabase.from("savings_contributions").select("employee_id, amount, period_year, period_month").in("employee_id", employeeIds),
+      supabase.from("savings").select("employee_id, balance").in("employee_id", filteredEmployeeIds),
+      supabase.from("loans").select("employee_id, outstanding_balance").in("employee_id", filteredEmployeeIds),
+      supabase.from("savings_contributions").select("employee_id, amount, period_year, period_month").in("employee_id", filteredEmployeeIds),
     ]);
 
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
 
-    for (const employeeId of employeeIds) {
+    for (const employeeId of filteredEmployeeIds) {
       const savingsRows = (savingsRes.data ?? []).filter((row: any) => row.employee_id === employeeId);
       const loanRows = (loansBalanceRes.data ?? []).filter((row: any) => row.employee_id === employeeId);
       const contributionRows = (contributionsRes.data ?? []).filter(
@@ -102,7 +147,7 @@ export async function fetchApprovalsList() {
     }
   }
 
-  const enriched = rows.map((row) => {
+  const enriched = allowedRows.map((row) => {
     const loan = row.entity_type === "loan" ? loanMap.get(row.entity_id) : null;
     const withdrawal = row.entity_type === "withdrawal" ? withdrawalMap.get(row.entity_id) : null;
     const employeeId = loan?.employee_id ?? withdrawal?.employee_id;
@@ -133,5 +178,5 @@ export async function fetchApprovalsList() {
     };
   });
 
-  return { approvals: enriched, total: count ?? 0 };
+  return { approvals: enriched, total: enriched.length };
 }
