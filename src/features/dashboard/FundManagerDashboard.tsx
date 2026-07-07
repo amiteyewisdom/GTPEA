@@ -34,10 +34,7 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
       ? Math.round((item.repayments / Math.max(item.disbursements, 1)) * 100)
       : 0,
   }));
-  const forecastTotal = stats.upcomingRepayments.reduce(
-    (acc, item) => acc + item.amountValue,
-    0
-  );
+  const forecastTotal = stats.expectedCollections;
 
   return (
     <div className="space-y-6">
@@ -57,9 +54,7 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
         />
         <DashboardStatCard
           title="Expected Collections"
-          value={formatCurrency(
-            stats.upcomingRepayments.reduce((acc, item) => acc + item.amountValue, 0)
-          )}
+          value={formatCurrency(stats.expectedCollections)}
           icon={BadgeCent}
           color="text-brand-success"
         />

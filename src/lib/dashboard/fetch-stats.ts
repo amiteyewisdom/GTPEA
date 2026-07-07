@@ -106,6 +106,7 @@ export interface DashboardStats {
     eligibilityScore: number;
     status: "eligible" | "review" | "caution" | "ineligible";
   }[];
+  expectedCollections: number;
   recentRecommendations: {
     employee: string;
     action: string;
@@ -437,6 +438,12 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     };
   });
 
+  const expectedCollections = upcomingRepayments.length > 0
+    ? upcomingRepayments.reduce((acc, r) => acc + r.amountValue, 0)
+    : loans
+        .filter((l) => ["disbursed", "repaying"].includes(l.status))
+        .reduce((acc, l) => acc + (Number(l.monthly_repayment) || 0), 0);
+
   // Filter employees shown in summaries to actual members only
   const memberEmployees = activeEmployees.filter((e) => employeeOnlyIds.size === 0 || employeeOnlyIds.has(e.id));
 
@@ -557,6 +564,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     recentActivity,
     approvalQueue,
     upcomingRepayments,
+    expectedCollections,
     pendingLoanReviews,
     chairpersonQueue,
     recentDisbursements,
