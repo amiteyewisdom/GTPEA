@@ -362,9 +362,22 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     };
   });
 
-  const fundManagerQueue = buildLoanApprovalQueue(approvals, loans, 2);
-  const chairpersonQueueItems = buildLoanApprovalQueue(approvals, loans, 3);
-  const unionRepQueue = buildLoanApprovalQueue(approvals, loans, 1);
+  const fundManagerQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 2);
+  const chairpersonQueueItems = buildLoanApprovalQueue(approvals, memberOnlyLoans, 3);
+  const unionRepQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 1);
+
+  // Only count union-rep actions tied to actual employee loans/withdrawals
+  const unionRepActions = approvalActions.filter((a) => {
+    if (a.stage !== 1 && a.required_role !== "union_rep") return false;
+    const approval = a.approvals;
+    if (!approval) return false;
+    if (approval.entity_type === "loan") return loanMap.has(approval.entity_id);
+    if (approval.entity_type === "withdrawal") {
+      const withdrawal = withdrawalMap.get(approval.entity_id);
+      return withdrawal && employeeOnlyIds.has(withdrawal.employee_id);
+    }
+    return false;
+  });
 
   const pendingLoanReviews = fundManagerQueue.slice(0, 6).map((item) => ({
     approvalId: item.approvalId,
@@ -487,16 +500,11 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
   const unionRepStats = {
     pendingReviews: unionRepQueue.length,
-    approvedReviews: approvalActions.filter(
-      (a) => a.action === "approved" && (a.stage === 1 || a.required_role === "union_rep")
-    ).length,
-    rejectedReviews: approvalActions.filter(
-      (a) => a.action === "rejected" && (a.stage === 1 || a.required_role === "union_rep")
-    ).length,
+    approvedReviews: unionRepActions.filter((a) => a.action === "approved").length,
+    rejectedReviews: unionRepActions.filter((a) => a.action === "rejected").length,
   };
 
-  const recentRecommendations = approvalActions
-    .filter((a) => a.stage === 1 || a.required_role === "union_rep")
+  const recentRecommendations = unionRepActions
     .slice(0, 4)
     .map((action) => {
     const approval = action.approvals;
