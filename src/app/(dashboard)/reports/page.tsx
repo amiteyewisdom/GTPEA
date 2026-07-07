@@ -176,5 +176,5 @@ export default async function ReportsPage() {
       : 0,
   };
 
-  return <ReportsClient summary={summary} savingsChartData={savingsChartData} loanChartData={loanChartData} userRole={profile?.role} />;
+  return <ReportsClient summary={summary} savingsChartData={savingsChartData} loanChartData={loanChartData} userRole={(profile as any)?.role} />;
 }
