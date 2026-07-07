@@ -274,7 +274,11 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     (acc, loan) => {
       const current = acc[loan.employee_id] || { total: 0, outstanding: 0, count: 0 };
       current.total += Number(loan.amount_approved || loan.amount_requested) || 0;
-      current.outstanding += Number(loan.outstanding_balance) || 0;
+      current.outstanding +=
+        Number(loan.outstanding_balance) ||
+        Number(loan.amount_approved) ||
+        Number(loan.amount_requested) ||
+        0;
       current.count += 1;
       acc[loan.employee_id] = current;
       return acc;
