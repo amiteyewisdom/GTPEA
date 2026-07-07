@@ -13,7 +13,7 @@ export default async function ReportsPage() {
   } = await supabase.auth.getUser();
 
   const { data: profile } = user
-    ? await supabase.from("profiles").select("role").eq("id", user.id).single()
+    ? await supabase.from("profiles").select("role").eq("user_id", user.id).single()
     : { data: null };
 
   const [
