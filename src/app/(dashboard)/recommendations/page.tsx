@@ -53,25 +53,47 @@ export default async function RecommendationsPage() {
   const loanMap = new Map(((loans ?? []) as any[]).map((l) => [l.id, l]));
   const approvalMap = new Map(((approvals ?? []) as any[]).map((a) => [a.id, a]));
 
-  const recommendations = ((actions ?? []) as any[]).map((action: any) => {
-    const approval = approvalMap.get(action.approval_id);
-    const loan = approval?.entity_type === "loan" ? loanMap.get(approval.entity_id) : null;
-    const employee = loan?.employees;
-    const name = employee
-      ? `${employee.first_name ?? ""} ${employee.last_name ?? ""}`.trim() || "Unknown"
-      : "Unknown";
-    const amount = loan ? Number(loan.amount_requested) || 0 : 0;
+  // Exclude recommendations for loans that don't belong to actual employee-role accounts
+  const employeeIds = [...new Set(((loans ?? []) as any[]).map((l) => l.employee_id).filter(Boolean))];
+  const { data: employeeProfiles } =
+    employeeIds.length > 0
+      ? await supabase
+          .from("profiles")
+          .select("employee_id")
+          .in("employee_id", employeeIds)
+          .eq("role", "employee")
+          .not("employee_id", "is", null)
+      : { data: [] };
+  const employeeOnlyIds = new Set(((employeeProfiles ?? []) as any[]).map((p) => p.employee_id));
+  const employeeOnlyLoanMap = new Map(
+    ((loans ?? []) as any[])
+      .filter((l) => employeeOnlyIds.has(l.employee_id))
+      .map((l) => [l.id, l])
+  );
 
-    return {
-      id: action.id,
-      employee: name,
-      employeeId: employee?.employee_no ?? "—",
-      action: action.action ?? "pending",
-      amount,
-      date: action.actioned_at,
-      notes: action.notes,
-    };
-  });
+  const recommendations = ((actions ?? []) as any[])
+    .map((action: any) => {
+      const approval = approvalMap.get(action.approval_id);
+      const loan = approval?.entity_type === "loan" ? employeeOnlyLoanMap.get(approval.entity_id) : null;
+      if (!loan) return null;
+
+      const employee = loan.employees;
+      const name = employee
+        ? `${employee.first_name ?? ""} ${employee.last_name ?? ""}`.trim() || "Unknown"
+        : "Unknown";
+      const amount = Number(loan.amount_requested) || 0;
+
+      return {
+        id: action.id,
+        employee: name,
+        employeeId: employee?.employee_no ?? "—",
+        action: action.action ?? "pending",
+        amount,
+        date: action.actioned_at,
+        notes: action.notes,
+      };
+    })
+    .filter(Boolean);
 
   const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
     approved: { label: "Approved", color: "text-brand-success", icon: CheckCircle },
