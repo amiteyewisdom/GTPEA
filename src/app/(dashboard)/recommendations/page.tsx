@@ -71,19 +71,19 @@ export default async function RecommendationsPage() {
       .map((l) => [l.id, l])
   );
 
-  const recommendations = ((actions ?? []) as any[])
-    .map((action: any) => {
-      const approval = approvalMap.get(action.approval_id);
-      const loan = approval?.entity_type === "loan" ? employeeOnlyLoanMap.get(approval.entity_id) : null;
-      if (!loan) return null;
+  const recommendations = ((actions ?? []) as any[]).flatMap((action: any) => {
+    const approval = approvalMap.get(action.approval_id);
+    const loan = approval?.entity_type === "loan" ? employeeOnlyLoanMap.get(approval.entity_id) : null;
+    if (!loan) return [];
 
-      const employee = loan.employees;
-      const name = employee
-        ? `${employee.first_name ?? ""} ${employee.last_name ?? ""}`.trim() || "Unknown"
-        : "Unknown";
-      const amount = Number(loan.amount_requested) || 0;
+    const employee = loan.employees;
+    const name = employee
+      ? `${employee.first_name ?? ""} ${employee.last_name ?? ""}`.trim() || "Unknown"
+      : "Unknown";
+    const amount = Number(loan.amount_requested) || 0;
 
-      return {
+    return [
+      {
         id: action.id,
         employee: name,
         employeeId: employee?.employee_no ?? "—",
@@ -91,9 +91,9 @@ export default async function RecommendationsPage() {
         amount,
         date: action.actioned_at,
         notes: action.notes,
-      };
-    })
-    .filter(Boolean);
+      },
+    ];
+  });
 
   const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
     approved: { label: "Approved", color: "text-brand-success", icon: CheckCircle },
