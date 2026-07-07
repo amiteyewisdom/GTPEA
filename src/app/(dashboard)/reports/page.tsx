@@ -8,6 +8,14 @@ export const metadata: Metadata = { title: "Reports" };
 export default async function ReportsPage() {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).single()
+    : { data: null };
+
   const [
     totalEmployeesRes,
     employeeProfilesRes,
@@ -168,5 +176,5 @@ export default async function ReportsPage() {
       : 0,
   };
 
-  return <ReportsClient summary={summary} savingsChartData={savingsChartData} loanChartData={loanChartData} />;
+  return <ReportsClient summary={summary} savingsChartData={savingsChartData} loanChartData={loanChartData} userRole={profile?.role} />;
 }

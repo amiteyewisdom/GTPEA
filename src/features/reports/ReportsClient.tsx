@@ -152,10 +152,12 @@ export function ReportsClient({
   summary,
   savingsChartData = [],
   loanChartData = [],
+  userRole,
 }: {
   summary: ReportSummary;
   savingsChartData?: ChartData[];
   loanChartData?: ChartData[];
+  userRole?: string;
 }) {
   const { download, openPrintView, loading } = useDownload();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -229,9 +231,11 @@ export function ReportsClient({
         <TabButton active={activeTab === "overview"} onClick={() => setActiveTab("overview")} icon={LayoutGrid}>
           Overview
         </TabButton>
-        <TabButton active={activeTab === "trends"} onClick={() => setActiveTab("trends")} icon={BarChart3}>
-          Trends
-        </TabButton>
+        {userRole !== "union_rep" && (
+          <TabButton active={activeTab === "trends"} onClick={() => setActiveTab("trends")} icon={BarChart3}>
+            Trends
+          </TabButton>
+        )}
         <TabButton active={activeTab === "export"} onClick={() => setActiveTab("export")} icon={FileSpreadsheet}>
           Downloads
         </TabButton>
