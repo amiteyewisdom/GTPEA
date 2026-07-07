@@ -184,7 +184,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
       .limit(50),
     supabase
       .from("savings_contributions")
-      .select("amount, period_year, period_month, created_at")
+      .select("amount, period_year, period_month, created_at, employee_id")
       .gte("created_at", subMonths(new Date(), 6).toISOString()),
     supabase
       .from("approval_actions")
@@ -292,15 +292,24 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     return acc;
   }, {});
 
+  // Build member-only loan set — exclude any loan whose employee_id belongs to a non-employee role
+  const memberOnlyLoans = employeeOnlyIds.size > 0
+    ? loans.filter((l) => employeeOnlyIds.has(l.employee_id))
+    : loans;
+
+  const memberOnlyContributions = employeeOnlyIds.size > 0
+    ? contributions.filter((c) => employeeOnlyIds.has(c.employee_id))
+    : contributions;
+
   const savingsTrend = months.map(({ key, label }) => {
     const [year, month] = key.split("-").map(Number);
-    const total = contributions
+    const total = memberOnlyContributions
       .filter((c) => c.period_year === year && c.period_month === month)
       .reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
     return { month: label, savings: total };
   });
 
-  const productTotals = loans.reduce<Record<string, number>>((acc, loan) => {
+  const productTotals = memberOnlyLoans.reduce<Record<string, number>>((acc, loan) => {
     const name = loan.loan_products?.name || "Other";
     acc[name] = (acc[name] || 0) + (Number(loan.amount_approved || loan.amount_requested) || 0);
     return acc;
@@ -314,7 +323,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
   const loanTrend = months.map(({ key, label }) => {
     const [year, month] = key.split("-").map(Number);
-    const disbursements = loans
+    const disbursements = memberOnlyLoans
       .filter((loan) => {
         const dateStr = loan.disbursement_date || loan.created_at;
         if (!dateStr) return false;
@@ -333,11 +342,6 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
     return { month: label, disbursements, repayments: monthRepayments };
   });
-
-  // Build member-only loan set — exclude any loan whose employee_id belongs to a non-employee role
-  const memberOnlyLoans = employeeOnlyIds.size > 0
-    ? loans.filter((l) => employeeOnlyIds.has(l.employee_id))
-    : loans;
 
   const loanMap = new Map(memberOnlyLoans.map((loan) => [loan.id, loan]));
   const withdrawalMap = new Map(withdrawals.map((withdrawal) => [withdrawal.id, withdrawal]));
