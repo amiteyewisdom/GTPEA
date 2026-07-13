@@ -196,7 +196,10 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
       .from("transactions")
       .select("id", { count: "exact", head: true })
       .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-    supabase.from("profiles").select("employee_id").eq("role", "employee").not("employee_id", "is", null),
+    supabase
+      .from("profiles")
+      .select("employee_id, role")
+      .not("employee_id", "is", null),
   ]);
 
   for (const [label, result] of [
@@ -224,9 +227,16 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
   const activeEmployees = employees.filter((e) => e.status === "active");
 
-  // Build set of employee_ids that belong to actual 'employee' role — used to exclude admin/rep/manager
+  // Build set of employee_ids linked to real members. Exclude only employees that are tied to
+  // admin/rep/manager profiles; imported employees without a profile are treated as members.
+  const nonEmployeeProfileIds = new Set(
+    ((employeeProfilesRes as any).data ?? [])
+      .filter((p: any) => p.role !== "employee")
+      .map((p: any) => p.employee_id)
+  );
+
   const employeeOnlyIds = new Set(
-    ((employeeProfilesRes as any).data ?? []).map((p: any) => p.employee_id)
+    employees.filter((e) => !nonEmployeeProfileIds.has(e.id)).map((e: any) => e.id)
   );
 
   // Sum all savings regardless of status; balance may be null for some rows so coerce

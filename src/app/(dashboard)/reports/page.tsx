@@ -29,7 +29,7 @@ export default async function ReportsPage() {
     dividendsRes,
   ] = await Promise.all([
     supabase.from("employees").select("id", { count: "exact", head: true }),
-    supabase.from("profiles").select("employee_id").eq("role", "employee").not("employee_id", "is", null),
+    supabase.from("profiles").select("employee_id, role").not("employee_id", "is", null),
     supabase.from("loans").select("id", { count: "exact", head: true }).in("status", ["pending", "approved", "disbursed", "repaying"]),
     supabase.from("approvals").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("savings").select("balance, type, status"),
@@ -47,11 +47,13 @@ export default async function ReportsPage() {
   const withdrawalsData = withdrawalsRes.data as any[] | null;
   const dividendsData = dividendsRes.data as any[] | null;
 
-  const employeeOnlyIds = new Set(
-    ((employeeProfilesRes as any).data ?? []).map((p: any) => p.employee_id)
+  const excludedEmployeeIds = new Set(
+    ((employeeProfilesRes as any).data ?? [])
+      .filter((p: any) => p.role !== "employee")
+      .map((p: any) => p.employee_id)
   );
 
-  const totalEmployeeCount = employeeOnlyIds.size;
+  const totalEmployeeCount = Math.max((totalEmployeesRes.count ?? 0) - excludedEmployeeIds.size, 0);
 
   const savingsBalanceTotal = savingsData?.reduce((s, r) => s + (r.balance ?? 0), 0) ?? 0;
   const contributionsTotal = contributionsData?.reduce((s, r) => s + (Number(r.amount) || 0), 0) ?? 0;

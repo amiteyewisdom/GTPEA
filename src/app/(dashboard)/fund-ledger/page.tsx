@@ -11,16 +11,18 @@ export const dynamic = "force-dynamic";
 export default async function FundLedgerPage() {
   const supabase = await createClient();
 
-  // Only include transactions tied to real employee-role accounts
+  // Exclude transactions tied to admin/rep/manager employee accounts
   const { data: employeeProfiles } = await supabase
     .from("profiles")
-    .select("employee_id")
-    .eq("role", "employee")
+    .select("employee_id, role")
     .not("employee_id", "is", null);
 
-  const employeeIds = ((employeeProfiles ?? []) as any[])
-    .map((p) => p.employee_id)
-    .filter(Boolean) as string[];
+  const excludedEmployeeIds = new Set(
+    ((employeeProfiles ?? []) as any[])
+      .filter((p) => p.role !== "employee")
+      .map((p) => p.employee_id)
+      .filter(Boolean)
+  );
 
   const [loansRes, contributionsRes, repaymentsRes, withdrawalsRes, dividendsRes, transactionsRes] = await Promise.all([
     supabase
@@ -141,7 +143,7 @@ export default async function FundLedgerPage() {
 
   // Sort all entries by date descending and compute running balance
   const allRows = [...loanRows, ...savingsRows, ...repaymentRows, ...withdrawalRows, ...dividendRows, ...transactionRows]
-    .filter((row) => employeeIds.length === 0 || employeeIds.includes(row.employee_id))
+    .filter((row) => !excludedEmployeeIds.has(row.employee_id))
     .sort((a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime());
 
   const totalCredits = allRows.reduce((sum, row) => sum + row.credit, 0);

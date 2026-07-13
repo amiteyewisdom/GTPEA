@@ -28,18 +28,21 @@ export default async function LoansPage() {
         { count: "exact" }
       )
       .order("created_at", { ascending: false }),
-    supabase.from("profiles").select("employee_id").eq("role", "employee").not("employee_id", "is", null),
+    supabase
+      .from("profiles")
+      .select("employee_id, role")
+      .not("employee_id", "is", null),
   ]);
 
-  const employeeOnlyIds = new Set(
-    (employeeProfilesRes.data ?? []).map((p: any) => p.employee_id)
+  const excludedEmployeeIds = new Set(
+    (employeeProfilesRes.data ?? [])
+      .filter((p: any) => p.role !== "employee")
+      .map((p: any) => p.employee_id)
   );
 
   const allLoans = (loansRes.data ?? []) as any[];
-  // Only show loans belonging to actual employee-role members (exclude admin/manager/rep accounts)
-  const filteredLoans = allLoans.filter((l) =>
-    employeeOnlyIds.size === 0 || employeeOnlyIds.has(l.employee_id)
-  );
+  // Only show loans belonging to real members (exclude admin/manager/rep-linked employee accounts)
+  const filteredLoans = allLoans.filter((l) => !excludedEmployeeIds.has(l.employee_id));
   const typedLoans = filteredLoans as Loan[];
   const loanProducts = loanProductsRes.data ?? [];
 

@@ -7,24 +7,23 @@ export const metadata: Metadata = { title: "Employees" };
 export default async function EmployeesPage() {
   const supabase = await createClient();
 
-  // Only show accounts whose profile role is 'employee' (exclude admin/management accounts)
-  const { data: employeeProfiles } = await supabase
+  // Show all employees except those linked to admin/rep/manager profiles.
+  const { data: nonEmployeeProfiles } = await supabase
     .from("profiles")
     .select("employee_id")
-    .eq("role", "employee");
+    .neq("role", "employee")
+    .not("employee_id", "is", null);
 
-  const employeeIds = (employeeProfiles ?? [])
-    .map((p: any) => p.employee_id)
-    .filter(Boolean) as string[];
+  const excludedIds = new Set(
+    (nonEmployeeProfiles ?? []).map((p: any) => p.employee_id).filter(Boolean)
+  );
 
-  const { data: employees, count } =
-    employeeIds.length > 0
-      ? await supabase
-          .from("employees")
-          .select("*", { count: "exact" })
-          .in("id", employeeIds)
-          .order("created_at", { ascending: false })
-      : { data: [], count: 0 };
+  const { data: employees, count } = await supabase
+    .from("employees")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false });
 
-  return <EmployeesClient employees={employees ?? []} total={count ?? 0} />;
+  const filteredEmployees = (employees ?? []).filter((e: any) => !excludedIds.has(e.id));
+
+  return <EmployeesClient employees={filteredEmployees} total={filteredEmployees.length} />;
 }

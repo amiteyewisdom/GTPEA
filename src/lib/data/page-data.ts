@@ -230,41 +230,39 @@ export async function fetchRepaymentsData() {
 export async function fetchDisbursementsData() {
   const supabase = await createClient();
 
-  // Only show loans tied to real employee-role accounts, not admin/manager test accounts
+  // Exclude loans tied to admin/rep/manager employee accounts
   const { data: employeeProfiles } = await supabase
     .from("profiles")
-    .select("employee_id")
-    .eq("role", "employee")
+    .select("employee_id, role")
     .not("employee_id", "is", null);
 
-  const employeeIds = ((employeeProfiles ?? []) as any[])
-    .map((p) => p.employee_id)
-    .filter(Boolean) as string[];
+  const excludedIds = new Set(
+    ((employeeProfiles ?? []) as any[])
+      .filter((p) => p.role !== "employee")
+      .map((p) => p.employee_id)
+      .filter(Boolean)
+  );
 
-  const query =
-    employeeIds.length > 0
-      ? supabase
-          .from("loans")
-          .select(`
-            id,
-            loan_ref,
-            amount_approved,
-            amount_disbursed,
-            disbursement_date,
-            status,
-            employees!employee_id (first_name, last_name, employee_no),
-            loan_products (name)
-          `)
-          .in("status", ["approved", "disbursed", "repaying", "completed"])
-          .in("employee_id", employeeIds)
-          .order("status", { ascending: true })
-          .order("disbursement_date", { ascending: false })
-          .limit(200)
-      : supabase.from("loans").select("id").eq("id", "no-match");
+  const { data } = await supabase
+    .from("loans")
+    .select(`
+      id,
+      loan_ref,
+      amount_approved,
+      amount_disbursed,
+      disbursement_date,
+      status,
+      employees!employee_id (first_name, last_name, employee_no),
+      loan_products (name)
+    `)
+    .in("status", ["approved", "disbursed", "repaying", "completed"])
+    .order("status", { ascending: true })
+    .order("disbursement_date", { ascending: false })
+    .limit(200);
 
-  const { data } = await query;
+  const filtered = (data ?? []).filter((l: any) => !excludedIds.has(l.employee_id));
 
-  return { disbursements: data ?? [] };
+  return { disbursements: filtered };
 }
 
 export async function fetchAuditLogsData() {
@@ -327,28 +325,29 @@ export async function fetchUsersData() {
 export async function fetchMembersData() {
   const supabase = await createClient();
 
-  // Only show real members (profile role = employee), hide admin/management accounts
+  // Show all active employees except those linked to admin/rep/manager profiles.
   const { data: employeeProfiles } = await supabase
     .from("profiles")
-    .select("employee_id")
-    .eq("role", "employee");
+    .select("employee_id, role")
+    .not("employee_id", "is", null);
 
-  const employeeIds = (employeeProfiles ?? [])
-    .map((p: any) => p.employee_id)
-    .filter(Boolean) as string[];
+  const excludedIds = new Set(
+    (employeeProfiles ?? [])
+      .filter((p: any) => p.role !== "employee")
+      .map((p: any) => p.employee_id)
+      .filter(Boolean)
+  );
 
-  const { data } =
-    employeeIds.length > 0
-      ? await supabase
-          .from("employees")
-          .select("id, first_name, last_name, employee_no, department, status, email")
-          .eq("status", "active")
-          .in("id", employeeIds)
-          .order("last_name", { ascending: true })
-      : { data: [] };
+  const { data } = await supabase
+    .from("employees")
+    .select("id, first_name, last_name, employee_no, department, status, email")
+    .eq("status", "active")
+    .order("last_name", { ascending: true });
+
+  const filtered = (data ?? []).filter((e: any) => !excludedIds.has(e.id));
 
   return {
-    members: (data ?? []).map((member: any) => ({
+    members: filtered.map((member: any) => ({
       id: member.id,
       name: `${member.first_name} ${member.last_name}`,
       employeeNo: member.employee_no,

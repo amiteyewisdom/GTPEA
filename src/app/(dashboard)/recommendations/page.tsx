@@ -53,21 +53,24 @@ export default async function RecommendationsPage() {
   const loanMap = new Map(((loans ?? []) as any[]).map((l) => [l.id, l]));
   const approvalMap = new Map(((approvals ?? []) as any[]).map((a) => [a.id, a]));
 
-  // Exclude recommendations for loans that don't belong to actual employee-role accounts
+  // Exclude recommendations for loans linked to admin/rep/manager employee accounts
   const employeeIds = [...new Set(((loans ?? []) as any[]).map((l) => l.employee_id).filter(Boolean))];
   const { data: employeeProfiles } =
     employeeIds.length > 0
       ? await supabase
           .from("profiles")
-          .select("employee_id")
+          .select("employee_id, role")
           .in("employee_id", employeeIds)
-          .eq("role", "employee")
           .not("employee_id", "is", null)
       : { data: [] };
-  const employeeOnlyIds = new Set(((employeeProfiles ?? []) as any[]).map((p) => p.employee_id));
+  const nonEmployeeIds = new Set(
+    ((employeeProfiles ?? []) as any[])
+      .filter((p) => p.role !== "employee")
+      .map((p) => p.employee_id)
+  );
   const employeeOnlyLoanMap = new Map(
     ((loans ?? []) as any[])
-      .filter((l) => employeeOnlyIds.has(l.employee_id))
+      .filter((l) => !nonEmployeeIds.has(l.employee_id))
       .map((l) => [l.id, l])
   );
 
