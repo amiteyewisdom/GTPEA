@@ -3,6 +3,47 @@ import type { AppSupabase } from "@/lib/supabase/types";
 
 export type ImportType = "employees" | "savings" | "loans";
 
+const VALID_DEPARTMENTS = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit"] as const;
+
+type Department = (typeof VALID_DEPARTMENTS)[number];
+
+function normalizeDepartment(input: string): Department {
+  const raw = input.trim().toLowerCase().replace(/[&\/_-]/g, " ");
+
+  const aliases: Record<Department, string[]> = {
+    management: ["management", "mgt", "mgr", "managerial"],
+    finance: ["finance", "fin", "account", "accounts", "accounting", "bac"],
+    operations: [
+      "operations",
+      "ops",
+      "operational",
+      "procurement",
+      "warehouse",
+      "logistics",
+      "admin",
+      "administration",
+      "support",
+      "user support",
+      "customer support",
+      "general services",
+      "gs",
+    ],
+    hr: ["hr", "human resources", "human resource", "personnel"],
+    it: ["it", "information technology", "information tech", "tech", "technology"],
+    sales: ["sales", "marketing", "business development", "biz dev"],
+    legal: ["legal", "compliance"],
+    audit: ["audit", "internal audit"],
+  };
+
+  if (VALID_DEPARTMENTS.includes(raw as Department)) return raw as Department;
+
+  for (const [department, departmentAliases] of Object.entries(aliases)) {
+    if (departmentAliases.includes(raw)) return department as Department;
+  }
+
+  return "operations";
+}
+
 export type ImportResult = {
   imported: number;
   skipped: number;
@@ -49,7 +90,7 @@ async function importEmployees(
     const firstName = row["first name"];
     const lastName = row["last name"];
     const email = row.email;
-    const department = (row.department || "operations").toLowerCase();
+    const department = normalizeDepartment(row.department || "operations");
     const position = row.position || "Staff";
     const joinDate = row["join date"] || new Date().toISOString().slice(0, 10);
     const salary = parseFloat(row.salary || "0");
