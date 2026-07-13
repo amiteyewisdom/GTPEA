@@ -41,3 +41,7 @@ const PRODUCT_MANAGEMENT_ROLES = ["fund_manager", "super_admin", "administrator"
 export function canManageLoanProducts(role: StaffRole | null) {
   return role !== null && PRODUCT_MANAGEMENT_ROLES.includes(role as (typeof PRODUCT_MANAGEMENT_ROLES)[number]);
 }
+
+export function canManageUsers(role: StaffRole | null) {
+  return role === "super_admin";
+}

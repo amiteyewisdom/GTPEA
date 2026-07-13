@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchDashboardStats } from "@/lib/dashboard/fetch-stats";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/utils/formatters";
 import { getSessionProfile, resolveEmployeeUuid } from "./session";
@@ -310,10 +311,31 @@ export async function fetchUsersData() {
     .neq("role", "super_admin")
     .order("created_at", { ascending: false });
 
+  const userIds = ((data ?? []) as any[]).map((user) => user.user_id).filter(Boolean);
+
+  let emailByUserId = new Map<string, string>();
+  if (userIds.length > 0) {
+    try {
+      const adminClient = createAdminClient();
+      const { data: authUsers } = await adminClient.auth.admin.listUsers({
+        page: 1,
+        perPage: Math.max(userIds.length, 50),
+      });
+      emailByUserId = new Map(
+        (authUsers?.users ?? [])
+          .filter((u: any) => userIds.includes(u.id))
+          .map((u: any) => [u.id, u.email || ""])
+      );
+    } catch {
+      // Admin client may be unavailable; export will omit emails gracefully.
+    }
+  }
+
   return {
     users: (data ?? []).map((user: any) => ({
       id: user.id,
       name: user.full_name,
+      email: emailByUserId.get(user.user_id) || "",
       role: user.role,
       employeeId: user.employee_id ?? "—",
       status: user.is_active ? "Active" : "Inactive",
