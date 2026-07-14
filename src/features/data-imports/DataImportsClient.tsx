@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import GlassCard from "@/components/ui/GlassCard";
 import DataImportPanel from "@/components/data/DataImportPanel";
+import { PayrollMasterFilePanel } from "@/components/payroll/PayrollMasterFilePanel";
 import { AlertCircle, CheckCircle, FileText } from "lucide-react";
 import type { ImportHistoryItem } from "@/lib/imports/log-import";
 
@@ -12,13 +14,15 @@ type DataImportsClientProps = {
 
 export default function DataImportsClient({ initialHistory }: DataImportsClientProps) {
   const [history, setHistory] = useState(initialHistory);
+  const router = useRouter();
 
   const refreshHistory = useCallback(async () => {
     const response = await fetch("/api/import/history");
     if (!response.ok) return;
     const data = await response.json();
     setHistory(data.history ?? []);
-  }, []);
+    router.refresh();
+  }, [router]);
 
   useEffect(() => {
     if (initialHistory.length === 0) {
@@ -31,9 +35,11 @@ export default function DataImportsClient({ initialHistory }: DataImportsClientP
       <div>
         <h1 className="mb-2 text-2xl font-bold text-brand-text md:text-3xl">Data Imports</h1>
         <p className="text-sm text-brand-text-secondary md:text-base">
-          Upload employee, savings, and loan records in bulk.
+          Upload employee, savings, loan records, and consolidated payroll master files.
         </p>
       </div>
+
+      <PayrollMasterFilePanel onComplete={refreshHistory} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-6">

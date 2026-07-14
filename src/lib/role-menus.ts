@@ -161,7 +161,7 @@ export const menuItems: MenuItem[] = [
     label: 'Data Imports',
     icon: Upload,
     path: '/data-imports',
-    roles: ['administrator'],
+    roles: ['administrator', 'fund_manager'],
   },
   {
     id: 'loan-products-admin',

@@ -37,6 +37,7 @@ export function canExportReports(role: StaffRole | null) {
 }
 
 const PRODUCT_MANAGEMENT_ROLES = ["fund_manager", "super_admin", "administrator", "chairperson"] as const;
+const PAYROLL_ROLES = ["administrator", "fund_manager"] as const;
 
 export function canManageLoanProducts(role: StaffRole | null) {
   return role !== null && PRODUCT_MANAGEMENT_ROLES.includes(role as (typeof PRODUCT_MANAGEMENT_ROLES)[number]);
@@ -44,4 +45,8 @@ export function canManageLoanProducts(role: StaffRole | null) {
 
 export function canManageUsers(role: StaffRole | null) {
   return role === "super_admin";
+}
+
+export function canManagePayroll(role: StaffRole | null) {
+  return role !== null && PAYROLL_ROLES.includes(role as (typeof PAYROLL_ROLES)[number]);
 }
