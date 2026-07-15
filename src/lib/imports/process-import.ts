@@ -214,6 +214,12 @@ async function importSavings(
     }
 
     const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      skipped++;
+      errors.push(`Row ${rowNo}: date "${date}" is not a valid date. Use YYYY-MM-DD format.`);
+      continue;
+    }
+
     const reference = `IMP-${employeeNo}-${parsedDate.getFullYear()}${parsedDate.getMonth() + 1}-${i + 1}`;
 
     const { error: contributionError } = await supabase.from("savings_contributions").insert({
@@ -273,9 +279,15 @@ async function importLoans(supabase: AppSupabase, rows: Record<string, string>[]
     const termMonths = parseInt(row["term months"] || row["duration (months)"] || "12", 10);
     const monthlyRepayment = parseFloat(row["monthly repayment"] || "0");
 
-    if (!loanRef || !employeeNo || !Number.isFinite(amountRequested)) {
+    if (!loanRef || !employeeNo || !Number.isFinite(amountRequested) || amountRequested <= 0) {
       skipped++;
-      errors.push(`Row ${rowNo}: reference, employee no, and amount are required.`);
+      errors.push(`Row ${rowNo}: reference, employee no, and a positive amount requested are required.`);
+      continue;
+    }
+
+    if (!Number.isFinite(interestRate) || !Number.isFinite(termMonths) || termMonths <= 0) {
+      skipped++;
+      errors.push(`Row ${rowNo}: interest rate and term months must be valid positive numbers.`);
       continue;
     }
 
@@ -340,7 +352,7 @@ export function getImportTemplate(type: ImportType): string {
       ["EMP-001", "John", "Smith", "john.smith@example.com", "operations", "Analyst", "2024-01-15", "5000", "0240000000"],
     ],
     savings: [
-      ["Employee No", "Amount", "Date", "Type", "Account Number"],
+      ["Employee No", "Amount", "Date (YYYY-MM-DD)", "Type", "Account Number"],
       ["EMP-001", "500", "2024-06-01", "monthly", ""],
     ],
     loans: [
