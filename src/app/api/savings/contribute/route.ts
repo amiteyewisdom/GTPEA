@@ -42,6 +42,7 @@ export async function POST(request: Request) {
 
   // Create savings contribution
   const contributionRef = generateReference("CONTRIB");
+  const contributionDate = new Date();
 
   const { data: contribution, error: contributionError } = await supabase
     .from("savings_contributions")
@@ -51,7 +52,9 @@ export async function POST(request: Request) {
         savings_id: savingsId,
         employee_id: savings.employee_id,
         amount: amount,
-        contribution_date: new Date().toISOString(),
+        contribution_date: contributionDate.toISOString(),
+        period_year: contributionDate.getUTCFullYear(),
+        period_month: contributionDate.getUTCMonth() + 1,
         source: "manual",
         notes: null,
       },

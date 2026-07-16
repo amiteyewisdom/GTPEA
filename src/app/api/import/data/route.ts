@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { canImport, getStaffUser } from "@/lib/api/staff-auth";
 import { logImportRun } from "@/lib/imports/log-import";
 import { processImport, type ImportType } from "@/lib/imports/process-import";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const IMPORT_TYPES = ["employees", "savings", "loans"] as const;
 
 export async function POST(request: Request) {
-  const { supabase, user, role } = await getStaffUser();
+  const { user, role } = await getStaffUser();
 
   if (!user) {
     return NextResponse.json({ error: "Please sign in to import data." }, { status: 401 });
@@ -29,10 +30,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unknown import type." }, { status: 400 });
     }
 
+    const adminSupabase = createAdminClient();
     const text = await file.text();
-    const result = await processImport(supabase, type, text, user.id);
+    const result = await processImport(adminSupabase, type, text, user.id);
 
-    await logImportRun(supabase, user.id, type, file.name, result);
+    await logImportRun(adminSupabase, user.id, type, file.name, result);
 
     return NextResponse.json({
       message: "Import finished.",

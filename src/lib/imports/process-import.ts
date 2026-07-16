@@ -54,6 +54,15 @@ export type ImportResult = {
   errors: string[];
 };
 
+export function normalizeLoanProductName(name: string): string {
+  const normalized = name.trim().toLowerCase().replace(/\s+/g, " ");
+  const aliases: Record<string, string> = {
+    "regular loan": "normal loan",
+  };
+
+  return aliases[normalized] ?? normalized;
+}
+
 export async function processImport(
   supabase: AppSupabase,
   type: ImportType,
@@ -273,7 +282,7 @@ async function importLoans(supabase: AppSupabase, rows: Record<string, string>[]
 
     const loanRef = row.reference || row["loan ref"];
     const employeeNo = row["employee no"] || row["employee id"];
-    const productName = (row.product || "Regular Loan").toLowerCase();
+    const productName = normalizeLoanProductName(row.product || "Normal Loan");
     const amountRequested = parseFloat(row["amount requested"] || row.amount || "0");
     const interestRate = parseFloat(row["interest rate"] || "0.1");
     const termMonths = parseInt(row["term months"] || row["duration (months)"] || "12", 10);
@@ -357,7 +366,7 @@ export function getImportTemplate(type: ImportType): string {
     ],
     loans: [
       ["Reference", "Employee No", "Product", "Amount Requested", "Interest Rate", "Term Months", "Monthly Repayment", "Status", "Purpose"],
-      ["LN-001", "EMP-001", "Regular Loan", "10000", "0.1", "12", "916.67", "pending", "Emergency"],
+      ["LN-001", "EMP-001", "Normal Loan", "10000", "0.02", "12", "850", "pending", "Emergency"],
     ],
   };
 

@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { canImport, getStaffUser } from "@/lib/api/staff-auth";
 import { parseCsv } from "@/lib/csv";
 import { logImportRun } from "@/lib/imports/log-import";
+import { normalizeLoanProductName } from "@/lib/imports/process-import";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
-  const { supabase, user, role } = await getStaffUser();
+  const { user, role } = await getStaffUser();
 
   if (!user) {
     return NextResponse.json({ error: "Please sign in to import data." }, { status: 401 });
@@ -23,12 +25,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Choose a file to upload." }, { status: 400 });
     }
 
+    const adminSupabase = createAdminClient();
     const rows = parseCsv(await file.text());
     if (rows.length === 0) {
       return NextResponse.json({ error: "The CSV file has no data rows." }, { status: 400 });
     }
 
-    const { data: products } = await (supabase.from("loan_products").select("id, name") as any);
+    const { data: products } = await (adminSupabase.from("loan_products").select("id, name") as any);
     const productMap = new Map((products ?? []).map((item: any) => [item.name.toLowerCase(), item.id]));
 
     let imported = 0;
@@ -40,10 +43,10 @@ export async function POST(request: Request) {
 
       if ((type === "loans" || type === "all") && row.reference && row["amount requested"]) {
         const employeeNo = row["employee no"];
-        const productName = (row.product || "Regular Loan").toLowerCase();
+        const productName = normalizeLoanProductName(row.product || "Normal Loan");
         const productId = productMap.get(productName);
 
-        const { data: employee } = await (supabase
+        const { data: employee } = await (adminSupabase
           .from("employees")
           .select("id")
           .eq("employee_no", employeeNo)
@@ -64,7 +67,7 @@ export async function POST(request: Request) {
         const interestRate = parseFloat(row["interest rate"] || "0.1");
         const monthlyRepayment = parseFloat(row["monthly repayment"] || "0");
 
-        const { error } = await ((supabase as any).from("loans").upsert(
+        const { error } = await ((adminSupabase as any).from("loans").upsert(
           {
             loan_ref: row.reference,
             employee_id: employee.id,
@@ -91,7 +94,7 @@ export async function POST(request: Request) {
       }
 
       if ((type === "withdrawals" || type === "all") && row.reference && row.amount && row["account number"]) {
-        const { data: employee } = await (supabase
+        const { data: employee } = await (adminSupabase
           .from("employees")
           .select("id")
           .eq("employee_no", row["employee no"])
@@ -102,7 +105,7 @@ export async function POST(request: Request) {
           continue;
         }
 
-        const { data: savings } = await (supabase
+        const { data: savings } = await (adminSupabase
           .from("savings")
           .select("id")
           .eq("account_number", row["account number"])
@@ -114,7 +117,7 @@ export async function POST(request: Request) {
           continue;
         }
 
-        const { error } = await ((supabase as any).from("withdrawal_requests").upsert(
+        const { error } = await ((adminSupabase as any).from("withdrawal_requests").upsert(
           {
             request_ref: row.reference,
             employee_id: employee.id,
@@ -134,7 +137,7 @@ export async function POST(request: Request) {
 
     const importType = type === "withdrawals" ? "savings" : "loans";
     const result = { imported, skipped: errors.length, errors };
-    await logImportRun(supabase, user.id, importType, file.name, result);
+    await logImportRun(adminSupabase, user.id, importType, file.name, result);
 
     return NextResponse.json({
       message: "Import finished.",
