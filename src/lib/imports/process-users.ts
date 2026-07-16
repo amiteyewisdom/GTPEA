@@ -133,14 +133,14 @@ export async function importUsers(fileText: string): Promise<UserImportResult> {
       continue;
     }
 
-    const { error: profileError } = await adminClient.from("profiles").insert({
+    const { error: profileError } = await (adminClient.from("profiles").insert({
       user_id: authUser.user.id,
       full_name: `${firstName} ${lastName}`,
       role,
       phone,
       employee_id: employeeId,
       is_active: isActive,
-    });
+    }) as any);
 
     if (profileError) {
       // Roll back auth user creation on profile failure
