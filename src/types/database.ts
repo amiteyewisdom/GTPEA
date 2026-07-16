@@ -140,6 +140,7 @@ export interface Database {
           actual_completion_date: string | null;
           guarantor_id: string | null;
           approved_by: string | null;
+          approved_at: string | null;
           disbursed_by: string | null;
           notes: string | null;
           created_at: string;

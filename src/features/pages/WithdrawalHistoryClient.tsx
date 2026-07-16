@@ -16,10 +16,10 @@ export function WithdrawalHistoryClient({
 }) {
   return (
     <SearchableList
-      title="Withdrawal History"
-      subtitle="View your withdrawal transactions"
-      searchPlaceholder="Search withdrawals..."
-      emptyMessage="No withdrawal transactions found."
+      title="Partial Withdrawal History"
+      subtitle="View your partial withdrawal transactions"
+      searchPlaceholder="Search partial withdrawals..."
+      emptyMessage="No partial withdrawal transactions found."
       stats={
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <GlassCard className="p-6">
@@ -27,7 +27,7 @@ export function WithdrawalHistoryClient({
               <div className="rounded-lg bg-brand-card-bg p-3 text-brand-danger">
                 <ArrowUpCircle className="h-5 w-5" />
               </div>
-              <span className="text-sm text-brand-text-secondary">Total Withdrawals</span>
+              <span className="text-sm text-brand-text-secondary">Total Partial Withdrawals</span>
             </div>
             <p className="text-2xl font-bold text-brand-text">{formatCurrency(totalWithdrawals)}</p>
           </GlassCard>

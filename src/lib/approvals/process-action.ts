@@ -101,7 +101,9 @@ export async function processApprovalAction(input: {
         .update({
           status: "approved",
           approved_by: userId,
+          approved_at: new Date().toISOString(),
           amount_approved: loanRes.data?.amount_requested ?? null,
+          outstanding_balance: loanRes.data?.amount_requested ?? 0,
         })
         .eq("id", approval.entity_id);
       if (loanUpdateRes.error) console.error("[processApprovalAction] loans update error:", loanUpdateRes.error);

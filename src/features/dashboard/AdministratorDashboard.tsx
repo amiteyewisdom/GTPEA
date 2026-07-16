@@ -94,12 +94,6 @@ export default function AdministratorDashboard({ stats: initialStats }: { stats:
               color="text-brand-danger"
             />
             <DashboardStatCard
-              title="Withdrawals"
-              value={formatCurrency(stats.totalWithdrawals)}
-              icon={TrendingUp}
-              color="text-brand-warning"
-            />
-            <DashboardStatCard
               title="Dividends"
               value={formatCurrency(stats.totalDividends)}
               icon={TrendingUp}

@@ -142,7 +142,7 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
         throw new Error(payload?.error || "Failed to submit withdrawal request");
       }
 
-      setMessage({ type: "success", text: "Withdrawal request submitted successfully" });
+      setMessage({ type: "success", text: "Partial withdrawal request submitted successfully" });
       setFormData({ savings_id: "", amount: "", reason: "" });
       setShowForm(false);
     } catch (error) {
@@ -156,7 +156,7 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-xl font-bold text-brand-text">Withdrawal Requests</h1>
+        <h1 className="text-xl font-bold text-brand-text">Partial Withdrawal Requests</h1>
         <div className="flex gap-2">
           <button 
             onClick={() => setImportDialogOpen(true)}
@@ -204,7 +204,7 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
       {showForm && (
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-brand-text">New Withdrawal Request</h2>
+            <h2 className="text-lg font-bold text-brand-text">New Partial Withdrawal Request</h2>
             <button onClick={() => setShowForm(false)} className="text-brand-text-secondary hover:text-brand-text">
               <X className="w-5 h-5" />
             </button>
@@ -308,7 +308,7 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
               {withdrawals.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-brand-text-secondary">
-                    No withdrawal requests found
+                    No partial withdrawal requests found
                   </td>
                 </tr>
               )}
@@ -321,7 +321,7 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
       {importDialogOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <GlassCard className="w-full max-w-md p-6">
-            <h3 className="text-lg font-bold text-brand-text mb-4">Import Withdrawal Requests</h3>
+            <h3 className="text-lg font-bold text-brand-text mb-4">Import Partial Withdrawal Requests</h3>
             <div className="space-y-4">
               <p className="text-sm text-brand-text-secondary">
                 Upload a CSV file to import withdrawal requests. The file should contain columns: Reference, Employee No, Account Number, Account Type, Amount, Reason, Status, Requested At.

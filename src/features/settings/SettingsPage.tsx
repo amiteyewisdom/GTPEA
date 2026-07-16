@@ -289,7 +289,7 @@ function RolesSettings() {
           { name: 'Administrator', count: 5, description: 'Full system access & operations management' },
           { name: 'Chairperson', count: 1, description: 'Executive oversight' },
           { name: 'Fund Manager', count: 3, description: 'Financial operations' },
-          { name: 'Union Representative', count: 8, description: 'Loan reviews' },
+          { name: 'Trustee', count: 8, description: 'Loan reviews' },
           { name: 'Employee', count: 1247, description: 'Self-service access' },
         ].map((role) => (
           <RoleCard key={role.name} {...role} />

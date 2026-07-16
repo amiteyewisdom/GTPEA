@@ -82,7 +82,7 @@ export function PayrollMasterFilePanel({ onComplete }: { onComplete?: () => void
       <div className="mb-4">
         <h3 className="text-xl font-semibold text-brand-text">Monthly Payroll Master File</h3>
         <p className="text-sm text-brand-text-secondary">
-          Upload a consolidated CSV for savings contributions, loan repayments, and withdrawals.
+          Upload savings contributions and loan recovery rows. Unrelated payroll allowances are ignored.
         </p>
       </div>
 
@@ -129,14 +129,14 @@ export function PayrollMasterFilePanel({ onComplete }: { onComplete?: () => void
         }}
       >
         <FileSpreadsheet className="mx-auto mb-3 h-10 w-10 text-brand-accent" />
-        <p className="mb-1 font-medium text-brand-text">{file ? file.name : "Drop the payroll master CSV here"}</p>
+        <p className="mb-1 font-medium text-brand-text">{file ? file.name : "Drop a payroll CSV or text report here"}</p>
         <p className="mb-3 text-sm text-brand-text-secondary">or browse from your computer</p>
         <label className="inline-block cursor-pointer rounded-lg bg-brand-accent px-5 py-2 text-sm font-medium text-brand-primary transition-all hover:bg-brand-accent/80">
           Browse Files
           <input
             ref={inputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.txt"
             className="hidden"
             onChange={(event) => pickFile(event.target.files?.[0] ?? null)}
           />

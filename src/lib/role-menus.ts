@@ -314,7 +314,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: 'apply-loan',
-    label: 'Apply Loan',
+    label: 'Apply for Facility',
     icon: BadgeCent,
     path: '/apply-loan',
     roles: ['employee'],
@@ -335,7 +335,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: 'withdrawal-history',
-    label: 'Withdrawal History',
+    label: 'Partial Withdrawals',
     icon: History,
     path: '/withdrawal-history',
     roles: ['employee'],

@@ -8,7 +8,6 @@ export type PayrollMasterRow = {
   department: string;
   savingsContribution: number;
   loanPayment: number;
-  withdrawalAmount: number;
 };
 
 export type PayrollMasterResult = {
@@ -16,16 +15,67 @@ export type PayrollMasterResult = {
   errors: string[];
 };
 
-export function parsePayrollMasterFile(csvText: string): PayrollMasterRow[] {
-  const rows = parseCsv(csvText);
-  return rows.map((row) => ({
-    employeeNo: String(row["staff id"] ?? row["employee no"] ?? row["employee id"] ?? "").trim(),
-    name: String(row["staff name"] ?? row.name ?? "").trim(),
-    department: String(row.department ?? "").trim(),
-    savingsContribution: Math.max(0, Number(row["savings contribution"] ?? row.savings ?? 0) || 0),
-    loanPayment: Math.max(0, Number(row["loan payment"] ?? row.loan ?? row["loan repayment"] ?? 0) || 0),
-    withdrawalAmount: Math.max(0, Number(row["withdrawal amount"] ?? row.withdrawal ?? 0) || 0),
-  }));
+export function parsePayrollMasterFile(fileText: string): PayrollMasterRow[] {
+  const rows = parseCsv(fileText);
+  const parsedRows = rows.flatMap((row) => {
+    const employeeNo = String(
+      row["staff id"] ?? row["employee no"] ?? row["employee id"] ?? row["emp numb"] ?? row["emp number"] ?? ""
+    ).trim();
+    const name = String(row["staff name"] ?? row.name ?? row["surname & othernames"] ?? "").trim();
+    const department = String(row.department ?? "").trim();
+    const allowanceName = String(
+      row["allowance name"] ?? row.allowance ?? row.description ?? row["allowance code"] ?? row.code ?? ""
+    ).trim();
+    const amount = parsePayrollAmount(row.amount ?? row["allowance amount"] ?? "0");
+
+    if (allowanceName) {
+      const category = payrollCategory(allowanceName);
+      if (!category) return [];
+      return [{
+        employeeNo,
+        name,
+        department,
+        savingsContribution: category === "savings" ? amount : 0,
+        loanPayment: category === "loan" ? amount : 0,
+      }];
+    }
+
+    return [{
+      employeeNo,
+      name,
+      department,
+      savingsContribution: parsePayrollAmount(row["savings contribution"] ?? row.savings ?? "0"),
+      loanPayment: parsePayrollAmount(row["loan payment"] ?? row.loan ?? row["loan repayment"] ?? row["loan recovery"] ?? "0"),
+    }];
+  });
+
+  if (parsedRows.some((row) => row.employeeNo)) return parsedRows;
+
+  return fileText.split(/\r?\n/).flatMap((line) => {
+    const category = payrollCategory(line);
+    const employeeMatch = line.match(/^\s*([A-Za-z0-9-]{4,})\b/);
+    const amountMatch = line.match(/\b\d[\d,]*\.\d{2}\b/);
+    if (!category || !employeeMatch || !amountMatch) return [];
+    const amount = parsePayrollAmount(amountMatch[0]);
+    return [{
+      employeeNo: employeeMatch[1],
+      name: "",
+      department: "",
+      savingsContribution: category === "savings" ? amount : 0,
+      loanPayment: category === "loan" ? amount : 0,
+    }];
+  });
+}
+
+function parsePayrollAmount(value: string): number {
+  return Math.max(0, Number(String(value).replace(/,/g, "")) || 0);
+}
+
+function payrollCategory(value: string): "savings" | "loan" | null {
+  const normalized = value.trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  if (/\bloan\s*(reco|recovery|repayment|payment)\b/.test(normalized)) return "loan";
+  if (/\bsavings?\b/.test(normalized)) return "savings";
+  return null;
 }
 
 function escapeCsv(value: string): string {
@@ -42,10 +92,8 @@ export function buildPayrollMasterTemplate(): string {
     "Department",
     "Current Savings Balance",
     "Current Loan Balance",
-    "Total Withdrawals",
     "Savings Contribution",
     "Loan Payment",
-    "Withdrawal Amount",
   ];
   const sample = [
     "TSG001",
@@ -53,10 +101,8 @@ export function buildPayrollMasterTemplate(): string {
     "Operations",
     "200.00",
     "100.00",
-    "0.00",
     "100.00",
     "50.00",
-    "0.00",
   ];
   return [headers.join(","), sample.join(",")].join("\n");
 }
@@ -98,12 +144,12 @@ export async function processPayrollMasterFile(
       continue;
     }
 
-    if (!Number.isFinite(row.savingsContribution) || !Number.isFinite(row.loanPayment) || !Number.isFinite(row.withdrawalAmount)) {
+    if (!Number.isFinite(row.savingsContribution) || !Number.isFinite(row.loanPayment)) {
       errors.push(`Row ${rowNo}: Invalid numeric value for ${row.employeeNo}.`);
       continue;
     }
 
-    if (row.savingsContribution === 0 && row.loanPayment === 0 && row.withdrawalAmount === 0) {
+    if (row.savingsContribution === 0 && row.loanPayment === 0) {
       // Skip rows with no activity but do not treat as an error.
       continue;
     }
@@ -224,6 +270,20 @@ async function processRow(
       throw new Error(`No active loan for ${row.employeeNo}.`);
     }
 
+    const repaymentReference = `PAY-LOAN-${period.year}${String(period.month).padStart(2, "0")}-${employee.employee_no}`;
+    const { data: existingRepayment } = await client
+      .from("repayments")
+      .select("id")
+      .eq("reference", repaymentReference)
+      .limit(1)
+      .single();
+
+    if (existingRepayment) {
+      throw new Error(
+        `A loan recovery for ${row.employeeNo} already exists for ${period.year}-${String(period.month).padStart(2, "0")}.`
+      );
+    }
+
     const newBalance = Math.max(0, Number(loan.outstanding_balance) - row.loanPayment);
     const { error: loanUpdateError } = await client
       .from("loans")
@@ -243,41 +303,18 @@ async function processRow(
       installment_no: 0,
       amount_due: row.loanPayment,
       amount_paid: row.loanPayment,
-      due_date: new Date().toISOString(),
+      due_date: new Date(period.year, period.month - 1, 1).toISOString(),
       status: "paid",
-      paid_date: new Date().toISOString(),
+      paid_date: new Date(period.year, period.month - 1, 1).toISOString(),
+      principal_component: row.loanPayment,
+      interest_component: 0,
+      payment_method: "payroll",
+      reference: repaymentReference,
+      notes: `Payroll loan recovery for ${period.year}-${String(period.month).padStart(2, "0")}`,
     });
 
     if (repaymentError) {
       throw new Error(`Could not record loan repayment for ${row.employeeNo}: ${repaymentError.message}`);
-    }
-  }
-
-  // Withdrawal: add to cumulative withdrawal history.
-  if (row.withdrawalAmount > 0) {
-    const { data: savings } = await client
-      .from("savings")
-      .select("id")
-      .eq("employee_id", employee.id)
-      .eq("status", "active")
-      .limit(1)
-      .single();
-
-    const reference = `PAY-${period.year}${String(period.month).padStart(2, "0")}-${employee.employee_no}-${Date.now().toString(36).slice(-4)}`;
-    const { error: withdrawalError } = await client.from("withdrawal_requests").insert({
-      request_ref: reference,
-      employee_id: employee.id,
-      savings_id: savings?.id ?? null,
-      amount: row.withdrawalAmount,
-      reason: "Payroll withdrawal",
-      status: "disbursed",
-      requested_at: new Date().toISOString(),
-      disbursement_date: new Date().toISOString(),
-      disbursed_by: userId,
-    });
-
-    if (withdrawalError) {
-      throw new Error(`Could not record withdrawal for ${row.employeeNo}: ${withdrawalError.message}`);
     }
   }
 }
@@ -292,7 +329,7 @@ export async function exportPayrollMasterFile(): Promise<string> {
 
   const empIds = (employees ?? []).map((e: any) => e.id);
 
-  const [savingsRes, loansRes, withdrawalRes] = await Promise.all([
+  const [savingsRes, loansRes] = await Promise.all([
     empIds.length > 0
       ? adminClient.from("savings").select("employee_id, balance").in("employee_id", empIds).eq("status", "active")
       : Promise.resolve({ data: [] }),
@@ -302,13 +339,6 @@ export async function exportPayrollMasterFile(): Promise<string> {
           .select("employee_id, outstanding_balance")
           .in("employee_id", empIds)
           .in("status", ["disbursed", "repaying"])
-      : Promise.resolve({ data: [] }),
-    empIds.length > 0
-      ? adminClient
-          .from("withdrawal_requests")
-          .select("employee_id, amount")
-          .in("employee_id", empIds)
-          .in("status", ["approved", "disbursed"])
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -322,21 +352,14 @@ export async function exportPayrollMasterFile(): Promise<string> {
     loansByEmp[l.employee_id] = (loansByEmp[l.employee_id] ?? 0) + Number(l.outstanding_balance);
   }
 
-  const withdrawalsByEmp: Record<string, number> = {};
-  for (const w of (withdrawalRes.data ?? []) as any[]) {
-    withdrawalsByEmp[w.employee_id] = (withdrawalsByEmp[w.employee_id] ?? 0) + Number(w.amount);
-  }
-
   const headers = [
     "Staff ID",
     "Staff Name",
     "Department",
     "Current Savings Balance",
     "Current Loan Balance",
-    "Total Withdrawals",
     "Savings Contribution",
     "Loan Payment",
-    "Withdrawal Amount",
   ];
 
   const rows = (employees ?? []).map((emp: any) => {
@@ -347,8 +370,6 @@ export async function exportPayrollMasterFile(): Promise<string> {
       escapeCsv(emp.department ?? ""),
       (savingsByEmp[emp.id] ?? 0).toFixed(2),
       (loansByEmp[emp.id] ?? 0).toFixed(2),
-      (withdrawalsByEmp[emp.id] ?? 0).toFixed(2),
-      "0.00",
       "0.00",
       "0.00",
     ].join(",");

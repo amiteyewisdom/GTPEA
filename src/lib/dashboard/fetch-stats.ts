@@ -283,13 +283,13 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   const loansByEmployee = loans.reduce<Record<string, { total: number; outstanding: number; count: number }>>(
     (acc, loan) => {
       const current = acc[loan.employee_id] || { total: 0, outstanding: 0, count: 0 };
-      current.total += Number(loan.amount_approved || loan.amount_requested) || 0;
-      current.outstanding +=
-        Number(loan.outstanding_balance) ||
-        Number(loan.amount_approved) ||
-        Number(loan.amount_requested) ||
-        0;
-      current.count += 1;
+      if (["approved", "disbursed", "repaying", "completed"].includes(loan.status)) {
+        current.total += Number(loan.amount_approved) || Number(loan.amount_disbursed) || 0;
+        current.count += 1;
+      }
+      if (["approved", "disbursed", "repaying"].includes(loan.status)) {
+        current.outstanding += Number(loan.outstanding_balance) || Number(loan.amount_approved) || 0;
+      }
       acc[loan.employee_id] = current;
       return acc;
     },
@@ -387,13 +387,13 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     };
   });
 
-  const fundManagerQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 2);
+  const fundManagerQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 1);
   const chairpersonQueueItems = buildLoanApprovalQueue(approvals, memberOnlyLoans, 3);
-  const unionRepQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 1);
+  const unionRepQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 2);
 
   // Only count union-rep actions tied to actual employee loans/withdrawals
   const unionRepActions = approvalActions.filter((a) => {
-    if (a.stage !== 1 && a.required_role !== "union_rep") return false;
+    if (a.stage !== 2 && a.required_role !== "union_rep") return false;
     const approval = a.approvals;
     if (!approval) return false;
     if (approval.entity_type === "loan") return loanMap.has(approval.entity_id);
@@ -710,7 +710,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
         .eq("employee_id", employeeUuid)
         .order("created_at", { ascending: false })
         .limit(10),
-      supabase.from("loans").select("outstanding_balance, amount_approved, amount_requested").eq("employee_id", employeeUuid),
+      supabase.from("loans").select("id, status, outstanding_balance, amount_approved, amount_requested").eq("employee_id", employeeUuid),
       supabase
         .from("savings_contributions")
         .select("amount, period_year, period_month, created_at")
@@ -785,9 +785,11 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   const totalSavings = savingsBalance > 0 ? savingsBalance : contributionsTotal;
 
   // Loan balance: use outstanding_balance; fall back to amount_approved / amount_requested
-  const totalLoanBalance = ((allLoansRes.data || []) as any[]).reduce((s: number, l: any) => {
-    return s + (Number(l.outstanding_balance) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
-  }, 0);
+  const totalLoanBalance = ((allLoansRes.data || []) as any[])
+    .filter((loan) => ["approved", "disbursed", "repaying"].includes(loan.status))
+    .reduce((sum: number, loan: any) => {
+      return sum + (Number(loan.outstanding_balance) || Number(loan.amount_approved) || 0);
+    }, 0);
 
   // Enrich active loans with monthly payment and next due date from repayments
   const repaymentsByLoan = repaymentsData.reduce((acc: Record<string, any[]>, r: any) => {

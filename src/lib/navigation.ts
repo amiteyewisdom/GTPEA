@@ -24,7 +24,7 @@ const ROLE_LABEL_MAP: Record<string, string> = {
   administrator: "Administrator",
   fund_manager: "Fund Manager",
   chairperson: "Chairperson",
-  union_rep: "Union Representative",
+  union_rep: "Trustee",
   employee: "Employee",
 };
 

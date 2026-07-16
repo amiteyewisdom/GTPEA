@@ -158,7 +158,7 @@ async function handleApply(body: any) {
   }
 
   return NextResponse.json({
-    message: "Loan application submitted. Union rep will review it first.",
+    message: "Facility application submitted. The Fund Manager will review it first.",
     loan: loanRes.data,
   });
 }

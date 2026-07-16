@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "Apply for Loan" };
+export const metadata: Metadata = { title: "Apply for a Facility" };
 
 export default async function ApplyLoanPage() {
   const supabase = await createClient();
@@ -39,9 +39,9 @@ export default async function ApplyLoanPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="mb-2 text-2xl font-bold text-brand-text md:text-3xl">Apply for Loan</h1>
+        <h1 className="mb-2 text-2xl font-bold text-brand-text md:text-3xl">Apply for a Facility</h1>
         <p className="text-sm text-brand-text-secondary md:text-base">
-          Submit a new loan application
+          Submit a new facility application
         </p>
       </div>
       <LoanApplication

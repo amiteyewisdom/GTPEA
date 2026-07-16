@@ -9,8 +9,7 @@ import {
   BadgeCent,
   TrendingUp,
   Users,
-  Calendar,
-  TrendingDown
+  Calendar
 } from 'lucide-react';
 import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
 import { formatCurrency } from '@/utils/formatters';
@@ -87,13 +86,6 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
           value={formatCurrency(stats.totalDividends)}
           icon={TrendingUp}
           color="text-brand-accent"
-        />
-        <DashboardStatCard
-          large
-          title="Withdrawals"
-          value={formatCurrency(stats.totalWithdrawals)}
-          icon={TrendingDown}
-          color="text-brand-danger"
         />
       </div>
 
@@ -225,7 +217,6 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
                 <th className="text-left py-4 px-4 text-brand-text-secondary text-sm font-medium">Loans</th>
                 <th className="text-left py-4 px-4 text-brand-text-secondary text-sm font-medium">Outstanding Balance</th>
                 <th className="text-left py-4 px-4 text-brand-text-secondary text-sm font-medium">Dividends</th>
-                <th className="text-left py-4 px-4 text-brand-text-secondary text-sm font-medium">Withdrawals</th>
               </tr>
             </thead>
             <tbody>
@@ -237,11 +228,10 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
                   loans={employee.loans}
                   balance={employee.balance}
                   dividends={employee.dividends}
-                  withdrawals={employee.withdrawals}
                 />
               )) : (
                 <tr>
-                  <td colSpan={6} className="py-6 px-4 text-center text-brand-text-secondary text-sm">
+                  <td colSpan={5} className="py-6 px-4 text-center text-brand-text-secondary text-sm">
                     No employee data available
                   </td>
                 </tr>
@@ -256,7 +246,7 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
   );
 }
 
-function EmployeeRow({ name, savings, loans, balance, dividends, withdrawals }: any) {
+function EmployeeRow({ name, savings, loans, balance, dividends }: any) {
   const initial = name?.charAt(0) || "?";
   return (
     <tr className="border-b border-brand-card-border hover:bg-brand-hover transition-all">
@@ -272,7 +262,6 @@ function EmployeeRow({ name, savings, loans, balance, dividends, withdrawals }: 
       <td className="py-4 px-4 text-brand-text font-medium">{loans}</td>
       <td className="py-4 px-4 text-brand-warning font-medium">{balance}</td>
       <td className="py-4 px-4 text-brand-success font-medium">{dividends}</td>
-      <td className="py-4 px-4 text-brand-text font-medium">{withdrawals}</td>
     </tr>
   );
 }

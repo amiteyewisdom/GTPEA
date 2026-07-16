@@ -436,7 +436,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                     {selected.approval_actions.map((action) => (
                       <div key={`${action.stage}-${action.actioned_at}`} className="rounded-brand border border-brand-card-border bg-brand-background p-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-brand-text">Stage {action.stage} — {action.required_role.replace(/_/g, " ")}</span>
+                          <span className="text-xs font-bold text-brand-text">Stage {action.stage} — {labelForRole(action.required_role)}</span>
                           <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${action.action === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{action.action.toUpperCase()}</span>
                         </div>
                         {action.notes && <p className="mt-1 text-xs text-brand-text-secondary">{action.notes}</p>}

@@ -103,8 +103,8 @@ export default function RolesPage() {
               <Star className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-brand-text font-semibold">Union Rep</h3>
-              <p className="text-brand-text-secondary text-xs">Employee representation</p>
+              <h3 className="text-brand-text font-semibold">Trustee</h3>
+              <p className="text-brand-text-secondary text-xs">Member representation</p>
             </div>
           </div>
           <div className="space-y-2">

@@ -8,8 +8,8 @@ import {
   BadgeCent,
   PiggyBank,
   Briefcase,
-  ArrowRight,
   TrendingUp,
+  ArrowRight,
   Clock,
   CheckCircle,
   AlertCircle
@@ -45,7 +45,7 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
           <div className="flex flex-wrap gap-4">
             <button onClick={() => router.push('/apply-loan')} className="flex items-center gap-2 px-6 py-3 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all">
               <span className="text-base font-bold leading-none">GH₵</span>
-              Apply for Loan
+              Apply for a Facility
             </button>
             <button onClick={() => router.push('/savings-history')} className="flex items-center gap-2 px-6 py-3 bg-brand-card-bg border border-brand-card-border text-brand-text font-semibold rounded-lg hover:bg-brand-hover transition-all">
               <PiggyBank className="w-5 h-5" />
@@ -89,10 +89,10 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <QuickActionCard
-          title="Apply Loan"
-          description="Submit a new loan application"
+          title="Apply for a Facility"
+          description="Submit a new facility application"
           icon={BadgeCent}
           color="bg-brand-accent/20 text-brand-accent"
           href="/apply-loan"
@@ -110,13 +110,6 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
           icon={Briefcase}
           color="bg-brand-warning/20 text-brand-warning"
           href="/my-loans"
-        />
-        <QuickActionCard
-          title="Withdrawals"
-          description="Request savings withdrawal"
-          icon={TrendingUp}
-          color="bg-brand-accent/20 text-brand-accent"
-          href="/withdrawal-history"
         />
       </div>
 

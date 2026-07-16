@@ -83,7 +83,7 @@ export function UsersClient({ users }: { users: any[] }) {
               <option value="administrator">Administrator</option>
               <option value="fund_manager">Fund Manager</option>
               <option value="chairperson">Chairperson</option>
-              <option value="union_rep">Union Rep</option>
+              <option value="union_rep">Trustee</option>
               <option value="employee">Employee</option>
             </select>
 

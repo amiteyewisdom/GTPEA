@@ -7,8 +7,8 @@ import { UserRole } from "@/lib/role-menus";
 const APPROVER_ROLES = ["union_rep", "fund_manager", "chairperson", "administrator"];
 
 const STAGE_FOR_ROLE: Record<string, number> = {
-  union_rep: 1,
-  fund_manager: 2,
+  fund_manager: 1,
+  union_rep: 2,
   chairperson: 3,
 };
 

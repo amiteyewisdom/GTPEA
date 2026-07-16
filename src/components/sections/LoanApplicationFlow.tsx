@@ -437,7 +437,7 @@ function Step4({ loanData, onBack, onSubmit, isSubmitting }: any) {
 
       <div className="bg-brand-warning/10 border border-brand-warning/30 rounded-lg p-4 mb-8">
         <p className="text-brand-warning text-sm">
-          <strong>Important:</strong> By submitting this application, you agree to the terms and conditions of the loan agreement. Your application will be reviewed by the Union Representative, Fund Manager, and Chairperson before approval.
+          <strong>Important:</strong> By submitting this application, you agree to the terms and conditions of the loan agreement. Your application will be reviewed by the Fund Manager, Trustee, and Chairperson before approval.
         </p>
       </div>
 

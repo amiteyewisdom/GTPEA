@@ -113,14 +113,16 @@ export async function fetchMyLoansData() {
 
   const { data: loans } = await supabase
     .from("loans")
-    .select("id, loan_ref, status, amount_requested, amount_approved, amount_disbursed, outstanding_balance, purpose, created_at, term_months, loan_products(name)")
+    .select("id, loan_ref, status, amount_requested, amount_approved, amount_disbursed, outstanding_balance, monthly_repayment, approved_at, purpose, created_at, term_months, loan_products(name)")
     .eq("employee_id", employeeUuid)
     .order("created_at", { ascending: false });
 
   const rows = (loans ?? []) as any[];
-  const totalBorrowed = rows.reduce((s, l) => {
-    return s + (Number(l.amount_disbursed) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
-  }, 0);
+  const totalBorrowed = rows
+    .filter((loan) => ["approved", "disbursed", "repaying", "completed"].includes(loan.status))
+    .reduce((sum, loan) => {
+      return sum + (Number(loan.amount_disbursed) || Number(loan.amount_approved) || 0);
+    }, 0);
   return {
     pending: rows.filter((l) => l.status === "pending").length,
     active: rows.filter((l) => ["disbursed", "repaying", "approved"].includes(l.status)).length,

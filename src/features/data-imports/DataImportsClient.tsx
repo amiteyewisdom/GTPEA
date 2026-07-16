@@ -35,7 +35,7 @@ export default function DataImportsClient({ initialHistory }: DataImportsClientP
       <div>
         <h1 className="mb-2 text-2xl font-bold text-brand-text md:text-3xl">Data Imports</h1>
         <p className="text-sm text-brand-text-secondary md:text-base">
-          Upload employee, savings, loan records, and consolidated payroll master files.
+          Upload employee, savings, loan records, and payroll reports containing savings or loan recovery rows.
         </p>
       </div>
 

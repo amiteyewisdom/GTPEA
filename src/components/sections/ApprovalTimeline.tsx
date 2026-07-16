@@ -34,7 +34,7 @@ const STAGE_CONFIG = {
     borderColor: 'border-brand-card-border',
   },
   union_review: {
-    label: 'Union Representative',
+    label: 'Trustee',
     description: 'Initial review and recommendation',
     icon: User,
     color: 'text-brand-text-secondary',

@@ -3,15 +3,12 @@
 import { useMemo, useState } from "react";
 import { addMonths, format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { BadgeCent, Calendar, Percent, AlertCircle, CheckCircle, X, ChevronDown, ChevronUp, Info } from "lucide-react";
+import { BadgeCent, Calendar, AlertCircle, CheckCircle, X, Info } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import {
   formatCurrency,
-  formatInterestRate,
   calculateMonthlyRepayment,
   calculateTotalRepayable,
-  calculateTotalInterest,
-  generateAmortizationSchedule,
 } from "@/utils/formatters";
 
 interface LoanProduct {
@@ -66,7 +63,6 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
   const duration = durationStr === "" ? 0 : Number(durationStr);
   const [purpose, setPurpose] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -87,16 +83,6 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
     () => calculateTotalRepayable(principal, selectedProduct?.interest_rate ?? 0, duration, calcMethod),
     [principal, selectedProduct, duration, calcMethod]
   );
-
-  const interestAmount = useMemo(
-    () => calculateTotalInterest(principal, selectedProduct?.interest_rate ?? 0, duration, calcMethod),
-    [principal, selectedProduct, duration, calcMethod]
-  );
-
-  const schedule = useMemo(() => {
-    if (!selectedProduct || duration <= 0 || principal <= 0) return [];
-    return generateAmortizationSchedule(principal, duration, selectedProduct.interest_rate * 100, new Date(), calcMethod);
-  }, [principal, selectedProduct, duration, calcMethod]);
 
   const firstRepaymentDate = useMemo(() => format(addMonths(new Date(), 1), "dd MMM yyyy"), []);
   const expectedCompletionDate = useMemo(() => format(addMonths(new Date(), duration), "dd MMM yyyy"), [duration]);
@@ -141,7 +127,7 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
         throw new Error(payload?.error || "Unable to submit loan request.");
       }
 
-      setSuccessMessage("Loan application submitted successfully. It will now enter the approval workflow.");
+      setSuccessMessage("Facility application submitted successfully. It will now enter the approval workflow.");
       setConfirmOpen(false);
       setLoading(false);
       router.refresh();
@@ -170,9 +156,9 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
           <div>
-            <h3 className="text-xl font-bold text-brand-text mb-1">Apply for a Loan</h3>
+            <h3 className="text-xl font-bold text-brand-text mb-1">Apply for a Facility</h3>
             <p className="text-brand-text-secondary text-sm">
-              Submit a new loan request and track progress through Union Rep, Fund Manager, and Chairperson review.
+              Submit a facility request and track progress through Fund Manager, Trustee, and Chairperson review.
             </p>
           </div>
 
@@ -222,14 +208,7 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
                     {product.name}
                   </span>
                   <span className="text-xs text-brand-text-secondary">
-                    {(product.interest_rate * 100).toFixed(1)}% p.m.
-                  </span>
-                  <span className={`mt-1 rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                    product.interest_calc_method === "flat_rate"
-                      ? "bg-amber-100 text-amber-700"
-                      : "bg-blue-50 text-blue-600"
-                  }`}>
-                    {product.interest_calc_method === "flat_rate" ? "Flat" : "Reducing"}
+                    {product.min_term_months}–{product.max_term_months} months
                   </span>
                 </button>
               );
@@ -237,9 +216,6 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
           </div>
           {selectedProduct?.description && (
             <p className="mt-2 text-xs text-brand-text-secondary">{selectedProduct.description}</p>
-          )}
-          {selectedProduct?.account_code && (
-            <p className="mt-1 text-xs text-brand-text-secondary/60">Account code: {selectedProduct.account_code}</p>
           )}
         </div>
 
@@ -312,17 +288,19 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
 
         {/* Loan Summary */}
         <div className="bg-brand-hover/30 border border-brand-card-border rounded-lg p-4">
-          <h4 className="text-lg font-semibold text-brand-text mb-4">Loan Summary</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h4 className="text-lg font-semibold text-brand-text mb-4">Facility Summary</h4>
+          <div className="mb-4 rounded-lg border-2 border-brand-green bg-brand-green/10 p-4 text-center">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-green">Monthly Payment</p>
+            <p className="mt-1 text-3xl font-bold text-brand-green">{formatCurrency(monthlyRepayment)}</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { label: "Requested Amount", value: formatCurrency(principal), icon: BadgeCent },
-              { label: "Interest Rate", value: `${(selectedProduct.interest_rate * 100).toFixed(2)}% p.m.`, icon: Percent },
-              { label: "Total Interest", value: formatCurrency(interestAmount), icon: BadgeCent },
-              { label: "Total Repayment", value: formatCurrency(totalRepayable), icon: BadgeCent },
-              { label: "Monthly Repayment", value: formatCurrency(monthlyRepayment), icon: BadgeCent },
-              { label: "First Repayment", value: firstRepaymentDate, icon: Calendar },
-              { label: "Completion Date", value: expectedCompletionDate, icon: Calendar },
-              { label: "Method", value: calcMethod === "flat_rate" ? "Flat Rate" : "Reducing Balance", icon: Percent },
+              { label: "Loan Type", value: selectedProduct.name },
+              { label: "Requested Amount", value: formatCurrency(principal) },
+              { label: "Number of Months", value: `${duration} months` },
+              { label: "Total Repayment", value: formatCurrency(totalRepayable) },
+              { label: "First Repayment", value: firstRepaymentDate },
+              { label: "Completion Date", value: expectedCompletionDate },
             ].map((item) => (
               <div key={item.label} className="space-y-1">
                 <p className="text-xs text-brand-text-secondary">{item.label}</p>
@@ -331,62 +309,6 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
             ))}
           </div>
         </div>
-
-        {/* Amortization Schedule Preview */}
-        {schedule.length > 0 && (
-          <div className="border border-brand-card-border rounded-lg overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setScheduleOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-brand-hover/20 hover:bg-brand-hover/40 transition-colors"
-            >
-              <span className="text-sm font-semibold text-brand-text">
-                Payment Schedule ({duration} instalments)
-              </span>
-              {scheduleOpen ? <ChevronUp className="w-4 h-4 text-brand-text-secondary" /> : <ChevronDown className="w-4 h-4 text-brand-text-secondary" />}
-            </button>
-
-            {scheduleOpen && (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-brand-hover/30 text-left">
-                      <th className="px-3 py-2 text-xs font-semibold text-brand-text-secondary whitespace-nowrap">#</th>
-                      <th className="px-3 py-2 text-xs font-semibold text-brand-text-secondary whitespace-nowrap">Month</th>
-                      <th className="px-3 py-2 text-xs font-semibold text-brand-text-secondary whitespace-nowrap">Opening Bal.</th>
-                      <th className="px-3 py-2 text-xs font-semibold text-brand-text-secondary whitespace-nowrap">Principal</th>
-                      <th className="px-3 py-2 text-xs font-semibold text-brand-text-secondary whitespace-nowrap">Interest</th>
-                      <th className="px-3 py-2 text-xs font-semibold text-brand-text-secondary whitespace-nowrap">Total Payment</th>
-                      <th className="px-3 py-2 text-xs font-semibold text-brand-text-secondary whitespace-nowrap">Closing Bal.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {schedule.map((row) => (
-                      <tr key={row.installment_no} className="border-t border-brand-card-border hover:bg-brand-hover/10">
-                        <td className="px-3 py-2 text-brand-text-secondary">{row.installment_no}</td>
-                        <td className="px-3 py-2 text-brand-text whitespace-nowrap">{row.month}</td>
-                        <td className="px-3 py-2 text-brand-text-secondary">{formatCurrency(row.opening_balance)}</td>
-                        <td className="px-3 py-2 text-brand-text font-medium">{formatCurrency(row.principal)}</td>
-                        <td className="px-3 py-2 text-amber-600 font-medium">{formatCurrency(row.interest)}</td>
-                        <td className="px-3 py-2 text-brand-text font-semibold">{formatCurrency(row.total)}</td>
-                        <td className="px-3 py-2 text-brand-text-secondary">{formatCurrency(row.closing_balance)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-brand-hover/30 border-t border-brand-card-border font-semibold">
-                      <td colSpan={3} className="px-3 py-2 text-xs text-brand-text-secondary">Totals</td>
-                      <td className="px-3 py-2 text-sm text-brand-text">{formatCurrency(principal)}</td>
-                      <td className="px-3 py-2 text-sm text-amber-600">{formatCurrency(interestAmount)}</td>
-                      <td className="px-3 py-2 text-sm text-brand-text">{formatCurrency(totalRepayable)}</td>
-                      <td className="px-3 py-2"></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
 
         {errorMessage && (
           <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
@@ -417,19 +339,19 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
       {confirmOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold text-brand-text mb-4">Confirm Loan Application</h3>
+            <h3 className="text-xl font-bold text-brand-text mb-4">Confirm Facility Application</h3>
             <p className="text-brand-text-secondary text-sm mb-4">
-              Once confirmed, the request will enter the approval workflow and be reviewed by the Union Representative first.
+              Once confirmed, the request will enter the approval workflow and be reviewed by the Fund Manager first.
             </p>
+            <div className="mb-4 rounded-lg border-2 border-brand-green bg-brand-green/10 p-4 text-center">
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-green">Monthly Payment</p>
+              <p className="mt-1 text-2xl font-bold text-brand-green">{formatCurrency(monthlyRepayment)}</p>
+            </div>
             <div className="space-y-2 mb-4">
               {[
-                { label: "Product", value: selectedProduct.name },
-                { label: "Account Code", value: selectedProduct.account_code ?? "—" },
-                { label: "Interest Method", value: calcMethod === "flat_rate" ? "Flat Rate" : "Reducing Balance" },
+                { label: "Loan Type", value: selectedProduct.name },
                 { label: "Amount", value: formatCurrency(principal) },
-                { label: "Duration", value: `${duration} months` },
-                { label: "Monthly Repayment", value: formatCurrency(monthlyRepayment) },
-                { label: "Total Interest", value: formatCurrency(interestAmount) },
+                { label: "Number of Months", value: `${duration} months` },
                 { label: "Total Repayment", value: formatCurrency(totalRepayable) },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between text-sm py-1 border-b border-gray-100">

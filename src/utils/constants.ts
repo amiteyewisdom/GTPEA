@@ -11,7 +11,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   fund_manager: 'Fund Manager',
   chairperson: 'Chairperson',
   chairman: 'Chairperson',
-  union_rep: 'Union Representative',
+  union_rep: 'Trustee',
 };
 
 export const LOAN_STATUS_COLORS = {
