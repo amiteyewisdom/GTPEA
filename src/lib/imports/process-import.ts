@@ -63,6 +63,22 @@ export function normalizeLoanProductName(name: string): string {
   return aliases[normalized] ?? normalized;
 }
 
+function parseImportDate(value: string): Date | null {
+  const match = value.trim().match(/^(?:(\d{4})-(\d{2})-(\d{2})|(\d{2})\/(\d{2})\/(\d{4}))$/);
+  if (!match) return null;
+
+  const year = Number(match[1] ?? match[6]);
+  const month = Number(match[2] ?? match[5]);
+  const day = Number(match[3] ?? match[4]);
+  const parsed = new Date(year, month - 1, day);
+
+  if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) {
+    return null;
+  }
+
+  return parsed;
+}
+
 export async function processImport(
   supabase: AppSupabase,
   type: ImportType,
@@ -157,12 +173,19 @@ async function importSavings(
 
     const employeeNo = row["employee no"] || row["employee id"];
     const amount = parseFloat(row.amount);
-    const date = row.date || new Date().toISOString().slice(0, 10);
+    const date = row.date || Object.entries(row).find(([header]) => header.startsWith("date"))?.[1] || new Date().toISOString().slice(0, 10);
     const accountNumber = row["account number"];
 
     if (!employeeNo || !Number.isFinite(amount) || amount <= 0) {
       skipped++;
       errors.push(`Row ${rowNo}: employee no and a positive amount are required.`);
+      continue;
+    }
+
+    const parsedDate = parseImportDate(date);
+    if (!parsedDate) {
+      skipped++;
+      errors.push(`Row ${rowNo}: date "${date}" is not valid. Use YYYY-MM-DD or DD/MM/YYYY format.`);
       continue;
     }
 
@@ -220,13 +243,6 @@ async function importSavings(
         continue;
       }
       savingsId = created.id;
-    }
-
-    const parsedDate = new Date(date);
-    if (Number.isNaN(parsedDate.getTime())) {
-      skipped++;
-      errors.push(`Row ${rowNo}: date "${date}" is not a valid date. Use YYYY-MM-DD format.`);
-      continue;
     }
 
     const reference = `IMP-${employeeNo}-${parsedDate.getFullYear()}${parsedDate.getMonth() + 1}-${i + 1}`;
@@ -361,8 +377,8 @@ export function getImportTemplate(type: ImportType): string {
       ["EMP-001", "John", "Smith", "john.smith@example.com", "operations", "Analyst", "2024-01-15", "5000", "0240000000"],
     ],
     savings: [
-      ["Employee No", "Amount", "Date (YYYY-MM-DD)", "Type", "Account Number"],
-      ["EMP-001", "500", "2024-06-01", "monthly", ""],
+      ["Employee No", "Amount", "Date (YYYY-MM-DD or DD/MM/YYYY)", "Type", "Account Number"],
+      ["EMP-001", "500", "01/06/2024", "monthly", ""],
     ],
     loans: [
       ["Reference", "Employee No", "Product", "Amount Requested", "Interest Rate", "Term Months", "Monthly Repayment", "Status", "Purpose"],
