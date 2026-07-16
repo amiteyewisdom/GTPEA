@@ -103,11 +103,11 @@ export async function importUsers(fileText: string): Promise<UserImportResult> {
 
     let employeeId: string | null = null;
     if (employeeNo) {
-      const { data: employee } = await adminClient
+      const { data: employee } = await (adminClient
         .from("employees")
         .select("id")
         .eq("employee_no", employeeNo)
-        .single();
+        .single() as any);
       if (!employee) {
         skipped++;
         errors.push(`Row ${rowNo}: employee "${employeeNo}" not found.`);
