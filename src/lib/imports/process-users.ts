@@ -1,5 +1,11 @@
 import { parseCsv } from "@/lib/csv";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveEmployeeNo, resolveEmployeeName } from "@/lib/imports/process-import";
+
+// Org-wide default password assigned to newly created accounts.
+// Every account created with this password has must_change_password = true,
+// forcing the user to set their own password on first login.
+export const DEFAULT_USER_PASSWORD = process.env.DEFAULT_USER_PASSWORD || "GTPEA@Welcome1";
 
 export type UserImportResult = {
   imported: number;
@@ -75,11 +81,10 @@ export async function importUsers(fileText: string): Promise<UserImportResult> {
     const rowNo = i + 2;
 
     const email = (row.email || "").trim();
-    const firstName = (row["first name"] || row.firstname || "").trim();
-    const lastName = (row["last name"] || row.lastname || "").trim();
+    const { firstName, lastName } = resolveEmployeeName(row);
     const phone = (row.phone || row["phone number"] || "").trim() || null;
     const role = normalizeRole(row.role || "");
-    const employeeNo = (row["employee no"] || row["employee id"] || "").trim() || null;
+    const employeeNo = resolveEmployeeNo(row) || null;
     const active = (row.active || row.status || "yes").toString().trim().toLowerCase();
     const isActive = ["yes", "y", "true", "active", "1"].includes(active);
 
@@ -116,11 +121,10 @@ export async function importUsers(fileText: string): Promise<UserImportResult> {
       employeeId = employee.id;
     }
 
-    // Create auth user with a temporary password
-    const temporaryPassword = `GTPEA${Date.now().toString(36).slice(-6)}!`;
+    // Create auth user with the org-wide default password; user must change it on first login.
     const { data: authUser, error: authError } = await adminClient.auth.admin.createUser({
       email,
-      password: temporaryPassword,
+      password: DEFAULT_USER_PASSWORD,
       email_confirm: true,
       user_metadata: {
         full_name: `${firstName} ${lastName}`,
@@ -140,6 +144,7 @@ export async function importUsers(fileText: string): Promise<UserImportResult> {
       phone,
       employee_id: employeeId,
       is_active: isActive,
+      must_change_password: true,
     });
 
     if (profileError) {

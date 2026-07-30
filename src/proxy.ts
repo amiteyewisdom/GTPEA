@@ -32,9 +32,30 @@ export default async function proxy(request: NextRequest) {
   const publicPaths = ['/', '/login', '/forgot-password', '/reset-password'];
   const isPublic = publicPaths.includes(pathname) || pathname.startsWith('/auth');
   const isApi = pathname.startsWith('/api');
+  const isChangePassword = pathname === '/change-password';
+  const isVerifyOtp = pathname === '/verify-otp';
 
   if (!user && !isPublic && !isApi) return NextResponse.redirect(new URL('/login', request.url));
   if (user && pathname === '/login') return NextResponse.redirect(new URL('/dashboard', request.url));
+
+  if (user && !isApi && !isChangePassword && !isVerifyOtp && pathname !== '/reset-password') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('must_change_password, phone')
+      .eq('user_id', user.id)
+      .single();
+
+    if ((profile as any)?.must_change_password) {
+      return NextResponse.redirect(new URL('/change-password', request.url));
+    }
+
+    const otpVerified = request.cookies.get('gtpea_otp_verified')?.value === '1';
+    const otpEnabled = process.env.ENABLE_OTP_LOGIN !== 'false';
+
+    if (otpEnabled && !otpVerified && (profile as any)?.phone) {
+      return NextResponse.redirect(new URL('/verify-otp', request.url));
+    }
+  }
 
   return response;
 }

@@ -29,7 +29,8 @@ export default function LoginPage() {
       return;
     }
 
-    // Hard navigate (not router.push) to force a full server-side session refresh
+    // Hard navigate (not router.push) to force a full server-side session refresh.
+    // proxy.ts will route to /change-password or /verify-otp first if required.
     window.location.href = '/dashboard';
   };
 

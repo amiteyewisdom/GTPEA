@@ -54,6 +54,39 @@ export type ImportResult = {
   errors: string[];
 };
 
+export function resolveEmployeeNo(row: Record<string, string>): string {
+  const numberValue = String(row["no."] ?? row["no"] ?? row["num"] ?? row["number"] ?? "").trim();
+  const coyValue = String(row["coy"] ?? row["cop"] ?? row["company"] ?? "").trim().toUpperCase();
+  if (coyValue && numberValue) return `${coyValue}${numberValue}`;
+  const unoValue = String(row["uno"] ?? row["union no"] ?? row["union number"] ?? "").trim();
+  if (unoValue) return unoValue;
+  return String(
+    row["employee no"] ??
+    row["employee id"] ??
+    row["staff id"] ??
+    row["emp numb"] ??
+    row["emp number"] ??
+    row["employee number"] ??
+    ""
+  ).trim();
+}
+
+export function resolveEmployeeName(row: Record<string, string>): { firstName: string; lastName: string } {
+  const fullName = String(
+    row["payee name"] ||
+    row["hr name"] ||
+    row["staff name"] ||
+    row["surname & othernames"] ||
+    (row["first name"] ? `${row["first name"]} ${row["last name"] ?? ""}`.trim() : "") ||
+    row.name ||
+    ""
+  ).trim();
+  const parts = fullName.split(/\s+/).filter(Boolean);
+  const firstName = parts.shift() ?? "";
+  const lastName = parts.join(" ");
+  return { firstName, lastName };
+}
+
 export function normalizeLoanProductName(name: string): string {
   const normalized = name.trim().toLowerCase().replace(/\s+/g, " ");
   const aliases: Record<string, string> = {
@@ -115,18 +148,19 @@ async function importEmployees(
     const row = rows[i];
     const rowNo = i + 2;
 
-    const employeeNo = row["employee no"] || row["employee id"];
-    const firstName = row["first name"];
-    const lastName = row["last name"];
-    const email = row.email;
-    const department = normalizeDepartment(row.department || "operations");
+    const employeeNo = resolveEmployeeNo(row);
+    const { firstName, lastName: rawLastName } = resolveEmployeeName(row);
+    const lastName = rawLastName || "-";
+    const bankAccountNo = row["payee account"] || row["account number"] || row["bank account no"] || null;
+    const email = row.email || (employeeNo ? `${employeeNo.toLowerCase()}@staff.gtpea.local` : "");
+    const department = normalizeDepartment(row.department || row["coy"] || "operations");
     const position = row.position || "Staff";
     const joinDate = row["join date"] || new Date().toISOString().slice(0, 10);
     const salary = parseFloat(row.salary || "0");
 
-    if (!employeeNo || !firstName || !lastName || !email) {
+    if (!employeeNo || !firstName) {
       skipped++;
-      errors.push(`Row ${rowNo}: missing employee no, name, or email.`);
+      errors.push(`Row ${rowNo}: missing employee no or name.`);
       continue;
     }
 
@@ -139,6 +173,7 @@ async function importEmployees(
         phone: row.phone || null,
         department,
         position,
+        bank_account_no: bankAccountNo,
         date_joined: joinDate,
         salary: Number.isFinite(salary) ? salary : 0,
         status: row.status || "active",
@@ -171,7 +206,7 @@ async function importSavings(
     const row = rows[i];
     const rowNo = i + 2;
 
-    const employeeNo = row["employee no"] || row["employee id"];
+    const employeeNo = resolveEmployeeNo(row);
     const amount = parseFloat(row.amount);
     const date = row.date || Object.entries(row).find(([header]) => header.startsWith("date"))?.[1] || new Date().toISOString().slice(0, 10);
     const accountNumber = row["account number"];
@@ -297,7 +332,7 @@ async function importLoans(supabase: AppSupabase, rows: Record<string, string>[]
     const rowNo = i + 2;
 
     const loanRef = row.reference || row["loan ref"];
-    const employeeNo = row["employee no"] || row["employee id"];
+    const employeeNo = resolveEmployeeNo(row);
     const productName = normalizeLoanProductName(row.product || "Normal Loan");
     const amountRequested = parseFloat(row["amount requested"] || row.amount || "0");
     const interestRate = parseFloat(row["interest rate"] || "0.1");

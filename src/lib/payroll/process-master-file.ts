@@ -1,6 +1,7 @@
 import { parseCsv } from "@/lib/csv";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppSupabase } from "@/lib/supabase/types";
+import { resolveEmployeeNo, resolveEmployeeName } from "@/lib/imports/process-import";
 
 export type PayrollMasterRow = {
   employeeNo: string;
@@ -18,11 +19,10 @@ export type PayrollMasterResult = {
 export function parsePayrollMasterFile(fileText: string): PayrollMasterRow[] {
   const rows = parseCsv(fileText);
   const parsedRows = rows.flatMap((row) => {
-    const employeeNo = String(
-      row["staff id"] ?? row["employee no"] ?? row["employee id"] ?? row["emp numb"] ?? row["emp number"] ?? ""
-    ).trim();
-    const name = String(row["staff name"] ?? row.name ?? row["surname & othernames"] ?? "").trim();
-    const department = String(row.department ?? "").trim();
+    const employeeNo = resolveEmployeeNo(row);
+    const { firstName, lastName } = resolveEmployeeName(row);
+    const name = [firstName, lastName].filter(Boolean).join(" ");
+    const department = String(row.department ?? row["coy"] ?? "").trim();
     const allowanceName = String(
       row["allowance name"] ?? row.allowance ?? row.description ?? row["allowance code"] ?? row.code ?? ""
     ).trim();

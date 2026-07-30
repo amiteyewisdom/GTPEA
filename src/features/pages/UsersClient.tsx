@@ -10,6 +10,7 @@ import {
   CheckCircle,
   Download,
   FileSpreadsheet,
+  KeyRound,
   Search,
   Upload,
   Users,
@@ -17,10 +18,34 @@ import {
 } from "lucide-react";
 
 export function UsersClient({ users }: { users: any[] }) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [importOpen, setImportOpen] = useState(false);
+  const [resettingId, setResettingId] = useState<string | null>(null);
+
+  async function handleResetPassword(userId: string, name: string) {
+    if (!window.confirm(`Reset ${name}'s password to the default password? They will be required to set a new password on next login.`)) {
+      return;
+    }
+    setResettingId(userId);
+    try {
+      const response = await fetch("/api/users/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not reset password.");
+      window.alert(`Password reset. ${name} must set a new password on next login.`);
+      router.refresh();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Could not reset password.");
+    } finally {
+      setResettingId(null);
+    }
+  }
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -120,7 +145,7 @@ export function UsersClient({ users }: { users: any[] }) {
           <table className="w-full min-w-[640px]">
             <thead>
               <tr className="border-b border-brand-card-border">
-                {["User", "Email", "Employee ID", "Role", "Status", "Joined"].map((header) => (
+                {["User", "Email", "Employee ID", "Role", "Status", "Joined", "Actions"].map((header) => (
                   <th key={header} className="px-4 py-3 text-left text-sm font-medium text-brand-text-secondary">
                     {header}
                   </th>
@@ -130,7 +155,7 @@ export function UsersClient({ users }: { users: any[] }) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-brand-text-secondary">
+                  <td colSpan={7} className="py-8 text-center text-brand-text-secondary">
                     <Users className="mx-auto mb-3 h-12 w-12 text-brand-text-secondary/50" />
                     <p>No users found</p>
                   </td>
@@ -142,8 +167,27 @@ export function UsersClient({ users }: { users: any[] }) {
                     <td className="px-4 py-3 text-sm text-brand-text-secondary">{user.email || "—"}</td>
                     <td className="px-4 py-3 text-sm text-brand-text-secondary">{user.employeeId}</td>
                     <td className="px-4 py-3 text-sm capitalize text-brand-text-secondary">{user.role.replace("_", " ")}</td>
-                    <td className="px-4 py-3 text-sm text-brand-text-secondary">{user.status}</td>
+                    <td className="px-4 py-3 text-sm text-brand-text-secondary">
+                      {user.status}
+                      {user.mustChangePassword && (
+                        <span className="ml-2 rounded-full bg-brand-warning/10 px-2 py-0.5 text-xs font-medium text-brand-warning">
+                          Password reset pending
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm text-brand-text-secondary">{user.joined}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {user.userId && (
+                        <button
+                          onClick={() => handleResetPassword(user.userId, user.name)}
+                          disabled={resettingId === user.userId}
+                          className="flex items-center gap-1.5 rounded-lg border border-brand-card-border bg-brand-card-bg px-3 py-1.5 text-xs font-medium text-brand-text transition-all hover:bg-brand-hover disabled:opacity-50"
+                        >
+                          <KeyRound className="h-3.5 w-3.5" />
+                          {resettingId === user.userId ? "Resetting..." : "Reset Password"}
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}

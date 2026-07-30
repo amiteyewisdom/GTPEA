@@ -331,7 +331,7 @@ export async function fetchUsersData() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, role, employee_id, is_active, created_at, user_id")
+    .select("id, full_name, role, employee_id, is_active, created_at, user_id, must_change_password")
     .neq("role", "super_admin")
     .order("created_at", { ascending: false });
 
@@ -358,12 +358,14 @@ export async function fetchUsersData() {
   return {
     users: (data ?? []).map((user: any) => ({
       id: user.id,
+      userId: user.user_id,
       name: user.full_name,
       email: emailByUserId.get(user.user_id) || "",
       role: user.role,
       employeeId: user.employee_id ?? "—",
       status: user.is_active ? "Active" : "Inactive",
       joined: user.created_at ? formatDate(user.created_at) : "—",
+      mustChangePassword: !!user.must_change_password,
     })),
   };
 }

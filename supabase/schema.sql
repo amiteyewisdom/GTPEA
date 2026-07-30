@@ -53,22 +53,64 @@ $$ LANGUAGE plpgsql;
 -- profiles (linked 1-to-1 with Supabase auth.users)
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS profiles (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  full_name     TEXT NOT NULL,
-  role          user_role NOT NULL DEFAULT 'employee',
-  avatar_url    TEXT,
-  phone         TEXT,
-  employee_id   TEXT,
-  is_active     BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id               UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name             TEXT NOT NULL,
+  role                  user_role NOT NULL DEFAULT 'employee',
+  avatar_url            TEXT,
+  phone                 TEXT,
+  employee_id           TEXT,
+  is_active             BOOLEAN NOT NULL DEFAULT TRUE,
+  must_change_password  BOOLEAN NOT NULL DEFAULT FALSE,
+  otp_code              TEXT,
+  otp_expires_at        TIMESTAMPTZ,
+  otp_verified_at       TIMESTAMPTZ,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Migration: add new auth-flow columns if the table pre-dates this change
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS otp_code TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMPTZ;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS otp_verified_at TIMESTAMPTZ;
 
 DROP TRIGGER IF EXISTS set_profiles_updated_at ON profiles;
 CREATE TRIGGER set_profiles_updated_at
   BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+-- Guard: the "Users can update own profile" RLS policy only restricts by row (user_id =
+-- auth.uid()), not by column. Without this trigger, any authenticated user could self-update
+-- their own role/is_active/employee_id via the client SDK and escalate privileges. Only
+-- super_admin/administrator (or the service role, which bypasses RLS/triggers via BYPASSRLS)
+-- may change these protected columns; everyone else keeps their existing values.
+CREATE OR REPLACE FUNCTION guard_profiles_protected_columns()
+RETURNS TRIGGER AS $$
+DECLARE
+  requester_role TEXT;
+BEGIN
+  IF NEW.role IS DISTINCT FROM OLD.role
+     OR NEW.is_active IS DISTINCT FROM OLD.is_active
+     OR NEW.employee_id IS DISTINCT FROM OLD.employee_id
+  THEN
+    SELECT role::text INTO requester_role FROM profiles WHERE user_id = auth.uid();
+
+    IF requester_role IS DISTINCT FROM 'super_admin' AND requester_role IS DISTINCT FROM 'administrator' THEN
+      NEW.role := OLD.role;
+      NEW.is_active := OLD.is_active;
+      NEW.employee_id := OLD.employee_id;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS guard_profiles_protected_columns_trigger ON profiles;
+CREATE TRIGGER guard_profiles_protected_columns_trigger
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION guard_profiles_protected_columns();
 
 -- Auto-create profile on new user signup (swallows errors so auth never blocks)
 CREATE OR REPLACE FUNCTION handle_new_user()
