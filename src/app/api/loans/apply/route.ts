@@ -117,7 +117,7 @@ async function handleApply(body: any) {
     );
   }
 
-  const allGuarantorIds = [guarantorId, ...additionalGuarantors.map((g) => g.guarantor_id)].filter(Boolean) as string[];
+  const allGuarantorIds = [guarantorId, ...additionalGuarantors.map((g: any) => g.guarantor_id)].filter(Boolean) as string[];
 
   const [savingsRes, loansRes] = await Promise.all([
     supabase.from("savings").select("balance").eq("employee_id", employee.employeeId).eq("status", "active"),
