@@ -24,11 +24,12 @@ DO $$ BEGIN CREATE TYPE beneficiary_relation AS ENUM ('spouse','child','parent',
 DO $$ BEGIN CREATE TYPE statement_status AS ENUM ('pending','processing','ready','downloaded'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN CREATE TYPE statement_type AS ENUM ('savings','loan','dividend','full_account'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN CREATE TYPE ledger_account_type AS ENUM ('savings','loan','loan_repayment','withdrawal','interest','dividend','penalty','fee'); EXCEPTION WHEN duplicate_object THEN null; END $$;
-DO $$ BEGIN CREATE TYPE approval_stage_role AS ENUM ('union_rep','fund_manager','chairperson'); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE TYPE approval_stage_role AS ENUM ('union_rep','fund_manager','chairperson','facility_committee'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 -- Add new role values to existing enums (safe for re-run)
 DO $$ BEGIN ALTER TYPE user_role ADD VALUE 'super_admin'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TYPE user_role ADD VALUE 'administrator'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TYPE user_role ADD VALUE 'chairperson'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TYPE user_role ADD VALUE 'facility_committee'; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- chairperson already in approval_stage_role enum above
 
 
@@ -218,9 +219,12 @@ CREATE TABLE IF NOT EXISTS loans (
   expected_completion_date  DATE,
   actual_completion_date    DATE,
   guarantor_id              UUID REFERENCES employees(id) ON DELETE SET NULL,
+  guarantor_account         TEXT,
+  guarantor_amount          NUMERIC(15, 2),
   approved_by               UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   disbursed_by              UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   notes                     TEXT,
+  rejection_reason_code     TEXT,
   created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -233,6 +237,20 @@ CREATE TRIGGER set_loans_updated_at
 CREATE INDEX IF NOT EXISTS idx_loans_employee_id ON loans(employee_id);
 CREATE INDEX IF NOT EXISTS idx_loans_status      ON loans(status);
 CREATE INDEX IF NOT EXISTS idx_loans_loan_ref    ON loans(loan_ref);
+
+-- -----------------------------------------------------------------------------
+-- loan_guarantors (supports up to 4 guarantors per loan)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS loan_guarantors (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  loan_id          UUID NOT NULL REFERENCES loans(id) ON DELETE CASCADE,
+  guarantor_id     UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  account_number   TEXT,
+  amount           NUMERIC(15, 2),
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_loan_guarantors_loan_id ON loan_guarantors(loan_id);
 
 -- -----------------------------------------------------------------------------
 -- repayments
@@ -314,6 +332,7 @@ CREATE TABLE IF NOT EXISTS approval_actions (
   action       approval_status NOT NULL,   -- approved | rejected | on_hold | escalated
   actioned_by  UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   notes        TEXT,
+  reason_code  TEXT,
   actioned_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (approval_id, stage)
 );
@@ -332,6 +351,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   balance_before NUMERIC(15, 2) NOT NULL,
   balance_after  NUMERIC(15, 2) NOT NULL,
   description   TEXT NOT NULL,
+  bill_url      TEXT,
   related_id    UUID,
   related_type  TEXT,
   performed_by  UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -468,6 +488,7 @@ CREATE TABLE IF NOT EXISTS withdrawal_requests (
   bank_name       TEXT,
   bank_account_no TEXT,
   notes           TEXT,
+  rejection_reason_code TEXT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -688,7 +709,7 @@ CREATE POLICY "Users can view own profile"
 DROP POLICY IF EXISTS "Staff can view all profiles" ON profiles;
 CREATE POLICY "Staff can view all profiles"
   ON profiles FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
@@ -702,7 +723,7 @@ CREATE POLICY "Admins can manage all profiles"
 DROP POLICY IF EXISTS "Staff can view employees" ON employees;
 CREATE POLICY "Staff can view employees"
   ON employees FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own record" ON employees;
 CREATE POLICY "Employees can view own record"
@@ -723,7 +744,7 @@ CREATE POLICY "Admins can update employees"
 DROP POLICY IF EXISTS "Staff can view all savings" ON savings;
 CREATE POLICY "Staff can view all savings"
   ON savings FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own savings" ON savings;
 CREATE POLICY "Employees can view own savings"
@@ -754,7 +775,7 @@ CREATE POLICY "Admins can manage loan products"
 DROP POLICY IF EXISTS "Staff can view all loans" ON loans;
 CREATE POLICY "Staff can view all loans"
   ON loans FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own loans" ON loans;
 CREATE POLICY "Employees can view own loans"
@@ -783,7 +804,8 @@ CREATE POLICY "Staff can update loans during workflow"
       'super_admin',
       'administrator',
       'fund_manager',
-      'chairperson'
+      'chairperson',
+      'facility_committee'
     )
   );
 
@@ -791,7 +813,7 @@ CREATE POLICY "Staff can update loans during workflow"
 DROP POLICY IF EXISTS "Staff can view all repayments" ON repayments;
 CREATE POLICY "Staff can view all repayments"
   ON repayments FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own repayments" ON repayments;
 CREATE POLICY "Employees can view own repayments"
@@ -811,7 +833,7 @@ CREATE POLICY "Admins and fund managers can manage repayments"
 DROP POLICY IF EXISTS "Staff can view all approvals" ON approvals;
 CREATE POLICY "Staff can view all approvals"
   ON approvals FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Users can view own submitted approvals" ON approvals;
 CREATE POLICY "Users can view own submitted approvals"
@@ -837,7 +859,8 @@ CREATE POLICY "Approvers can update approvals"
       'administrator',
       'union_rep',
       'fund_manager',
-      'chairperson'
+      'chairperson',
+      'facility_committee'
     )
   );
 
@@ -866,7 +889,7 @@ CREATE POLICY "System can insert notifications"
 DROP POLICY IF EXISTS "Staff can view all transactions" ON transactions;
 CREATE POLICY "Staff can view all transactions"
   ON transactions FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own transactions" ON transactions;
 CREATE POLICY "Employees can view own transactions"
@@ -917,7 +940,7 @@ CREATE POLICY "System can insert audit logs"
 DROP POLICY IF EXISTS "Staff can view approval actions" ON approval_actions;
 CREATE POLICY "Staff can view approval actions"
   ON approval_actions FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Users can view own approval actions" ON approval_actions;
 CREATE POLICY "Users can view own approval actions"
@@ -933,7 +956,8 @@ CREATE POLICY "Approvers can insert approval actions"
       'administrator',
       'union_rep',
       'fund_manager',
-      'chairperson'
+      'chairperson',
+      'facility_committee'
     )
   );
 
@@ -954,7 +978,7 @@ CREATE POLICY "Employees can manage own beneficiaries"
 DROP POLICY IF EXISTS "Staff can view savings contributions" ON savings_contributions;
 CREATE POLICY "Staff can view savings contributions"
   ON savings_contributions FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own contributions" ON savings_contributions;
 CREATE POLICY "Employees can view own contributions"
@@ -983,7 +1007,7 @@ CREATE POLICY "Admins and fund managers can manage adjustments"
 DROP POLICY IF EXISTS "Staff can view all withdrawals" ON withdrawal_requests;
 CREATE POLICY "Staff can view all withdrawals"
   ON withdrawal_requests FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own withdrawals" ON withdrawal_requests;
 CREATE POLICY "Employees can view own withdrawals"
@@ -1008,7 +1032,7 @@ CREATE POLICY "Fund managers and chairman can update withdrawals"
 DROP POLICY IF EXISTS "Staff can view amortization schedules" ON loan_amortization_schedules;
 CREATE POLICY "Staff can view amortization schedules"
   ON loan_amortization_schedules FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own loan schedules" ON loan_amortization_schedules;
 CREATE POLICY "Employees can view own loan schedules"
@@ -1030,7 +1054,7 @@ CREATE POLICY "System can manage amortization schedules"
 DROP POLICY IF EXISTS "Staff can view dividend configs" ON dividend_configs;
 CREATE POLICY "Staff can view dividend configs"
   ON dividend_configs FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Fund managers can manage dividend configs" ON dividend_configs;
 CREATE POLICY "Fund managers can manage dividend configs"
@@ -1041,7 +1065,7 @@ CREATE POLICY "Fund managers can manage dividend configs"
 DROP POLICY IF EXISTS "Staff can view all dividends" ON dividends;
 CREATE POLICY "Staff can view all dividends"
   ON dividends FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own dividends" ON dividends;
 CREATE POLICY "Employees can view own dividends"
@@ -1077,7 +1101,7 @@ CREATE POLICY "Admin can process all statement requests"
 DROP POLICY IF EXISTS "Staff can view ledger" ON ledger_entries;
 CREATE POLICY "Staff can view ledger"
   ON ledger_entries FOR SELECT
-  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep'));
+  USING (current_user_role() IN ('super_admin', 'administrator', 'fund_manager', 'chairperson', 'union_rep', 'facility_committee'));
 
 DROP POLICY IF EXISTS "Employees can view own ledger entries" ON ledger_entries;
 CREATE POLICY "Employees can view own ledger entries"
@@ -1121,3 +1145,22 @@ VALUES
   ('School Fees',   'Targeted tuition support. Fixed repayment aligned to academic calendar (up to 4 months).',                        0.025, 'flat_rate',        100,    30000,  1,  4,  0.00, FALSE, 2, TRUE),
   ('Car Loan',      'Vehicle acquisition loan. Rates and terms set by fund manager.',                                                  0.02,  'reducing_balance', 5000,   300000, 12, 60, 0.00, TRUE,  4, TRUE)
 ON CONFLICT DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 6. STORAGE: Bill upload bucket for member charges
+-- -----------------------------------------------------------------------------
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('bills', 'bills', TRUE, 5242880, ARRAY['application/pdf', 'image/png', 'image/jpeg']::text[])
+ON CONFLICT (id) DO UPDATE SET public = TRUE;
+
+DO $$ BEGIN
+  CREATE POLICY "Allow authenticated users to upload bills"
+    ON storage.objects FOR INSERT
+    WITH CHECK (bucket_id = 'bills' AND auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Allow public read of bills"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'bills');
+EXCEPTION WHEN duplicate_object THEN null; END $$;

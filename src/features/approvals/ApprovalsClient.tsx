@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Check, X, ExternalLink, Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { KPICard } from "@/components/ui/KPICard";
 import { useRouter } from "next/navigation";
-import { formatDate, formatRelativeTime, formatCurrency } from "@/utils/formatters";
+import { formatDate, formatRelativeTime, formatCurrency, feedbackDeadline } from "@/utils/formatters";
+import { REJECTION_REASON_CODES } from "@/utils/constants";
 import {
   APPROVAL_STAGES,
   canApproveAtStage,
@@ -18,6 +19,7 @@ interface ApprovalAction {
   required_role: string;
   action: string;
   notes: string | null;
+  reason_code: string | null;
   actioned_at: string;
 }
 
@@ -45,16 +47,23 @@ interface ApprovalRow {
     interest_rate: number;
     interest_calc_method?: string | null;
     product_name?: string | null;
+    purpose?: string | null;
+    created_at?: string;
+    rejection_reason_code?: string | null;
+    available_funds?: number;
   } | null;
   withdrawal_details?: {
     amount: number;
     savings_balance: number;
     savings_type: string;
+    rejection_reason_code?: string | null;
+    available_funds?: number;
   } | null;
   employee_details?: {
     total_savings: number;
     total_loan_balance: number;
     monthly_savings: number;
+    net_available?: number;
   } | null;
 }
 
@@ -75,7 +84,17 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const isApproverRole = ["union_rep", "fund_manager", "chairperson"].includes(userRole);
+  const [rejectionReason, setRejectionReason] = useState("");
+
+  useEffect(() => {
+    if (selected?.status === "rejected" && (selected.loan_details?.rejection_reason_code || selected.withdrawal_details?.rejection_reason_code)) {
+      setRejectionReason(selected.loan_details?.rejection_reason_code || selected.withdrawal_details?.rejection_reason_code || "");
+    } else {
+      setRejectionReason("");
+    }
+  }, [selected]);
+
+  const isApproverRole = ["union_rep", "fund_manager", "chairperson", "facility_committee"].includes(userRole);
   const [view, setView] = useState<"action" | "all">(isApproverRole ? "action" : "all");
 
   const STAGE_ROLE_MAP: Record<number, string> = Object.fromEntries(
@@ -117,7 +136,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
     }
 
     // ALL RELEVANT: approvers see all pending/in-pipeline approvals; employees see only their own
-    const isApprover = ["union_rep", "fund_manager", "chairperson"].includes(userRole);
+    const isApprover = ["union_rep", "fund_manager", "chairperson", "facility_committee"].includes(userRole);
     if (isApprover) {
       return matchesSearch;
     }
@@ -130,21 +149,25 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
     setActionLoading(true);
     setActionError(null);
     try {
+      const payload = action === "rejected"
+        ? { approval_id: approvalId, action, notes, reason_code: rejectionReason }
+        : { approval_id: approvalId, action, notes };
       const response = await fetch("/api/approvals/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approval_id: approvalId, action, notes }),
+        body: JSON.stringify(payload),
       });
 
-      const payload = await response.json();
-      console.log("[handleAction] response payload:", payload);
+      const data = await response.json();
+      console.log("[handleAction] response data:", data);
       if (!response.ok) {
-        throw new Error(payload?.error || payload?.details?.message || "Unable to process approval action.");
+        throw new Error(data?.error || data?.details?.message || "Unable to process approval action.");
       }
 
-      setSuccessMessage(payload.message || "Approval updated successfully.");
+      setSuccessMessage(data.message || "Approval updated successfully.");
       setSelected(null);
       setNotes("");
+      setRejectionReason("");
       router.refresh();
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Unexpected error.");
@@ -156,8 +179,8 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
     <div className="flex flex-col gap-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-brand-text">Loan Approvals</h1>
-        <p className="mt-1 text-sm text-brand-text-secondary">Review and action loan applications in the approval pipeline.</p>
+        <h1 className="text-2xl font-bold text-brand-text">Facility Approvals</h1>
+        <p className="mt-1 text-sm text-brand-text-secondary">Review and action facility applications in the approval pipeline.</p>
       </div>
 
       {/* KPIs */}
@@ -372,7 +395,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
               {/* Loan details */}
               {selected.entity_type === "loan" && selected.loan_details && (
                 <div className="rounded-brand border border-brand-card-border bg-brand-background p-4">
-                  <p className="mb-3 text-sm font-bold text-brand-green">Loan Details</p>
+                  <p className="mb-3 text-sm font-bold text-brand-green">Facility Details</p>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: "Amount Requested", value: formatCurrency(selected.loan_details.amount_requested) },
@@ -388,6 +411,22 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                         <span className="text-sm font-semibold text-brand-text">{value}</span>
                       </div>
                     ))}
+                  </div>
+                  {selected.loan_details.purpose && (
+                    <div className="mt-3 rounded-brand border border-brand-card-border bg-white p-3">
+                      <span className="text-xs text-brand-text-secondary">Reason / Purpose</span>
+                      <p className="mt-1 text-sm text-brand-text">{selected.loan_details.purpose}</p>
+                    </div>
+                  )}
+                  <div className="mt-3 grid grid-cols-2 gap-3 rounded-brand border border-blue-200 bg-blue-50 p-3">
+                    <div>
+                      <span className="text-xs text-blue-600">Available Funds (Net)</span>
+                      <p className="text-sm font-bold text-blue-800">{formatCurrency(selected.loan_details.available_funds ?? 0)}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-blue-600">Feedback Deadline</span>
+                      <p className="text-sm font-bold text-blue-800">{selected.submitted_at ? feedbackDeadline(selected.submitted_at) : "—"}</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -418,6 +457,11 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                       { label: "Total Savings", value: formatCurrency(selected.employee_details.total_savings) },
                       { label: "Loan Balance", value: formatCurrency(selected.employee_details.total_loan_balance) },
                       { label: "Monthly Savings", value: formatCurrency(selected.employee_details.monthly_savings) },
+                      { label: "Net Available", value: formatCurrency(selected.employee_details.net_available ?? 0) },
+                      {
+                        label: "Net Value",
+                        value: formatCurrency(selected.employee_details.total_savings - selected.employee_details.total_loan_balance),
+                      },
                     ].map(({ label, value }) => (
                       <div key={label} className="flex flex-col gap-0.5">
                         <span className="text-xs text-green-600">{label}</span>
@@ -440,6 +484,11 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                           <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${action.action === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{action.action.toUpperCase()}</span>
                         </div>
                         {action.notes && <p className="mt-1 text-xs text-brand-text-secondary">{action.notes}</p>}
+                        {action.reason_code && (
+                          <p className="mt-1 text-xs text-red-700">
+                            Reason: {REJECTION_REASON_CODES.find((r) => r.code === action.reason_code)?.label ?? action.reason_code}
+                          </p>
+                        )}
                         <p className="mt-1 text-xs text-brand-text-secondary">{formatDate(action.actioned_at, "dd MMM yyyy, HH:mm")}</p>
                       </div>
                     ))}
@@ -453,6 +502,40 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
               {selected.status === "pending" && !needsMyAction(selected) && (
                 <div className="rounded-brand border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
                   Waiting for <strong>{labelForRole(STAGE_ROLE_MAP[selected.current_stage ?? 1] ?? "next reviewer")}</strong> to review.
+                </div>
+              )}
+
+              {/* Rejected info */}
+              {selected.status === "rejected" && (
+                <div className="rounded-brand border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                  <p className="font-semibold">Application rejected</p>
+                  {selected.loan_details?.rejection_reason_code && (
+                    <p className="mt-1 text-xs">
+                      Reason: {REJECTION_REASON_CODES.find((r) => r.code === selected.loan_details?.rejection_reason_code)?.label ?? selected.loan_details?.rejection_reason_code}
+                    </p>
+                  )}
+                  {selected.withdrawal_details?.rejection_reason_code && (
+                    <p className="mt-1 text-xs">
+                      Reason: {REJECTION_REASON_CODES.find((r) => r.code === selected.withdrawal_details?.rejection_reason_code)?.label ?? selected.withdrawal_details?.rejection_reason_code}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Rejection reason */}
+              {selected.status === "pending" && needsMyAction(selected) && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-brand-text">Rejection Reason (required to reject)</label>
+                  <select
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    className="w-full rounded-brand border border-brand-card-border bg-white px-3 py-2 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                  >
+                    <option value="">Select a reason…</option>
+                    {REJECTION_REASON_CODES.map((r) => (
+                      <option key={r.code} value={r.code}>{r.label}</option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -480,7 +563,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                 <>
                   <button
                     onClick={() => handleAction(selected.id, "rejected")}
-                    disabled={actionLoading}
+                    disabled={actionLoading || !rejectionReason}
                     className="rounded-brand border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
                   >
                     Reject

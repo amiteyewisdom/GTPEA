@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { WithdrawalsClient } from "@/features/withdrawals/WithdrawalsClient";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Partial Withdrawals" };
+export const metadata: Metadata = { title: "PW" };
 
 export default async function WithdrawalsPage() {
   const supabase = await createClient();

@@ -6,14 +6,14 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type UserRole = "super_admin" | "administrator" | "employee" | "fund_manager" | "chairperson" | "chairman" | "union_rep";
+export type UserRole = "super_admin" | "administrator" | "employee" | "fund_manager" | "chairperson" | "chairman" | "union_rep" | "facility_committee";
 export type EmployeeStatus = "active" | "inactive" | "suspended" | "terminated";
 export type LoanStatus = "pending" | "approved" | "disbursed" | "repaying" | "completed" | "rejected" | "defaulted";
 export type SavingsType = "regular" | "special" | "emergency" | "retirement";
 export type SavingsStatus = "active" | "frozen" | "closed" | "suspended";
 export type ApprovalStatus     = "pending" | "approved" | "rejected" | "escalated" | "on_hold";
 export type ApprovalEntityType = "loan" | "withdrawal" | "savings_adjustment" | "employee_onboarding" | "dividend";
-export type ApprovalStageRole  = "union_rep" | "fund_manager" | "chairperson" | "chairman";
+export type ApprovalStageRole  = "union_rep" | "fund_manager" | "chairperson" | "chairman" | "facility_committee";
 export type TransactionType    = "savings_deposit" | "savings_withdrawal" | "savings_adjustment" | "loan_disbursement" | "loan_repayment" | "withdrawal_disbursement" | "dividend_credit" | "interest_credit" | "transfer" | "fee" | "penalty";
 export type RepaymentStatus    = "pending" | "paid" | "overdue" | "partial" | "waived";
 export type Department         = "management" | "finance" | "operations" | "hr" | "it" | "sales" | "legal" | "audit";
@@ -139,15 +139,30 @@ export interface Database {
           expected_completion_date: string | null;
           actual_completion_date: string | null;
           guarantor_id: string | null;
+          guarantor_account: string | null;
+          guarantor_amount: number | null;
           approved_by: string | null;
           approved_at: string | null;
           disbursed_by: string | null;
           notes: string | null;
+          rejection_reason_code: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: Omit<Database["public"]["Tables"]["loans"]["Row"], "id" | "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["loans"]["Insert"]>;
+      };
+      loan_guarantors: {
+        Row: {
+          id: string;
+          loan_id: string;
+          guarantor_id: string;
+          account_number: string | null;
+          amount: number | null;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["loan_guarantors"]["Row"], "id" | "created_at">;
+        Update: Partial<Database["public"]["Tables"]["loan_guarantors"]["Insert"]>;
       };
       repayments: {
         Row: {
@@ -199,6 +214,7 @@ export interface Database {
           balance_before: number;
           balance_after: number;
           description: string;
+          bill_url: string | null;
           related_id: string | null;
           related_type: string | null;
           performed_by: string | null;
@@ -251,6 +267,7 @@ export interface Database {
           action: ApprovalStatus;
           actioned_by: string | null;
           notes: string | null;
+          reason_code: string | null;
           actioned_at: string;
         };
         Insert: Omit<Database["public"]["Tables"]["approval_actions"]["Row"], "id" | "actioned_at">;
@@ -321,6 +338,7 @@ export interface Database {
           bank_name: string | null;
           bank_account_no: string | null;
           notes: string | null;
+          rejection_reason_code: string | null;
           created_at: string;
           updated_at: string;
         };

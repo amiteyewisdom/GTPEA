@@ -47,7 +47,8 @@ interface LoansClientProps {
   userRole?: string;
 }
 
-const ALL_TABS = ["all", "pending", "approved", "disbursed", "repaying", "completed", "rejected", "defaulted"];
+const ALL_TABS = ["all", "active", "pending", "approved", "disbursed", "repaying", "completed", "rejected", "defaulted"];
+const ACTIVE_STATUSES = ["approved", "disbursed", "repaying"];
 
 export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalOutstanding, userRole }: LoansClientProps) {
   const isEmployee = userRole === "employee";
@@ -63,6 +64,9 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
 
   const defaulted = loans.filter((l) => l.status === "defaulted").length;
 
+  const activeLoans = loans.filter((l) => ACTIVE_STATUSES.includes(l.status));
+  const activeLoansBalance = activeLoans.reduce((s, l) => s + (Number(l.outstanding_balance) || 0), 0);
+
   const filtered = loans.filter((l) => {
     const q = search.toLowerCase();
     const matchesSearch =
@@ -70,7 +74,7 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
       (l.employees
         ? `${l.employees.first_name} ${l.employees.last_name}`.toLowerCase().includes(q)
         : false);
-    const matchesTab = tab === "all" || l.status === tab;
+    const matchesTab = tab === "all" || (tab === "active" ? ACTIVE_STATUSES.includes(l.status) : l.status === tab);
     return matchesSearch && matchesTab;
   });
 
@@ -135,10 +139,11 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
   return (
     <div className="flex flex-col gap-6">
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <KPICard title="Total Loans" value={total} icon={Landmark} accent="primary" subtitle="All records" />
+        <KPICard title="Active Loans" value={activeLoans.length} icon={Landmark} accent="success" subtitle="Approved / disbursed / repaying" />
+        <KPICard title="Active Balances" value={formatCurrency(activeLoansBalance)} icon={TrendingDown} accent="accent" subtitle="Outstanding on active loans" />
         <KPICard title="Total Disbursed" value={formatCurrency(totalDisbursed)} icon={Landmark} accent="success" trend="up" trendValue="+14%" subtitle="Cumulative" />
-        <KPICard title="Outstanding Balance" value={formatCurrency(totalOutstanding)} icon={TrendingDown} accent="accent" subtitle="Active portfolio" />
         <KPICard title="Defaulted" value={defaulted} icon={AlertTriangle} accent={defaulted > 0 ? "danger" : "primary"} subtitle={`${((defaulted / Math.max(total, 1)) * 100).toFixed(1)}% default rate`} />
       </div>
 
@@ -170,7 +175,7 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
             onClick={() => document.getElementById("loan-application")?.scrollIntoView({ behavior: "smooth" })}
             className="flex items-center gap-1.5 rounded-brand bg-brand-green px-3 py-2 text-xs font-semibold text-white hover:bg-brand-green-dark"
           >
-            <Plus className="h-3.5 w-3.5" /> New Loan
+            <Plus className="h-3.5 w-3.5" /> New Facility
           </button>
         </div>
       </div>
@@ -215,7 +220,9 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
               {paginated.length === 0 ? (
                 <tr>
                   <td colSpan={11} className="px-4 py-12 text-center text-sm text-brand-text-secondary">
-                    {search ? "No loans match your search." : `No ${tab === "all" ? "" : tab + " "}loans found.`}
+                    {search
+                      ? "No loans match your search."
+                      : `No ${tab === "all" ? "" : tab === "active" ? "active " : tab + " "}loans found.`}
                   </td>
                 </tr>
               ) : (

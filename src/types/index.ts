@@ -1,6 +1,6 @@
 // ─── User & Auth ─────────────────────────────────────────────────────────────
 
-export type UserRole = 'super_admin' | 'administrator' | 'admin' | 'employee' | 'fund_manager' | 'chairperson' | 'chairman' | 'union_rep';
+export type UserRole = 'super_admin' | 'administrator' | 'admin' | 'employee' | 'fund_manager' | 'chairperson' | 'chairman' | 'union_rep' | 'facility_committee';
 
 export interface AppUser {
   id: string;

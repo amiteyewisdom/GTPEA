@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, CheckCircle, AlertCircle, Trash2, AlertTriangle, BadgeCent } from "lucide-react";
+import { Plus, X, CheckCircle, AlertCircle, Trash2, AlertTriangle, BadgeCent, Paperclip } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
+import { createClient } from "@/lib/supabase/client";
 
 interface Employee {
   id: string;
@@ -19,6 +20,7 @@ interface Charge {
   amount: number;
   description: string;
   reference: string;
+  bill_url?: string | null;
   created_at: string;
   employees?: { first_name: string; last_name: string; employee_no: string } | null;
 }
@@ -63,6 +65,7 @@ export function ChargesClient({
     description: "",
     reference: "",
   });
+  const [billFile, setBillFile] = useState<File | null>(null);
 
   const totalFees = charges.filter((c) => c.type === "fee").reduce((s, c) => s + Number(c.amount), 0);
   const totalPenalties = charges.filter((c) => c.type === "penalty").reduce((s, c) => s + Number(c.amount), 0);
@@ -72,16 +75,27 @@ export function ChargesClient({
     setLoading(true);
     setMessage(null);
     try {
+      let billUrl: string | undefined;
+      if (billFile) {
+        const supabase = createClient();
+        const fileExt = billFile.name.split('.').pop() || 'pdf';
+        const fileName = `bills/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from("bills").upload(fileName, billFile);
+        if (uploadError) throw new Error(uploadError.message);
+        const { data: publicUrl } = supabase.storage.from("bills").getPublicUrl(fileName);
+        billUrl = publicUrl.publicUrl;
+      }
       const res = await fetch("/api/charges", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, amount: Number(formData.amount) }),
+        body: JSON.stringify({ ...formData, amount: Number(formData.amount), bill_url: billUrl }),
       });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || "Failed to record charge.");
       setMessage({ type: "success", text: "Charge recorded successfully." });
       setCharges([payload.charge, ...charges]);
       setFormData({ employee_id: "", type: "fee", amount: "", description: "", reference: "" });
+      setBillFile(null);
       setShowForm(false);
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed." });
@@ -222,6 +236,16 @@ export function ChargesClient({
                   className="w-full rounded-lg border border-brand-card-border bg-white px-4 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green"
                 />
               </div>
+              <div className="md:col-span-2">
+                <label className="mb-1.5 block text-sm font-medium text-brand-text">Bill / Receipt Upload</label>
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={(e) => setBillFile(e.target.files?.[0] || null)}
+                  className="w-full rounded-lg border border-brand-card-border bg-white px-4 py-2.5 text-sm text-brand-text file:mr-4 file:rounded file:border-0 file:bg-brand-green file:px-3 file:py-1 file:text-xs file:text-white focus:outline-none focus:ring-2 focus:ring-brand-green"
+                />
+                {billFile && <p className="mt-1 text-xs text-brand-text-secondary">Selected: {billFile.name}</p>}
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <button
@@ -249,7 +273,7 @@ export function ChargesClient({
           <table className="w-full min-w-[640px]">
             <thead>
               <tr className="border-b border-brand-card-border">
-                {["Date", "Member", "Type", "Description", "Reference", "Amount"].map((h) => (
+                {["Date", "Member", "Type", "Description", "Reference", "Bill", "Amount"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-brand-text-secondary">
                     {h}
                   </th>
@@ -259,7 +283,7 @@ export function ChargesClient({
             <tbody>
               {charges.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-brand-text-secondary">
+                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-brand-text-secondary">
                     No charges recorded yet.
                   </td>
                 </tr>
@@ -282,6 +306,15 @@ export function ChargesClient({
                     </td>
                     <td className="px-4 py-3 text-sm text-brand-text-secondary">{c.description || "—"}</td>
                     <td className="px-4 py-3 text-sm font-mono text-brand-text-secondary">{c.reference}</td>
+                    <td className="px-4 py-3">
+                      {c.bill_url ? (
+                        <a href={c.bill_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-brand-green hover:underline">
+                          <Paperclip className="h-3.5 w-3.5" /> View
+                        </a>
+                      ) : (
+                        <span className="text-xs text-brand-text-secondary">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm font-bold text-brand-text">{formatCurrency(Number(c.amount))}</td>
                   </tr>
                 ))

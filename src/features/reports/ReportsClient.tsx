@@ -39,6 +39,7 @@ interface ReportSummary {
   totalDisbursed: number;
   totalWithdrawals: number;
   totalDividends: number;
+  possibleDividend: number;
   defaultRate: number;
 }
 
@@ -294,6 +295,12 @@ export function ReportsClient({
               value={formatCurrency(summary.totalDividends)}
               icon={TrendingUp}
               color="text-brand-success"
+            />
+            <DashboardStatCard
+              title="Possible Dividend"
+              value={formatPercent(summary.possibleDividend)}
+              icon={TrendingUp}
+              color="text-brand-accent"
             />
             <DashboardStatCard
               title="Default Rate"

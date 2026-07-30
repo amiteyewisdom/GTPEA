@@ -1,7 +1,8 @@
 export const APPROVAL_STAGES = [
-  { stage: 1, role: "fund_manager", label: "Fund Manager" },
-  { stage: 2, role: "union_rep", label: "Trustee" },
-  { stage: 3, role: "chairperson", label: "Chairperson" },
+  { stage: 1, role: "facility_committee", label: "Facility Committee" },
+  { stage: 2, role: "union_rep", label: "Relief Committee" },
+  { stage: 3, role: "fund_manager", label: "Fund Manager" },
+  { stage: 4, role: "chairperson", label: "Chairperson" },
 ] as const;
 
 export type ApproverRole = (typeof APPROVAL_STAGES)[number]["role"];
@@ -15,7 +16,7 @@ export function labelForStage(stage: number): string {
 }
 
 export function labelForRole(role: string): string {
-  if (role === "union_rep") return "Trustee";
+  if (role === "union_rep") return "Relief Committee";
   return role.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 

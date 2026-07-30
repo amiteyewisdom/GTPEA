@@ -7,6 +7,7 @@ export async function POST(request: Request) {
   const loanId = String(body?.loan_id || "");
   const action = String(body?.action || "");
   const notes = String(body?.notes || "").trim();
+  const reasonCode = body?.reason_code ? String(body.reason_code).trim() : "";
 
   if (!loanId) {
     return NextResponse.json({ error: "Loan ID is required." }, { status: 400 });
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
     approval,
     action: mappedAction,
     notes,
+    reasonCode,
     userId: user.id,
     userRole: role,
   });

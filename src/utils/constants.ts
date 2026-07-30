@@ -12,6 +12,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   chairperson: 'Chairperson',
   chairman: 'Chairperson',
   union_rep: 'Trustee',
+  facility_committee: 'Facility Committee',
 };
 
 export const LOAN_STATUS_COLORS = {
@@ -44,6 +45,15 @@ export const DEPARTMENTS = [
 
 export const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 export const DEFAULT_PAGE_SIZE = 25;
+
+export const REJECTION_REASON_CODES = [
+  { code: 'insufficient_savings', label: 'Insufficient Savings' },
+  { code: 'incomplete_documents', label: 'Incomplete Documents' },
+  { code: 'exceeds_eligibility', label: 'Amount Exceeds Eligibility' },
+  { code: 'guarantor_required', label: 'Guarantor Required' },
+  { code: 'not_qualified', label: 'Applicant Not Qualified' },
+  { code: 'other', label: 'Other' },
+] as const;
 
 export const SUPABASE_TABLES = {
   EMPLOYEES: 'employees',

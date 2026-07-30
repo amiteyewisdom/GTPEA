@@ -144,7 +144,7 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
           className="flex items-center gap-2 px-4 py-2.5 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all"
         >
           <Plus className="w-4 h-4" />
-          New Loan Product
+          New Facility Product
         </button>
       </div>
 
@@ -166,7 +166,7 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-brand-text">
-              {editingProduct ? "Edit Loan Product" : "Add New Loan Product"}
+              {editingProduct ? "Edit Facility Product" : "Add New Facility Product"}
             </h2>
             <button
               onClick={() => {

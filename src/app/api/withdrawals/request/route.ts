@@ -97,5 +97,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: approvalError.message || "Failed to create approval workflow." }, { status: 500 });
   }
 
-  return NextResponse.json({ message: "Withdrawal request submitted successfully.", withdrawal });
+  return NextResponse.json({
+    message: "Withdrawal request submitted. The approval and administrative process will take a maximum of 2 weeks.",
+    withdrawal,
+  });
 }

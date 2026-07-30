@@ -17,7 +17,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { employee_id, type, amount, description, reference } = body;
+  const { employee_id, type, amount, description, reference, bill_url } = body;
 
   if (!employee_id || !type || !amount) {
     return NextResponse.json({ error: "Employee, type and amount are required." }, { status: 400 });
@@ -54,6 +54,7 @@ export async function POST(request: Request) {
       balance_before: balanceBefore,
       balance_after: balanceBefore,
       description: description ? String(description).trim() : `${type === "fee" ? "Processing fee" : "Penalty charge"}`,
+      bill_url: bill_url ? String(bill_url).trim() : null,
       reference: ref,
       related_id: null,
       related_type: null,

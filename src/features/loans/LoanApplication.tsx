@@ -3,12 +3,14 @@
 import { useMemo, useState } from "react";
 import { addMonths, format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { BadgeCent, Calendar, AlertCircle, CheckCircle, X, Info } from "lucide-react";
+import { BadgeCent, Calendar, AlertCircle, CheckCircle, X, Info, Users, Phone, Shield } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import {
   formatCurrency,
   calculateMonthlyRepayment,
   calculateTotalRepayable,
+  calculateTotalInterest,
+  numberToWords,
 } from "@/utils/formatters";
 
 interface LoanProduct {
@@ -20,15 +22,34 @@ interface LoanProduct {
   max_amount: number;
   min_term_months: number;
   max_term_months: number;
+  requires_guarantor?: boolean;
   account_code?: string | null;
   description?: string | null;
 }
 
+interface EmployeeDetails {
+  name: string;
+  employeeNo: string;
+  department: string;
+  accountNumber: string | null;
+  yearsInService: number;
+}
+
+interface GuarantorOption {
+  id: string;
+  first_name: string;
+  last_name: string;
+  employee_no: string;
+  account_number: string | null;
+}
+
 interface LoanApplicationProps {
   loanProducts: LoanProduct[];
+  employeeDetails?: EmployeeDetails | null;
   maxBorrowable?: number;
   savingsBalance?: number;
   activeLoanBalance?: number;
+  guarantorEmployees?: GuarantorOption[];
 }
 
 function amountError(product: LoanProduct | undefined, amount: number) {
@@ -54,7 +75,14 @@ function termError(product: LoanProduct | undefined, months: number) {
   return null;
 }
 
-export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, activeLoanBalance }: LoanApplicationProps) {
+export function LoanApplication({
+  loanProducts,
+  employeeDetails,
+  maxBorrowable,
+  savingsBalance,
+  activeLoanBalance,
+  guarantorEmployees = [],
+}: LoanApplicationProps) {
   const router = useRouter();
   const [productId, setProductId] = useState(loanProducts[0]?.id ?? "");
   const [principalStr, setPrincipalStr] = useState("");
@@ -62,6 +90,10 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
   const principal = principalStr === "" ? 0 : Number(principalStr);
   const duration = durationStr === "" ? 0 : Number(durationStr);
   const [purpose, setPurpose] = useState("");
+  const [guarantorId, setGuarantorId] = useState("");
+  const [guarantorAmountStr, setGuarantorAmountStr] = useState("");
+  const [guarantorAccount, setGuarantorAccount] = useState("");
+  const [additionalGuarantors, setAdditionalGuarantors] = useState<{ id: string; account: string; amount: string }[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -71,6 +103,50 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
     () => loanProducts.find((p) => p.id === productId) ?? loanProducts[0],
     [loanProducts, productId]
   );
+
+  const selectedGuarantor = useMemo(
+    () => guarantorEmployees.find((e) => e.id === guarantorId),
+    [guarantorEmployees, guarantorId]
+  );
+
+  useMemo(() => {
+    if (selectedGuarantor) {
+      setGuarantorAccount(selectedGuarantor.account_number ?? "");
+    } else {
+      setGuarantorAccount("");
+    }
+  }, [selectedGuarantor]);
+
+  const guarantorAmount = guarantorAmountStr === "" ? principal : Number(guarantorAmountStr);
+
+  const requiresGuarantor =
+    savingsBalance !== undefined && activeLoanBalance !== undefined
+      ? savingsBalance <= activeLoanBalance
+      : selectedProduct?.requires_guarantor ?? false;
+
+  const usedGuarantorIds = [guarantorId, ...additionalGuarantors.map((g) => g.id)].filter(Boolean);
+
+  const addAdditionalGuarantor = () => {
+    if (additionalGuarantors.length >= 1) return;
+    setAdditionalGuarantors([...additionalGuarantors, { id: "", account: "", amount: "" }]);
+  };
+
+  const updateAdditionalGuarantor = (index: number, patch: Partial<{ id: string; account: string; amount: string }>) => {
+    const next = [...additionalGuarantors];
+    next[index] = { ...next[index], ...patch };
+    if (patch.id) {
+      const emp = guarantorEmployees.find((e) => e.id === patch.id);
+      next[index].account = emp?.account_number ?? "";
+      next[index].amount = String(principal);
+    }
+    setAdditionalGuarantors(next);
+  };
+
+  const removeAdditionalGuarantor = (index: number) => {
+    const next = [...additionalGuarantors];
+    next.splice(index, 1);
+    setAdditionalGuarantors(next);
+  };
 
   const calcMethod = selectedProduct?.interest_calc_method ?? "reducing_balance";
 
@@ -84,13 +160,19 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
     [principal, selectedProduct, duration, calcMethod]
   );
 
+  const totalDividend = useMemo(
+    () => calculateTotalInterest(principal, selectedProduct?.interest_rate ?? 0, duration, calcMethod),
+    [principal, selectedProduct, duration, calcMethod]
+  );
+
   const firstRepaymentDate = useMemo(() => format(addMonths(new Date(), 1), "dd MMM yyyy"), []);
   const expectedCompletionDate = useMemo(() => format(addMonths(new Date(), duration), "dd MMM yyyy"), [duration]);
 
   const amountValidation = amountError(selectedProduct, principal);
   const amountWarn = amountWarning(principal, maxBorrowable);
   const termValidation = termError(selectedProduct, duration);
-  const formValid = !amountValidation && !termValidation && Boolean(selectedProduct) && principal > 0;
+  const guarantorMissing = requiresGuarantor && !guarantorId;
+  const formValid = !amountValidation && !termValidation && Boolean(selectedProduct) && principal > 0 && !guarantorMissing;
 
   const handleProductChange = (nextProductId: string) => {
     const product = loanProducts.find((item) => item.id === nextProductId);
@@ -119,6 +201,18 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
           principal,
           duration_months: duration,
           purpose: purpose.trim(),
+          guarantor_id: selectedGuarantor?.id,
+          guarantor_name: selectedGuarantor ? `${selectedGuarantor.first_name} ${selectedGuarantor.last_name}` : null,
+          guarantor_staff_id: selectedGuarantor?.employee_no,
+          guarantor_account: guarantorAccount || null,
+          guarantor_amount: guarantorAmount || null,
+          additional_guarantors: additionalGuarantors
+            .filter((g) => g.id)
+            .map((g) => ({
+              guarantor_id: g.id,
+              guarantor_account: g.account || null,
+              guarantor_amount: g.amount === "" ? principal : Number(g.amount),
+            })),
         }),
       });
 
@@ -127,7 +221,7 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
         throw new Error(payload?.error || "Unable to submit loan request.");
       }
 
-      setSuccessMessage("Facility application submitted successfully. It will now enter the approval workflow.");
+      setSuccessMessage("Facility application submitted. The approval and administrative process will take a maximum of 2 weeks.");
       setConfirmOpen(false);
       setLoading(false);
       router.refresh();
@@ -156,11 +250,32 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
           <div>
-            <h3 className="text-xl font-bold text-brand-text mb-1">Apply for a Facility</h3>
+            <h3 className="text-xl font-bold text-brand-text mb-1">Loan Application Form</h3>
             <p className="text-brand-text-secondary text-sm">
-              Submit a facility request and track progress through Fund Manager, Trustee, and Chairperson review.
+              Submit a facility request and track progress through Relief Committee, Fund Manager, and Chairperson review.
             </p>
           </div>
+
+          {employeeDetails && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-brand-hover/30 border border-brand-card-border rounded-lg p-3 min-w-[260px]">
+              <div>
+                <p className="text-xs text-brand-text-secondary">Name</p>
+                <p className="text-sm font-semibold text-brand-text">{employeeDetails.name}</p>
+              </div>
+              <div>
+                <p className="text-xs text-brand-text-secondary">Account No.</p>
+                <p className="text-sm font-semibold text-brand-text">{employeeDetails.accountNumber ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-brand-text-secondary">Department</p>
+                <p className="text-sm font-semibold text-brand-text">{employeeDetails.department}</p>
+              </div>
+              <div>
+                <p className="text-xs text-brand-text-secondary">Years in Service</p>
+                <p className="text-sm font-semibold text-brand-text">{employeeDetails.yearsInService}</p>
+              </div>
+            </div>
+          )}
 
           {/* How much can I borrow */}
           {maxBorrowable !== undefined && (
@@ -184,7 +299,7 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
 
         {/* Loan Product Cards */}
         <div>
-          <label className="block text-sm font-medium text-brand-text mb-3">Select Loan Type</label>
+          <label className="block text-sm font-medium text-brand-text mb-3">Select Facility Type</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {loanProducts.map((product) => {
               const isSelected = productId === product.id;
@@ -241,6 +356,11 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
             <p className="mt-1 text-xs text-brand-text-secondary">
               Allowed: {formatCurrency(selectedProduct.min_amount)} – {formatCurrency(selectedProduct.max_amount)}
             </p>
+            {principal > 0 && (
+              <p className="mt-1 text-xs text-brand-text-secondary italic">
+                Amount in words: {numberToWords(principal)} Ghana Cedis
+              </p>
+            )}
             {amountValidation && (
               <p className="mt-1 text-xs text-red-600">{amountValidation}</p>
             )}
@@ -275,6 +395,17 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
           </div>
         </div>
 
+        <div className="rounded-lg border border-brand-card-border bg-brand-hover/30 p-3">
+          <p className="text-xs font-semibold text-brand-text mb-2">Repayment Period Guidelines</p>
+          <ul className="text-xs text-brand-text-secondary space-y-1">
+            <li>GH₵1,000 – GH₵1,500 : Payable within 12 months</li>
+            <li>GH₵1,501 – GH₵2,000 : Payable within 18 months</li>
+            <li>GH₵2,001 – GH₵5,000 : Payable within 24 months</li>
+            <li>GH₵6,000 – GH₵10,000 : Payable within 36 months</li>
+            <li>GH₵10,500 and above : Payable within 60 months</li>
+          </ul>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-brand-text mb-2">Purpose</label>
           <textarea
@@ -286,6 +417,134 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
           />
         </div>
 
+        {/* Guarantor */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-brand-accent" />
+            <label className="text-sm font-medium text-brand-text">Guarantor</label>
+            {requiresGuarantor && <span className="text-xs text-red-600 font-medium">* required</span>}
+            {!requiresGuarantor && savingsBalance !== undefined && activeLoanBalance !== undefined && (
+              <span className="text-xs text-brand-green font-medium">(not required because savings exceed total loan balance)</span>
+            )}
+          </div>
+          <select
+            value={guarantorId}
+            onChange={(e) => setGuarantorId(e.target.value)}
+            className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+          >
+            <option value="">{guarantorEmployees.length ? "Select a guarantor" : "No guarantors available"}</option>
+            {guarantorEmployees.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.first_name} {emp.last_name} ({emp.employee_no})
+              </option>
+            ))}
+          </select>
+          {selectedGuarantor ? (
+            <div className="space-y-3 rounded-lg border border-brand-card-border bg-brand-card-bg/50 p-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-brand-text-secondary" />
+                  <div>
+                    <p className="text-xs text-brand-text-secondary">Staff ID</p>
+                    <p className="text-sm font-semibold text-brand-text">{selectedGuarantor.employee_no}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-brand-text-secondary" />
+                  <div>
+                    <p className="text-xs text-brand-text-secondary">Name</p>
+                    <p className="text-sm font-semibold text-brand-text">{selectedGuarantor.first_name} {selectedGuarantor.last_name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-brand-text-secondary" />
+                  <div>
+                    <p className="text-xs text-brand-text-secondary">Account No.</p>
+                    <p className="text-sm font-semibold text-brand-text">{guarantorAccount || selectedGuarantor.account_number || "—"}</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-brand-text-secondary mb-1">Guarantor Amount Approved (GH₵)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={guarantorAmountStr}
+                  placeholder={String(principal)}
+                  onChange={(e) => setGuarantorAmountStr(e.target.value.replace(/[^0-9.]/g, ""))}
+                  className="w-1/2 sm:w-1/3 px-3 py-2 bg-white border border-brand-card-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+                />
+              </div>
+            </div>
+          ) : requiresGuarantor ? (
+            <p className="text-xs text-red-600">This product requires a guarantor before submission.</p>
+          ) : null}
+
+          {additionalGuarantors.map((entry, index) => {
+            const emp = guarantorEmployees.find((e) => e.id === entry.id);
+            return (
+              <div key={index} className="space-y-3 rounded-lg border border-brand-card-border bg-brand-card-bg/50 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-brand-text-secondary">Additional Guarantor {index + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeAdditionalGuarantor(index)}
+                    className="text-xs text-red-600 hover:text-red-800"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <select
+                  value={entry.id}
+                  onChange={(e) => updateAdditionalGuarantor(index, { id: e.target.value })}
+                  className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+                >
+                  <option value="">Select a guarantor</option>
+                  {guarantorEmployees
+                    .filter((e) => !usedGuarantorIds.includes(e.id) || e.id === entry.id)
+                    .map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.first_name} {e.last_name} ({e.employee_no})
+                      </option>
+                    ))}
+                </select>
+                {emp && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-brand-text-secondary" />
+                      <div>
+                        <p className="text-xs text-brand-text-secondary">Account No.</p>
+                        <p className="text-sm font-semibold text-brand-text">{entry.account || emp.account_number || "—"}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-brand-text-secondary mb-1">Amount Approved (GH₵)</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={entry.amount}
+                        placeholder={String(principal)}
+                        onChange={(e) => updateAdditionalGuarantor(index, { amount: e.target.value.replace(/[^0-9.]/g, "") })}
+                        className="w-full px-3 py-2 bg-white border border-brand-card-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {guarantorId && requiresGuarantor && additionalGuarantors.length < 1 && (
+            <button
+              type="button"
+              onClick={addAdditionalGuarantor}
+              className="text-xs font-semibold text-brand-green hover:text-brand-green-dark flex items-center gap-1"
+            >
+              + Add another guarantor ({1 - additionalGuarantors.length} remaining)
+            </button>
+          )}
+        </div>
+
         {/* Loan Summary */}
         <div className="bg-brand-hover/30 border border-brand-card-border rounded-lg p-4">
           <h4 className="text-lg font-semibold text-brand-text mb-4">Facility Summary</h4>
@@ -295,10 +554,11 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { label: "Loan Type", value: selectedProduct.name },
+              { label: "Facility Type", value: selectedProduct.name },
               { label: "Requested Amount", value: formatCurrency(principal) },
               { label: "Number of Months", value: `${duration} months` },
               { label: "Total Repayment", value: formatCurrency(totalRepayable) },
+              { label: "Total Interest", value: formatCurrency(totalDividend) },
               { label: "First Repayment", value: firstRepaymentDate },
               { label: "Completion Date", value: expectedCompletionDate },
             ].map((item) => (
@@ -341,7 +601,7 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
           <div className="bg-white rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-brand-text mb-4">Confirm Facility Application</h3>
             <p className="text-brand-text-secondary text-sm mb-4">
-              Once confirmed, the request will enter the approval workflow and be reviewed by the Fund Manager first.
+              Once confirmed, the request will enter the approval workflow and be reviewed by the Relief Committee first.
             </p>
             <div className="mb-4 rounded-lg border-2 border-brand-green bg-brand-green/10 p-4 text-center">
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-green">Monthly Payment</p>
@@ -349,10 +609,11 @@ export function LoanApplication({ loanProducts, maxBorrowable, savingsBalance, a
             </div>
             <div className="space-y-2 mb-4">
               {[
-                { label: "Loan Type", value: selectedProduct.name },
+                { label: "Facility Type", value: selectedProduct.name },
                 { label: "Amount", value: formatCurrency(principal) },
                 { label: "Number of Months", value: `${duration} months` },
                 { label: "Total Repayment", value: formatCurrency(totalRepayable) },
+                { label: "Total Interest", value: formatCurrency(totalDividend) },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between text-sm py-1 border-b border-gray-100">
                   <span className="text-brand-text-secondary">{label}:</span>

@@ -37,6 +37,7 @@ export type UserRole =
   | 'chairperson'
   | 'fund_manager'
   | 'union_rep'
+  | 'facility_committee'
   | 'employee';
 
 export interface MenuItem {
@@ -274,6 +275,22 @@ export const menuItems: MenuItem[] = [
     roles: ['fund_manager'],
   },
 
+  // Facility Committee
+  {
+    id: 'dashboard-facility',
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    path: '/dashboard',
+    roles: ['facility_committee'],
+  },
+  {
+    id: 'loan-reviews-facility',
+    label: 'Loan Reviews',
+    icon: ClipboardList,
+    path: '/approvals',
+    roles: ['facility_committee'],
+  },
+
   // Union Representative
   {
     id: 'dashboard-ur',
@@ -335,7 +352,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     id: 'withdrawal-history',
-    label: 'Partial Withdrawals',
+    label: 'PW',
     icon: History,
     path: '/withdrawal-history',
     roles: ['employee'],

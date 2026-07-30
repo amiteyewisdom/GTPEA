@@ -70,6 +70,15 @@ export default async function ReportsPage() {
   const totalWithdrawals = withdrawalsData?.reduce((s, r) => s + (r.amount ?? 0), 0) ?? 0;
   const totalDividends = dividendsData?.reduce((s, r) => s + (r.dividend_amount ?? 0), 0) ?? 0;
 
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
+  const interestIncome = transactionsData
+    ?.filter((t) => t.type === "interest_credit" && t.created_at >= yearStart)
+    .reduce((s, t) => s + (Number(t.amount) || 0), 0) ?? 0;
+  const totalExpenses = totalDividends + totalWithdrawals;
+  const netProfit = interestIncome - totalExpenses;
+  const possibleDividend = totalSavings > 0 ? netProfit / totalSavings : 0;
+
   // Aggregate savings contributions by month for chart data
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -173,6 +182,7 @@ export default async function ReportsPage() {
     totalDisbursed,
     totalWithdrawals,
     totalDividends,
+    possibleDividend,
     defaultRate: activeLoanRows.length
       ? ((activeLoanRows.filter((l) => l.status === "defaulted").length / Math.max(activeLoanRows.length, 1)) * 100)
       : 0,

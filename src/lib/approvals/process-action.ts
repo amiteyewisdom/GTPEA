@@ -21,10 +21,11 @@ export async function processApprovalAction(input: {
   approval: ApprovalRecord;
   action: "approved" | "rejected";
   notes: string;
+  reasonCode?: string;
   userId: string;
   userRole: string;
 }) {
-  const { approval, action, notes, userId, userRole } = input;
+  const { approval, action, notes, reasonCode, userId, userRole } = input;
 
   if (approval.status !== "pending") {
     return { error: "This approval is already completed.", status: 400 };
@@ -59,6 +60,7 @@ export async function processApprovalAction(input: {
       action,
       actioned_by: userId,
       notes: notes || null,
+      reason_code: reasonCode || null,
     });
 
     if (actionRes.error) {
@@ -89,7 +91,9 @@ export async function processApprovalAction(input: {
 
   if (approval.entity_type === "loan") {
     if (action === "rejected") {
-      const loanRes = await (admin.from("loans") as any).update({ status: "rejected" }).eq("id", approval.entity_id);
+      const loanRes = await (admin.from("loans") as any)
+        .update({ status: "rejected", rejection_reason_code: reasonCode || null })
+        .eq("id", approval.entity_id);
       if (loanRes.error) console.error("[processApprovalAction] loans update error:", loanRes.error);
     } else if (action === "approved" && isFinalStage) {
       const loanRes = await (admin.from("loans") as any)
@@ -119,7 +123,9 @@ export async function processApprovalAction(input: {
     if (!withdrawal || withdrawalRes.error) {
       console.error("[processApprovalAction] withdrawal fetch error:", withdrawalRes.error);
     } else if (action === "rejected") {
-      const wRes = await (admin.from("withdrawal_requests") as any).update({ status: "rejected" }).eq("id", withdrawal.id);
+      const wRes = await (admin.from("withdrawal_requests") as any)
+        .update({ status: "rejected", rejection_reason_code: reasonCode || null })
+        .eq("id", withdrawal.id);
       if (wRes.error) console.error("[processApprovalAction] withdrawal update error:", wRes.error);
     } else if (action === "approved" && isFinalStage) {
       // Deduct from savings balance on final approval

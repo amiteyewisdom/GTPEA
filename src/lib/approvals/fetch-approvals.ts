@@ -11,7 +11,7 @@ export async function fetchApprovalsList() {
     .from("approvals")
     .select(
       `*,
-       approval_actions (stage, required_role, action, notes, actioned_at)`,
+       approval_actions (stage, required_role, action, notes, reason_code, actioned_at)`,
       { count: "exact" }
     )
     .order("submitted_at", { ascending: false });
@@ -46,7 +46,7 @@ export async function fetchApprovalsList() {
       ? supabase
           .from("loans")
           .select(
-            "id, employee_id, amount_requested, amount_approved, outstanding_balance, monthly_repayment, term_months, interest_rate, interest_calc_method, loan_products (name)"
+            "id, employee_id, amount_requested, amount_approved, outstanding_balance, monthly_repayment, term_months, interest_rate, interest_calc_method, purpose, created_at, loan_products (name)"
           )
           .in("id", loanIds)
       : Promise.resolve({ data: [] as any[] }),
@@ -110,7 +110,7 @@ export async function fetchApprovalsList() {
     ),
   ] as string[];
 
-  const employeeSummaries = new Map<string, { total_savings: number; total_loan_balance: number; monthly_savings: number }>();
+  const employeeSummaries = new Map<string, { total_savings: number; total_loan_balance: number; monthly_savings: number; net_available: number }>();
 
   if (filteredEmployeeIds.length) {
     const [savingsRes, loansBalanceRes, contributionsRes] = await Promise.all([
@@ -131,10 +131,13 @@ export async function fetchApprovalsList() {
           row.employee_id === employeeId && row.period_year === year && row.period_month === month
       );
 
+      const totalSavings = sum(savingsRows, "balance");
+      const totalLoanBalance = sum(loanRows, "outstanding_balance");
       employeeSummaries.set(employeeId, {
-        total_savings: sum(savingsRows, "balance"),
-        total_loan_balance: sum(loanRows, "outstanding_balance"),
+        total_savings: totalSavings,
+        total_loan_balance: totalLoanBalance,
         monthly_savings: sum(contributionRows, "amount"),
+        net_available: Math.max(0, totalSavings * 3 - totalLoanBalance),
       });
     }
   }
@@ -157,6 +160,10 @@ export async function fetchApprovalsList() {
             interest_rate: loan.interest_rate,
             interest_calc_method: loan.interest_calc_method ?? null,
             product_name: loan.loan_products?.name ?? null,
+            purpose: loan.purpose ?? null,
+            created_at: loan.created_at,
+            rejection_reason_code: loan.rejection_reason_code ?? null,
+            available_funds: employeeSummaries.get(loan.employee_id)?.net_available ?? 0,
           }
         : null,
       withdrawal_details: withdrawal
@@ -164,6 +171,8 @@ export async function fetchApprovalsList() {
             amount: withdrawal.amount,
             savings_balance: withdrawal.savings?.balance ?? 0,
             savings_type: withdrawal.savings?.type ?? "N/A",
+            rejection_reason_code: withdrawal.rejection_reason_code ?? null,
+            available_funds: withdrawal.savings?.balance ?? 0,
           }
         : null,
       employee_details: employeeId ? employeeSummaries.get(employeeId) ?? null : null,

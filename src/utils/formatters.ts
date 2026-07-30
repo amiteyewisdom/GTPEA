@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow, parseISO, addMonths } from 'date-fns';
+import { format, formatDistanceToNow, parseISO, addMonths, addDays, isWeekend } from 'date-fns';
 
 // ─── Currency ─────────────────────────────────────────────────────────────────
 
@@ -202,4 +202,67 @@ export function generateReference(prefix: string): string {
 export function maskAccountNumber(account: string): string {
   if (account.length <= 4) return account;
   return `****${account.slice(-4)}`;
+}
+
+// ─── Working Days ─────────────────────────────────────────────────────────────
+
+export function addWorkingDays(startDate: Date, days: number): Date {
+  let current = new Date(startDate);
+  let added = 0;
+  while (added < days) {
+    current = addDays(current, 1);
+    if (!isWeekend(current)) {
+      added++;
+    }
+  }
+  return current;
+}
+
+export function feedbackDeadline(dateStr: string, days = 14): string {
+  try {
+    const deadline = addWorkingDays(parseISO(dateStr), days);
+    return format(deadline, 'dd MMM yyyy');
+  } catch {
+    return '—';
+  }
+}
+
+export function numberToWords(num: number): string {
+  if (num === 0) return "Zero";
+  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+  const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const groups = ["", "Thousand", "Million", "Billion"];
+
+  function chunkToWords(n: number): string {
+    let result = "";
+    const h = Math.floor(n / 100);
+    const t = Math.floor((n % 100) / 10);
+    const o = n % 10;
+    if (h > 0) result += `${ones[h]} Hundred `;
+    if (t === 1) result += `${teens[o]} `;
+    else {
+      if (t > 0) result += `${tens[t]} `;
+      if (o > 0) result += `${ones[o]} `;
+    }
+    return result.trim();
+  }
+
+  let remaining = Math.floor(num);
+  let groupIndex = 0;
+  const parts: string[] = [];
+  while (remaining > 0) {
+    const chunk = remaining % 1000;
+    if (chunk > 0) {
+      const chunkWords = chunkToWords(chunk);
+      parts.unshift(`${chunkWords}${groups[groupIndex] ? ` ${groups[groupIndex]}` : ""}`);
+    }
+    remaining = Math.floor(remaining / 1000);
+    groupIndex++;
+  }
+
+  const decimal = Math.round((num % 1) * 100);
+  let words = parts.join(", ").trim();
+  if (decimal > 0) words += ` and ${decimal}/100`;
+  return words;
 }

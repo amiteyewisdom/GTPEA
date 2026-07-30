@@ -390,11 +390,12 @@ async function buildProfitLossReport(supabase: AppSupabase) {
   const now = new Date();
   const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
 
-  const [interestRes, savingsContribRes, dividendsRes, withdrawalsRes] = await Promise.all([
+  const [interestRes, savingsContribRes, dividendsRes, withdrawalsRes, savingsRes] = await Promise.all([
     supabase.from("transactions").select("type, amount, created_at").in("type", ["interest_credit", "loan_repayment"]).gte("created_at", yearStart),
     supabase.from("savings_contributions").select("amount, period_year, period_month").eq("period_year", now.getFullYear()),
     supabase.from("dividends").select("dividend_amount, fiscal_year").eq("fiscal_year", now.getFullYear()),
     supabase.from("withdrawal_requests").select("amount, status").in("status", ["approved", "disbursed"]).gte("created_at", yearStart),
+    supabase.from("savings").select("balance").eq("status", "active"),
   ]);
 
   const interestIncome = (interestRes.data ?? [])
@@ -408,10 +409,13 @@ async function buildProfitLossReport(supabase: AppSupabase) {
   const totalSavingsContributions = (savingsContribRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
   const totalDividendsPaid = (dividendsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.dividend_amount), 0);
   const totalWithdrawals = (withdrawalsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
+  const totalSavingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
 
   const grossIncome = interestIncome + loanRepayments;
   const totalExpenses = totalDividendsPaid + totalWithdrawals;
   const netSurplus = grossIncome - totalExpenses;
+  const netProfit = interestIncome - totalExpenses;
+  const possibleDividend = totalSavingsBalance > 0 ? netProfit / totalSavingsBalance : 0;
 
   const reportDate = now.toLocaleDateString("en-GB");
   const headers = ["Account", "Code", "Amount (GH₵)"];
@@ -428,6 +432,8 @@ async function buildProfitLossReport(supabase: AppSupabase) {
     ["TOTAL EXPENDITURE", "", totalExpenses.toFixed(2)],
     ["", "", ""],
     ["NET SURPLUS / (DEFICIT)", "", netSurplus.toFixed(2)],
+    ["", "", ""],
+    ["POSSIBLE DIVIDEND (Net Profit / Total Savings)", "", (possibleDividend * 100).toFixed(2) + "%"],
     ["", "", ""],
     [`Report Date: ${reportDate}`, `Period: ${now.getFullYear()}`, ""],
   ];

@@ -8,6 +8,7 @@ export async function POST(request: Request) {
     const approvalId = String(body?.approval_id || "");
     const action = String(body?.action || "");
     const notes = String(body?.notes || "").trim();
+    const reasonCode = body?.reason_code ? String(body.reason_code).trim() : "";
 
     if (!approvalId) {
       return NextResponse.json({ error: "Approval ID is required." }, { status: 400 });
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
       approval,
       action,
       notes,
+      reasonCode,
       userId: user.id,
       userRole: role,
     });
