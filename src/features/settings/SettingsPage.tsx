@@ -105,7 +105,6 @@ function getAvailableTabs(role: UserRole) {
     fund_manager: [],
     union_rep: [],
     chairperson: [],
-    chairman: [],
     facility_committee: [],
     employee: [
       { id: 'password', label: 'Password', icon: Lock },
