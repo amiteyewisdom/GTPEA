@@ -37,6 +37,10 @@ export interface Database {
           phone: string | null;
           employee_id: string | null;
           is_active: boolean;
+          must_change_password: boolean;
+          otp_code: string | null;
+          otp_expires_at: string | null;
+          otp_verified_at: string | null;
           created_at: string;
           updated_at: string;
         };
