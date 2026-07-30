@@ -53,8 +53,8 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    const { error: profileError } = await supabase
-      .from("profiles")
+    const { error: profileError } = await (supabase
+      .from("profiles") as any)
       .update({ must_change_password: false })
       .eq("user_id", userData.user.id);
 
