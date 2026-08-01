@@ -117,10 +117,12 @@ CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   BEGIN
-    INSERT INTO profiles (user_id, full_name, role)
+    INSERT INTO profiles (user_id, full_name, phone, employee_id, role)
     VALUES (
       NEW.id,
       COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+      NEW.raw_user_meta_data->>'phone',
+      NEW.raw_user_meta_data->>'employee_id',
       COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'employee')
     );
   EXCEPTION WHEN OTHERS THEN
