@@ -93,6 +93,13 @@ UPDATE profiles SET role = 'union_rep'     WHERE user_id = (SELECT id FROM auth.
 UPDATE profiles SET role = 'employee'      WHERE user_id = (SELECT id FROM auth.users WHERE email = 'employee1@gtpea.com');
 UPDATE profiles SET role = 'employee'      WHERE user_id = (SELECT id FROM auth.users WHERE email = 'employee2@gtpea.com');
 
+-- ── Step 4b: Force password change on first login ─────────────────────────────
+UPDATE profiles
+SET must_change_password = true
+WHERE user_id IN (
+  SELECT id FROM auth.users WHERE email LIKE '%@gtpea.com'
+);
+
 -- ── Step 4: Create employee records ───────────────────────────────────────────
 INSERT INTO employees (employee_no, first_name, last_name, email, department, position, status, date_joined, salary, gender)
 VALUES

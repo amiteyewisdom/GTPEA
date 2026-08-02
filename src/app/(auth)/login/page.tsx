@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const defaultPassword = process.env.NEXT_PUBLIC_DEFAULT_USER_PASSWORD || 'Gtpea@2025';
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
@@ -182,6 +184,13 @@ export default function LoginPage() {
                 <a href="/forgot-password" className="text-sm text-brand-green font-medium hover:underline">
                   Forgot password?
                 </a>
+              </div>
+
+              <div className="rounded-lg bg-brand-green/5 border border-brand-green/10 p-3 text-sm">
+                <p className="text-brand-green-dark font-medium mb-0.5">First-time / test account?</p>
+                <p className="text-gray-600">
+                  Default password is <span className="font-semibold text-gray-900">{defaultPassword}</span>. You’ll be asked to change it after signing in.
+                </p>
               </div>
 
               <button
