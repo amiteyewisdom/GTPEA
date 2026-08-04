@@ -1,10 +1,28 @@
 -- =============================================================================
 -- GTPEA — Create System Users & Test Employees
--- Run in Supabase SQL Editor AFTER running reset-to-fresh.sql
+-- Run in Supabase SQL Editor AFTER running schema.sql and reset-to-fresh.sql
+-- (schema.sql creates the tables; reset-to-fresh.sql wipes stale data and
+-- re-seeds loan_products.)
 -- =============================================================================
 -- Passwords are all: Gtpea@2025
 -- Change them after first login!
 -- =============================================================================
+
+-- ── Pre-check: required GTPEA schema must already exist ─────────────────────
+-- This script only seeds data. Run schema.sql first to create types, tables,
+-- triggers, and policies. If you want a clean state, run reset-to-fresh.sql next.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    RAISE EXCEPTION 'Required type "user_role" does not exist. Run supabase/schema.sql first, then supabase/reset-to-fresh.sql, before running this script.';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'profiles' AND relkind = 'r') THEN
+    RAISE EXCEPTION 'Required table "profiles" does not exist. Run supabase/schema.sql first before running this script.';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'employees' AND relkind = 'r') THEN
+    RAISE EXCEPTION 'Required table "employees" does not exist. Run supabase/schema.sql first before running this script.';
+  END IF;
+END $$;
 
 -- ── Step 1: Create auth users ─────────────────────────────────────────────────
 -- The trigger will auto-create a profiles row for each one.
@@ -65,19 +83,27 @@ VALUES
    'authenticated', 'authenticated', now(), now(), '', '', '', '');
 
 -- ── Step 2: Seed GTPEA loan products (safe - deletes old then inserts) ────────
-DELETE FROM loan_products WHERE name IN (
-  'Normal Loan','Hire Purchase','Quick Cash','Land Loan','School Fees','Car Loan',
-  'Personal Loan','Emergency Loan','Business Loan','Education Loan','Vehicle Loan','Housing Loan','Regular Loan'
-);
+-- Only runs if loan_products exists (created by schema.sql / reset-to-fresh.sql).
+DO $$
+BEGIN
+  IF to_regclass('public.loan_products') IS NULL THEN
+    RAISE NOTICE 'loan_products table does not exist; skipping loan product seed. Run schema.sql / reset-to-fresh.sql first.';
+  ELSE
+    DELETE FROM loan_products WHERE name IN (
+      'Normal Loan','Hire Purchase','Quick Cash','Land Loan','School Fees','Car Loan',
+      'Personal Loan','Emergency Loan','Business Loan','Education Loan','Vehicle Loan','Housing Loan','Regular Loan'
+    );
 
-INSERT INTO loan_products (name, description, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, processing_fee_percent, requires_guarantor, max_loan_to_salary_ratio, is_active)
-VALUES
-  ('Normal Loan',   'Standard reducing balance loan.',                              0.02,  'reducing_balance', 500,   100000, 1,  48, 0.00, FALSE, 3, TRUE),
-  ('Hire Purchase', 'Fixed asset financing. Flat rate interest on full principal.', 0.025, 'flat_rate',        200,   50000,  1,  12, 0.00, FALSE, 2, TRUE),
-  ('Quick Cash',    'Short-term emergency cash loan.',                              0.05,  'reducing_balance', 100,   5000,   1,  6,  0.00, FALSE, 1, TRUE),
-  ('Land Loan',     'Land acquisition. Amortized over up to 4 years.',             0.02,  'reducing_balance', 1000,  200000, 1,  48, 0.00, FALSE, 3, TRUE),
-  ('School Fees',   'Academic calendar aligned school fees loan.',                 0.025, 'flat_rate',        200,   20000,  1,  12, 0.00, FALSE, 2, TRUE),
-  ('Car Loan',      'Vehicle purchase loan.',                                       0.02,  'reducing_balance', 5000,  150000, 12, 60, 0.00, TRUE,  4, TRUE);
+    INSERT INTO loan_products (name, description, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, processing_fee_percent, requires_guarantor, max_loan_to_salary_ratio, is_active)
+    VALUES
+      ('Normal Loan',   'Standard reducing balance loan.',                              0.02,  'reducing_balance', 500,   100000, 1,  48, 0.00, FALSE, 3, TRUE),
+      ('Hire Purchase', 'Fixed asset financing. Flat rate interest on full principal.', 0.025, 'flat_rate',        200,   50000,  1,  12, 0.00, FALSE, 2, TRUE),
+      ('Quick Cash',    'Short-term emergency cash loan.',                              0.05,  'reducing_balance', 100,   5000,   1,  6,  0.00, FALSE, 1, TRUE),
+      ('Land Loan',     'Land acquisition. Amortized over up to 4 years.',             0.02,  'reducing_balance', 1000,  200000, 1,  48, 0.00, FALSE, 3, TRUE),
+      ('School Fees',   'Academic calendar aligned school fees loan.',                 0.025, 'flat_rate',        200,   20000,  1,  12, 0.00, FALSE, 2, TRUE),
+      ('Car Loan',      'Vehicle purchase loan.',                                       0.02,  'reducing_balance', 5000,  150000, 12, 60, 0.00, TRUE,  4, TRUE);
+  END IF;
+END $$;
 
 -- ── Step 3: Extend role enum with new values (safe - skips if already exists) ─
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'super_admin';
