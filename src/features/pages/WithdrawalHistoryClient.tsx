@@ -195,6 +195,8 @@ export function WithdrawalHistoryClient({
 
       {/* Searchable List */}
       <SearchableList
+        title=""
+        subtitle=""
         searchPlaceholder="Search PWs..."
         emptyMessage="No PW transactions found."
         items={withdrawals.map((item) => ({
