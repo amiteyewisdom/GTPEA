@@ -11,12 +11,12 @@ export default async function DashboardRouter() {
 
   let profile;
   try {
-    const { data: profileRes } = await supabase
+    const profileRes = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
-    profile = profileRes?.data;
+    profile = profileRes.data;
   } catch (error) {
     console.error("[Dashboard] Profile fetch error:", error);
     redirect("/login");
