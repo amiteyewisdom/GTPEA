@@ -28,13 +28,31 @@ export default async function DashboardRouter() {
 
   const role = profile.role as UserRole;
 
-  // Simplified dashboard to isolate the error
+  if (role === "employee") {
+    try {
+      const dashboardData = await fetchEmployeeDashboardData(user.id, profile);
+      // Try to load EmployeeDashboard with dynamic import
+      const EmployeeDashboard = (await import('@/features/dashboard/EmployeeDashboard')).default;
+      return <EmployeeDashboard data={dashboardData} />;
+    } catch (error) {
+      console.error("[Dashboard] Employee dashboard error:", error);
+      return (
+        <div className="p-8">
+          <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+          <p className="text-gray-600">Welcome, {profile.full_name || 'User'}</p>
+          <p className="text-red-600 mt-4">Error loading dashboard: {error instanceof Error ? error.message : String(error)}</p>
+        </div>
+      );
+    }
+  }
+
+  // For other roles, show simplified version for now
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
       <p className="text-gray-600">Welcome, {profile.full_name || 'User'}</p>
       <p className="text-gray-500 mt-2">Role: {role}</p>
-      <p className="text-gray-500 mt-2">User ID: {user.id}</p>
+      <p className="text-gray-500 mt-4">Full dashboard for {role} is being restored...</p>
     </div>
   );
 }
