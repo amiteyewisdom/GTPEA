@@ -28,55 +28,13 @@ export default async function DashboardRouter() {
 
   const role = profile.role as UserRole;
 
-  if (role === "employee") {
-    try {
-      const dashboardData = await fetchEmployeeDashboardData(user.id, profile);
-      return <EmployeeDashboard data={dashboardData} />;
-    } catch (error) {
-      console.error("[Dashboard] Employee dashboard data fetch error:", error);
-      return (
-        <div className="p-8">
-          <h1 className="text-xl font-semibold mb-4">Dashboard Error</h1>
-          <p className="text-red-600">Failed to load dashboard data. Please try again or contact support.</p>
-          <p className="text-sm text-gray-500 mt-2">Error: {error instanceof Error ? error.message : String(error)}</p>
-        </div>
-      );
-    }
-  }
-
-  let stats;
-  try {
-    stats = await fetchDashboardStats();
-  } catch (error) {
-    console.error("[Dashboard] Stats fetch error:", error);
-    return (
-      <div className="p-8">
-        <h1 className="text-xl font-semibold mb-4">Dashboard Error</h1>
-        <p className="text-red-600">Failed to load dashboard statistics. Please try again or contact support.</p>
-        <p className="text-sm text-gray-500 mt-2">Error: {error instanceof Error ? error.message : String(error)}</p>
-      </div>
-    );
-  }
-
-  // Use dynamic imports to avoid React component errors
-  const SuperAdminDashboard = (await import('@/features/dashboard/SuperAdminDashboard')).default;
-  const AdministratorDashboard = (await import('@/features/dashboard/AdministratorDashboard')).default;
-  const ChairpersonDashboard = (await import('@/features/dashboard/ChairpersonDashboard')).default;
-  const FundManagerDashboard = (await import('@/features/dashboard/FundManagerDashboard')).default;
-  const UnionRepDashboard = (await import('@/features/dashboard/UnionRepDashboard')).default;
-
-  switch (role) {
-    case "super_admin":
-      return <SuperAdminDashboard stats={stats} />;
-    case "administrator":
-      return <AdministratorDashboard stats={stats} />;
-    case "chairperson":
-      return <ChairpersonDashboard stats={stats} />;
-    case "fund_manager":
-      return <FundManagerDashboard stats={stats} />;
-    case "union_rep":
-      return <UnionRepDashboard stats={stats} />;
-    default:
-      redirect("/login");
-  }
+  // Simplified dashboard to isolate the error
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <p className="text-gray-600">Welcome, {profile.full_name || 'User'}</p>
+      <p className="text-gray-500 mt-2">Role: {role}</p>
+      <p className="text-gray-500 mt-2">User ID: {user.id}</p>
+    </div>
+  );
 }
