@@ -2,11 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UserRole } from "@/lib/role-menus";
 import { fetchDashboardStats, fetchEmployeeDashboardData } from "@/lib/dashboard/fetch-stats";
-import SuperAdminDashboard from "@/features/dashboard/SuperAdminDashboard";
-import AdministratorDashboard from "@/features/dashboard/AdministratorDashboard";
-import ChairpersonDashboard from "@/features/dashboard/ChairpersonDashboard";
-import FundManagerDashboard from "@/features/dashboard/FundManagerDashboard";
-import UnionRepDashboard from "@/features/dashboard/UnionRepDashboard";
 import EmployeeDashboard from "@/features/dashboard/EmployeeDashboard";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +57,13 @@ export default async function DashboardRouter() {
       </div>
     );
   }
+
+  // Use dynamic imports to avoid React component errors
+  const SuperAdminDashboard = (await import('@/features/dashboard/SuperAdminDashboard')).default;
+  const AdministratorDashboard = (await import('@/features/dashboard/AdministratorDashboard')).default;
+  const ChairpersonDashboard = (await import('@/features/dashboard/ChairpersonDashboard')).default;
+  const FundManagerDashboard = (await import('@/features/dashboard/FundManagerDashboard')).default;
+  const UnionRepDashboard = (await import('@/features/dashboard/UnionRepDashboard')).default;
 
   switch (role) {
     case "super_admin":
