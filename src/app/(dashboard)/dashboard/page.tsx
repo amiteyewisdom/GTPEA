@@ -9,7 +9,7 @@ export default async function DashboardRouter() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  let profile;
+  let profile: any;
   try {
     const profileRes = await supabase
       .from("profiles")
