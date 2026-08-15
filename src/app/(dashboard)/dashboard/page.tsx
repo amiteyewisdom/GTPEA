@@ -16,22 +16,52 @@ export default async function DashboardRouter() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, role, employee_id")
-    .eq("user_id", user.id)
-    .single() as any;
+  let profile;
+  try {
+    const profileRes = await supabase
+      .from("profiles")
+      .select("full_name, role, employee_id")
+      .eq("user_id", user.id)
+      .single() as any;
+    profile = profileRes.data;
+  } catch (error) {
+    console.error("[Dashboard] Profile fetch error:", error);
+    redirect("/login");
+  }
 
   if (!profile) redirect("/login");
 
   const role = profile.role as UserRole;
 
   if (role === "employee") {
-    const dashboardData = await fetchEmployeeDashboardData(user.id, profile);
-    return <EmployeeDashboard data={dashboardData} />;
+    try {
+      const dashboardData = await fetchEmployeeDashboardData(user.id, profile);
+      return <EmployeeDashboard data={dashboardData} />;
+    } catch (error) {
+      console.error("[Dashboard] Employee dashboard data fetch error:", error);
+      return (
+        <div className="p-8">
+          <h1 className="text-xl font-semibold mb-4">Dashboard Error</h1>
+          <p className="text-red-600">Failed to load dashboard data. Please try again or contact support.</p>
+          <p className="text-sm text-gray-500 mt-2">Error: {error instanceof Error ? error.message : String(error)}</p>
+        </div>
+      );
+    }
   }
 
-  const stats = await fetchDashboardStats();
+  let stats;
+  try {
+    stats = await fetchDashboardStats();
+  } catch (error) {
+    console.error("[Dashboard] Stats fetch error:", error);
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-semibold mb-4">Dashboard Error</h1>
+        <p className="text-red-600">Failed to load dashboard statistics. Please try again or contact support.</p>
+        <p className="text-sm text-gray-500 mt-2">Error: {error instanceof Error ? error.message : String(error)}</p>
+      </div>
+    );
+  }
 
   switch (role) {
     case "super_admin":
