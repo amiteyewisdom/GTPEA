@@ -2,12 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UserRole } from "@/lib/role-menus";
 import { fetchDashboardStats, fetchEmployeeDashboardData } from "@/lib/dashboard/fetch-stats";
-import EmployeeDashboard from "@/features/dashboard/EmployeeDashboard";
-import SuperAdminDashboard from "@/features/dashboard/SuperAdminDashboard";
-import AdministratorDashboard from "@/features/dashboard/AdministratorDashboard";
-import ChairpersonDashboard from "@/features/dashboard/ChairpersonDashboard";
-import FundManagerDashboard from "@/features/dashboard/FundManagerDashboard";
-import UnionRepDashboard from "@/features/dashboard/UnionRepDashboard";
+import DashboardWrapper from "@/features/dashboard/DashboardWrapper";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +31,7 @@ export default async function DashboardRouter() {
   if (role === "employee") {
     try {
       const dashboardData = await fetchEmployeeDashboardData(user.id, profile);
-      return <EmployeeDashboard data={dashboardData} />;
+      return <DashboardWrapper role={role} data={dashboardData} />;
     } catch (error) {
       console.error("[Dashboard] Employee dashboard error:", error);
       return (
@@ -63,18 +58,5 @@ export default async function DashboardRouter() {
     );
   }
 
-  switch (role) {
-    case "super_admin":
-      return <SuperAdminDashboard stats={stats} />;
-    case "administrator":
-      return <AdministratorDashboard stats={stats} />;
-    case "chairperson":
-      return <ChairpersonDashboard stats={stats} />;
-    case "fund_manager":
-      return <FundManagerDashboard stats={stats} />;
-    case "union_rep":
-      return <UnionRepDashboard stats={stats} />;
-    default:
-      redirect("/login");
-  }
+  return <DashboardWrapper role={role} stats={stats} />;
 }
