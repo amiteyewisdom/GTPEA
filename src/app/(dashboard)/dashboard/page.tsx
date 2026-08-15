@@ -16,7 +16,7 @@ export default async function DashboardRouter() {
       .select("*")
       .eq("id", user.id)
       .single();
-    profile = profileRes.data;
+    profile = profileRes?.data;
   } catch (error) {
     console.error("[Dashboard] Profile fetch error:", error);
     redirect("/login");
