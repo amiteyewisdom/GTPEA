@@ -3,6 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { UserRole } from "@/lib/role-menus";
 import { fetchDashboardStats, fetchEmployeeDashboardData } from "@/lib/dashboard/fetch-stats";
 import EmployeeDashboard from "@/features/dashboard/EmployeeDashboard";
+import SuperAdminDashboard from "@/features/dashboard/SuperAdminDashboard";
+import AdministratorDashboard from "@/features/dashboard/AdministratorDashboard";
+import ChairpersonDashboard from "@/features/dashboard/ChairpersonDashboard";
+import FundManagerDashboard from "@/features/dashboard/FundManagerDashboard";
+import UnionRepDashboard from "@/features/dashboard/UnionRepDashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -28,38 +33,48 @@ export default async function DashboardRouter() {
 
   const role = profile.role as UserRole;
 
-  // Completely simplified dashboard without any data fetching
-  return (
-    <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold mb-2">Welcome Back, {profile.full_name || 'User'}</h1>
-        <p className="text-gray-600">Manage your savings, loans, and financial goals</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-6 bg-white border rounded-lg">
-          <h3 className="text-sm text-gray-600 mb-2">Savings Balance</h3>
-          <p className="text-2xl font-bold">Loading...</p>
+  if (role === "employee") {
+    try {
+      const dashboardData = await fetchEmployeeDashboardData(user.id, profile);
+      return <EmployeeDashboard data={dashboardData} />;
+    } catch (error) {
+      console.error("[Dashboard] Employee dashboard error:", error);
+      return (
+        <div className="p-8">
+          <h1 className="text-2xl font-bold mb-4">Dashboard Error</h1>
+          <p className="text-red-600">Failed to load dashboard data. Please try again or contact support.</p>
+          <p className="text-sm text-gray-500 mt-2">Error: {error instanceof Error ? error.message : String(error)}</p>
         </div>
-        <div className="p-6 bg-white border rounded-lg">
-          <h3 className="text-sm text-gray-600 mb-2">Loan Balance</h3>
-          <p className="text-2xl font-bold">Loading...</p>
-        </div>
-        <div className="p-6 bg-white border rounded-lg">
-          <h3 className="text-sm text-gray-600 mb-2">Pending Requests</h3>
-          <p className="text-2xl font-bold">Loading...</p>
-        </div>
-      </div>
+      );
+    }
+  }
 
-      <div className="p-6 bg-white border rounded-lg">
-        <h3 className="text-lg font-semibold mb-4">Active Loans</h3>
-        <p className="text-gray-600">Loading...</p>
+  let stats;
+  try {
+    stats = await fetchDashboardStats();
+  } catch (error) {
+    console.error("[Dashboard] Stats fetch error:", error);
+    return (
+      <div className="p-8">
+        <h1 className="text-2xl font-bold mb-4">Dashboard Error</h1>
+        <p className="text-red-600">Failed to load dashboard statistics. Please try again or contact support.</p>
+        <p className="text-sm text-gray-500 mt-2">Error: {error instanceof Error ? error.message : String(error)}</p>
       </div>
+    );
+  }
 
-      <div className="p-6 bg-white border rounded-lg">
-        <h3 className="text-lg font-semibold mb-4">Recent Activities</h3>
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    </div>
-  );
+  switch (role) {
+    case "super_admin":
+      return <SuperAdminDashboard stats={stats} />;
+    case "administrator":
+      return <AdministratorDashboard stats={stats} />;
+    case "chairperson":
+      return <ChairpersonDashboard stats={stats} />;
+    case "fund_manager":
+      return <FundManagerDashboard stats={stats} />;
+    case "union_rep":
+      return <UnionRepDashboard stats={stats} />;
+    default:
+      redirect("/login");
+  }
 }
