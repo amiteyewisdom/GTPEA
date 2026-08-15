@@ -444,7 +444,7 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
               {expenses.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-10 text-center text-sm text-brand-text-secondary">
-                    No expenses recorded yet. Click "Add Expense" to get started.
+                    No expenses recorded yet. Click &quot;Add Expense&quot; to get started.
                   </td>
                 </tr>
               ) : (
