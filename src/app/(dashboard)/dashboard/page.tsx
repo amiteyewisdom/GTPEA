@@ -33,7 +33,7 @@ export default async function DashboardRouter() {
 
   try {
     if (role === "employee") {
-      data = await fetchEmployeeDashboardData(user.id);
+      data = await fetchEmployeeDashboardData(user.id, profile);
     } else {
       stats = await fetchDashboardStats();
     }
