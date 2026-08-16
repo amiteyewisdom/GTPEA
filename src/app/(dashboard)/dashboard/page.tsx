@@ -1,8 +1,47 @@
-export default function DashboardRouter() {
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { UserRole } from "@/lib/role-menus";
+import { fetchDashboardStats, fetchEmployeeDashboardData } from "@/lib/dashboard/fetch-stats";
+import DashboardWrapper from "@/features/dashboard/DashboardWrapper";
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardRouter() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  let profile: any;
+  try {
+    const profileRes = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+    profile = profileRes.data;
+  } catch (error) {
+    console.error("[Dashboard] Profile fetch error:", error);
+    redirect("/login");
+  }
+
+  if (!profile) redirect("/login");
+
+  const role = profile.role as UserRole;
+
+  let data = null;
+  let stats = null;
+
+  try {
+    if (role === "employee") {
+      data = await fetchEmployeeDashboardData(user.id);
+    } else {
+      stats = await fetchDashboardStats();
+    }
+  } catch (error) {
+    console.error("[Dashboard] Data fetch error:", error);
+  }
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <p>Welcome back!</p>
-    </div>
+    <DashboardWrapper role={role} data={data} stats={stats} />
   );
 }

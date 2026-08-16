@@ -1,12 +1,6 @@
 'use client';
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import EmployeeDashboard from './EmployeeDashboard';
-import SuperAdminDashboard from './SuperAdminDashboard';
-import AdministratorDashboard from './AdministratorDashboard';
-import ChairpersonDashboard from './ChairpersonDashboard';
-import FundManagerDashboard from './FundManagerDashboard';
-import UnionRepDashboard from './UnionRepDashboard';
+import React, { Component, ErrorInfo, ReactNode, Suspense, lazy } from 'react';
 
 interface Props {
   role: string;
@@ -48,15 +42,48 @@ class DashboardErrorBoundary extends Component<{ children: ReactNode }, State> {
   }
 }
 
+// Dynamic imports to isolate component loading errors
+const EmployeeDashboard = lazy(() => import('./EmployeeDashboard').catch(e => {
+  console.error('Failed to load EmployeeDashboard:', e);
+  return { default: () => <div>Error loading Employee Dashboard</div> };
+}));
+
+const SuperAdminDashboard = lazy(() => import('./SuperAdminDashboard').catch(e => {
+  console.error('Failed to load SuperAdminDashboard:', e);
+  return { default: () => <div>Error loading Super Admin Dashboard</div> };
+}));
+
+const AdministratorDashboard = lazy(() => import('./AdministratorDashboard').catch(e => {
+  console.error('Failed to load AdministratorDashboard:', e);
+  return { default: () => <div>Error loading Administrator Dashboard</div> };
+}));
+
+const ChairpersonDashboard = lazy(() => import('./ChairpersonDashboard').catch(e => {
+  console.error('Failed to load ChairpersonDashboard:', e);
+  return { default: () => <div>Error loading Chairperson Dashboard</div> };
+}));
+
+const FundManagerDashboard = lazy(() => import('./FundManagerDashboard').catch(e => {
+  console.error('Failed to load FundManagerDashboard:', e);
+  return { default: () => <div>Error loading Fund Manager Dashboard</div> };
+}));
+
+const UnionRepDashboard = lazy(() => import('./UnionRepDashboard').catch(e => {
+  console.error('Failed to load UnionRepDashboard:', e);
+  return { default: () => <div>Error loading Union Rep Dashboard</div> };
+}));
+
 export default function DashboardWrapper({ role, data, stats }: Props) {
   return (
     <DashboardErrorBoundary>
-      {role === 'employee' && <EmployeeDashboard data={data} />}
-      {role === 'super_admin' && <SuperAdminDashboard stats={stats} />}
-      {role === 'administrator' && <AdministratorDashboard stats={stats} />}
-      {role === 'chairperson' && <ChairpersonDashboard stats={stats} />}
-      {role === 'fund_manager' && <FundManagerDashboard stats={stats} />}
-      {role === 'union_rep' && <UnionRepDashboard stats={stats} />}
+      <Suspense fallback={<div className="p-8">Loading dashboard...</div>}>
+        {role === 'employee' && <EmployeeDashboard data={data} />}
+        {role === 'super_admin' && <SuperAdminDashboard stats={stats} />}
+        {role === 'administrator' && <AdministratorDashboard stats={stats} />}
+        {role === 'chairperson' && <ChairpersonDashboard stats={stats} />}
+        {role === 'fund_manager' && <FundManagerDashboard stats={stats} />}
+        {role === 'union_rep' && <UnionRepDashboard stats={stats} />}
+      </Suspense>
     </DashboardErrorBoundary>
   );
 }
