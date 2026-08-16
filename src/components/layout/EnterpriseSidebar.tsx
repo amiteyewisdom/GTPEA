@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, User, X } from "lucide-react";
 import { getMenuItemsForRole, UserRole } from "@/lib/role-menus";
 import { formatRoleLabel, isNavItemActive } from "@/lib/navigation";
-import LogoutButton from "./LogoutButton";
+// import LogoutButton from "./LogoutButton";
 
 const BADGE_PATHS = ['/approvals', '/loan-reviews', '/final-approvals'];
 
@@ -146,7 +146,7 @@ export default function EnterpriseSidebar({
                   <User className="h-4 w-4" />
                   Profile
                 </Link>
-                <LogoutButton onBeforeLogout={onClose} />
+                {/* <LogoutButton onBeforeLogout={onClose} /> */}
               </div>
             </div>
           ) : (
@@ -162,7 +162,7 @@ export default function EnterpriseSidebar({
               >
                 <User className="h-5 w-5" />
               </Link>
-              <LogoutButton compact onBeforeLogout={onClose} />
+              {/* <LogoutButton compact onBeforeLogout={onClose} /> */}
             </div>
           )}
         </div>
