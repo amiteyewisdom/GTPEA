@@ -16,6 +16,8 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
+    console.log("Attempting sign in with:", email);
+
     const supabase = createClient();
     await supabase.auth.signOut();
 
@@ -24,12 +26,16 @@ export default function LoginPage() {
       password,
     });
 
+    console.log("Sign in result:", { signInError });
+
     if (signInError) {
+      console.error("Sign in error:", signInError);
       setError(signInError.message || "Unable to sign in.");
       setLoading(false);
       return;
     }
 
+    console.log("Sign in successful, redirecting to dashboard");
     window.location.href = "/dashboard";
   };
 
