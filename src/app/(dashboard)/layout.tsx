@@ -49,6 +49,12 @@ export default async function DashboardLayout({
       .select("full_name, role, avatar_url")
       .eq("user_id", user.id)
       .single();
+    
+    if (profileRes.error) {
+      console.error('Dashboard layout - profile error:', profileRes.error);
+      // Don't redirect on profile error, use defaults
+    }
+    
     const profile = profileRes.data as Profile | null;
     const role = profile?.role ?? "employee";
 

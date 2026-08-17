@@ -18,6 +18,7 @@
     "@mui/material": "^6.4.0",
     "@mui/x-data-grid": "^7.23.0",
     "@mui/x-date-pickers": "^7.23.0",
+    "@supabase/server": "^1.4.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.107.0",
     "clsx": "^2.1.1",

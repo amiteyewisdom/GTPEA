@@ -277,14 +277,14 @@ function ActivityRow({ type, description, amount, date, status }: any) {
     failed: 'text-brand-danger',
   };
 
-  const TypeIcon = typeIcons[type as keyof typeof typeIcons];
-  const StatusIcon = statusIcons[status as keyof typeof statusIcons];
+  const TypeIcon = typeIcons[type as keyof typeof typeIcons] || BadgeCent;
+  const StatusIcon = statusIcons[status as keyof typeof statusIcons] || Clock;
 
   return (
     <div className="flex items-center justify-between p-3 rounded-lg bg-brand-card-bg hover:bg-brand-hover transition-all">
       <div className="flex items-center gap-4">
         <div className={`p-2 rounded-lg ${type === 'deposit' || type === 'dividend' ? 'bg-brand-success/20 text-brand-success' : 'bg-brand-accent/20 text-brand-accent'}`}>
-          <TypeIcon className="w-5 h-5" />
+          {TypeIcon && <TypeIcon className="w-5 h-5" />}
         </div>
         <div>
           <p className="text-brand-text font-medium">{description}</p>
@@ -295,7 +295,7 @@ function ActivityRow({ type, description, amount, date, status }: any) {
         <span className={`text-brand-text font-bold ${type === 'withdrawal' ? 'text-brand-danger' : ''}`}>
           {type === 'withdrawal' ? '-' : '+'}{amount}
         </span>
-        <StatusIcon className={`w-5 h-5 ${statusColors[status as keyof typeof statusColors]}`} />
+        {StatusIcon && <StatusIcon className={`w-5 h-5 ${statusColors[status as keyof typeof statusColors]}`} />}
       </div>
     </div>
   );

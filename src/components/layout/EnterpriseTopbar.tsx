@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, Bell, MessageSquare, User, ChevronDown, Shield, Menu } from "lucide-react";
 import { formatRoleLabel } from "@/lib/navigation";
-// import LogoutButton from "./LogoutButton";
+import LogoutButton from "./LogoutButton";
 
 type EnterpriseTopbarProps = {
   userName?: string;
@@ -124,7 +124,7 @@ export default function EnterpriseTopbar({
                 </div>
 
                 <div className="border-t border-brand-card-border p-2">
-                  {/* <LogoutButton menu onBeforeLogout={() => setShowUserMenu(false)} /> */}
+  <LogoutButton menu onBeforeLogout={() => setShowUserMenu(false)} />
                 </div>
               </div>
             )}
