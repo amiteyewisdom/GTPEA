@@ -172,7 +172,8 @@ export function LoanApplication({
   const amountWarn = amountWarning(principal, maxBorrowable);
   const termValidation = termError(selectedProduct, duration);
   const guarantorMissing = requiresGuarantor && !guarantorId;
-  const formValid = !amountValidation && !termValidation && Boolean(selectedProduct) && principal > 0 && !guarantorMissing;
+  const noSavings = savingsBalance === 0;
+  const formValid = !amountValidation && !termValidation && Boolean(selectedProduct) && principal > 0 && !guarantorMissing && !noSavings;
 
   const handleProductChange = (nextProductId: string) => {
     const product = loanProducts.find((item) => item.id === nextProductId);
@@ -240,6 +241,20 @@ export function LoanApplication({
         <h3 className="text-lg font-bold text-brand-text mb-2">No loan products available</h3>
         <p className="text-brand-text-secondary text-sm max-w-sm mx-auto">
           Loan products have not been configured yet. Please ask your administrator to run the setup script to add the GTPEA loan products.
+        </p>
+      </GlassCard>
+    );
+  }
+
+  if (savingsBalance === 0) {
+    return (
+      <GlassCard className="p-8 mb-6 text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-50 border border-red-200 mb-4">
+          <AlertCircle className="w-7 h-7 text-red-500" />
+        </div>
+        <h3 className="text-lg font-bold text-brand-text mb-2">No Savings Balance</h3>
+        <p className="text-brand-text-secondary text-sm max-w-sm mx-auto">
+          You need to have savings before you can apply for a loan. Please make a deposit to your savings account first.
         </p>
       </GlassCard>
     );

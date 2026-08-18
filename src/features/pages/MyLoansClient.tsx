@@ -177,11 +177,6 @@ export function MyLoansClient({
                             {feedbackDate}
                           </span>
                         )}
-                        {loan.status === "rejected" && loan.rejection_reason_code && (
-                          <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200" title={loan.rejection_reason_code}>
-                            {REJECTION_REASON_CODES.find((r) => r.code === loan.rejection_reason_code)?.label ?? loan.rejection_reason_code}
-                          </span>
-                        )}
                         <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold capitalize text-brand-text-secondary">
                           {loan.status}
                         </span>
@@ -193,6 +188,13 @@ export function MyLoansClient({
                       <LoanDetail label="Outstanding Balance" value={getOutstanding(loan)} />
                       <LoanDetail label="Total Interest" value={formatCurrency(totalInterest)} />
                     </div>
+
+                    {loan.status === "rejected" && (
+                      <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                        <p className="font-semibold">This application was rejected</p>
+                        <p className="mt-1">You can amend the application and resubmit it for review.</p>
+                      </div>
+                    )}
                     {(guarantor || (loan.loan_guarantors && loan.loan_guarantors.length > 0)) && (
                       <div className="mt-3 space-y-2 rounded-lg border border-brand-card-border bg-white/50 px-3 py-2 text-xs text-brand-text-secondary">
                         {guarantor && (
@@ -202,10 +204,6 @@ export function MyLoansClient({
                             <span className="text-brand-text">
                               {guarantor.first_name} {guarantor.last_name} ({guarantor.employee_no})
                             </span>
-                            {loan.guarantor_account && <span>· Ac/No: {loan.guarantor_account}</span>}
-                            {loan.guarantor_amount !== null && loan.guarantor_amount !== undefined && (
-                              <span>· Approved: {formatCurrency(Number(loan.guarantor_amount))}</span>
-                            )}
                           </div>
                         )}
                         {(loan.loan_guarantors ?? []).map((entry: any, index: number) =>

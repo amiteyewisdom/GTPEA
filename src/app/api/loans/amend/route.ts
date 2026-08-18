@@ -58,7 +58,7 @@ async function handleAmend(body: any) {
     return NextResponse.json({ error: "Only employees can amend facility applications." }, { status: 403 });
   }
 
-  const [productRes, loanRes, guarantorsRes] = await Promise.all([
+  const [productRes, loanRes, guarantorsRes, existingApprovalRes] = await Promise.all([
     supabase
       .from("loan_products")
       .select("id, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, is_active, requires_guarantor")
@@ -71,6 +71,12 @@ async function handleAmend(body: any) {
       .eq("employee_id", employee.employeeId)
       .single(),
     supabase.from("loan_guarantors").select("guarantor_id").eq("loan_id", loanId),
+    supabase
+      .from("approvals")
+      .select("id, status, rejection_stage, rejection_reason")
+      .eq("entity_id", loanId)
+      .eq("entity_type", "loan")
+      .single(),
   ]);
 
   const product = productRes.data as {
@@ -167,13 +173,19 @@ async function handleAmend(body: any) {
     await (admin.from("approvals") as any).delete().in("id", approvalIds);
   }
 
+  // If this was a rejected loan, skip to the rejection stage
+  const existingApproval = existingApprovalRes.data as { status: string; rejection_stage?: number; rejection_reason?: string } | null;
+  const startStage = (existingApproval?.status === "rejected" && existingApproval.rejection_stage) ? existingApproval.rejection_stage : 1;
+
   const approvalRes = await (admin.from("approvals") as any).insert({
     entity_type: "loan",
     entity_id: loanId,
     status: "pending",
-    current_stage: 1,
+    current_stage: startStage,
     total_stages: APPROVAL_STAGES.length,
     submitted_by: employee.userId,
+    rejection_stage: existingApproval?.rejection_stage || null,
+    rejection_reason: existingApproval?.rejection_reason || null,
   });
 
   if (approvalRes.error) {
@@ -181,8 +193,12 @@ async function handleAmend(body: any) {
     return NextResponse.json({ error: approvalRes.error.message }, { status: 500 });
   }
 
+  const message = startStage > 1
+    ? `Facility application amended. It will go directly to ${existingApproval?.rejection_stage === 2 ? 'Union Rep' : existingApproval?.rejection_stage === 3 ? 'Fund Manager' : 'Chairperson'} for review.`
+    : "Facility application amended. The Facility Committee will review it first.";
+
   return NextResponse.json({
-    message: "Facility application amended. The Facility Committee will review it first.",
+    message,
     loan: { id: loanId },
   });
 }

@@ -76,6 +76,8 @@ export async function processApprovalAction(input: {
   if (action === "rejected") {
     approvalUpdates.status = "rejected";
     approvalUpdates.completed_at = new Date().toISOString();
+    approvalUpdates.rejection_stage = approval.current_stage;
+    approvalUpdates.rejection_reason = notes || reasonCode || null;
   } else if (action === "approved" && isFinalStage) {
     approvalUpdates.status = "approved";
     approvalUpdates.completed_at = new Date().toISOString();

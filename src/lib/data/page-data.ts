@@ -106,8 +106,20 @@ export async function fetchFundsData() {
 }
 
 export async function fetchMyLoansData() {
-  const { supabase, employeeUuid } = await getSessionProfile();
+  const { supabase, user, profile, employeeUuid: initialUuid } = await getSessionProfile();
+  let employeeUuid = initialUuid;
+
+  console.log("[fetchMyLoansData] Initial state:", { user: user?.id, profile, initialUuid });
+
+  // Fallback: look up employee by matching user_id directly on employees table
+  if (!employeeUuid && user) {
+    const byUser = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
+    employeeUuid = (byUser.data as any)?.id ?? null;
+    console.log("[fetchMyLoansData] Fallback lookup:", { byUser: byUser.data, employeeUuid });
+  }
+
   if (!employeeUuid) {
+    console.log("[fetchMyLoansData] No employeeUuid found, returning empty data");
     return { pending: 0, active: 0, totalBorrowed: 0, netAvailable: 0, savingsBalance: 0, activeLoanBalance: 0, loans: [] as any[], loanProducts: [] as any[] };
   }
 
@@ -115,7 +127,7 @@ export async function fetchMyLoansData() {
     supabase
       .from("loans")
       .select(
-        `id, loan_ref, status, amount_requested, amount_approved, amount_disbursed, outstanding_balance, monthly_repayment, approved_at, purpose, created_at, term_months, interest_rate, interest_calc_method, disbursement_date, loan_product_id, loan_products(name), guarantor_id, guarantor_account, guarantor_amount, guarantor:guarantor_id(first_name, last_name, employee_no, phone), loan_guarantors(guarantor_id, account_number, amount, guarantor:guarantor_id(first_name, last_name, employee_no)), rejection_reason_code`
+        `id, loan_ref, status, amount_requested, amount_approved, amount_disbursed, outstanding_balance, monthly_repayment, purpose, created_at, term_months, interest_rate, interest_calc_method, disbursement_date, loan_product_id, loan_products(name), guarantor_id, guarantor:guarantor_id(first_name, last_name, employee_no, phone), loan_guarantors(guarantor_id, account_number, amount, guarantor:guarantor_id(first_name, last_name, employee_no))`
       )
       .eq("employee_id", employeeUuid)
       .order("created_at", { ascending: false }),
@@ -127,6 +139,13 @@ export async function fetchMyLoansData() {
       .in("status", ["approved", "disbursed", "repaying"]),
     supabase.from("loan_products").select("*").eq("is_active", true),
   ]);
+
+  console.log("[fetchMyLoansData] Query results:", {
+    loansCount: loansRes.data?.length,
+    loansError: loansRes.error,
+    savingsCount: savingsRes.data?.length,
+    productsCount: productsRes.data?.length
+  });
 
   const rows = (loansRes.data ?? []) as any[];
   const savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
@@ -141,7 +160,8 @@ export async function fetchMyLoansData() {
     .reduce((sum, loan) => {
       return sum + (Number(loan.amount_disbursed) || Number(loan.amount_approved) || 0);
     }, 0);
-  return {
+
+  const result = {
     pending: rows.filter((l) => l.status === "pending").length,
     active: rows.filter((l) => ["disbursed", "repaying", "approved"].includes(l.status)).length,
     totalBorrowed,
@@ -151,6 +171,9 @@ export async function fetchMyLoansData() {
     loans: rows,
     loanProducts,
   };
+
+  console.log("[fetchMyLoansData] Returning:", result);
+  return result;
 }
 
 export async function fetchSavingsHistoryData() {
