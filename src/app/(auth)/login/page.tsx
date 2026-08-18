@@ -61,20 +61,20 @@ export default function LoginPage() {
         zIndex: 1,
         width: "100%",
         maxWidth: "400px",
-        backgroundColor: "rgba(255, 255, 255, 0.85)",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
         backdropFilter: "blur(10px)",
         borderRadius: "16px",
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
         padding: "32px",
-        border: "1px solid rgba(255, 255, 255, 0.3)"
+        border: "1px solid rgba(255, 255, 255, 0.5)"
       }}>
         <div style={{ marginBottom: "24px", textAlign: "center" }}>
           <div style={{
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            height: "64px",
-            width: "64px",
+            height: "80px",
+            width: "80px",
             marginBottom: "16px",
             borderRadius: "12px",
             backgroundColor: "rgba(255, 255, 255, 0.9)",

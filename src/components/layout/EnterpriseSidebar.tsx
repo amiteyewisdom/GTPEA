@@ -56,7 +56,7 @@ export default function EnterpriseSidebar({
             <img
               src="/images/gtpea-logo.jpeg"
               alt="GTPEA Logo"
-              className="h-10 w-10 object-contain mix-blend-multiply"
+              className="h-12 w-12 object-contain"
             />
             {!isCollapsed && (
               <div className="min-w-0">
