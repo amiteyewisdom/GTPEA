@@ -177,7 +177,7 @@ export default function ForgotPasswordPage() {
                 Forgot your password?
               </h2>
               <p style={{ fontSize: "14px", color: "#6b7280", lineHeight: "1.5" }}>
-                No problem. Enter your work email and we'll send a secure reset link.
+                No problem. Enter your work email and we&apos;ll send a secure reset link.
               </p>
             </div>
 
