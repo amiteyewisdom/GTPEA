@@ -53,9 +53,11 @@ export default function EnterpriseSidebar({
       >
         <div className="flex h-16 items-center justify-between border-b border-brand-card-border px-4">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-3" onClick={onClose}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-brand-accent text-lg font-bold text-brand-accent">
-              G
-            </div>
+            <img
+              src="/images/gtpea-logo.jpeg"
+              alt="GTPEA Logo"
+              className="h-10 w-10 object-contain mix-blend-multiply"
+            />
             {!isCollapsed && (
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold text-brand-text">
