@@ -167,7 +167,7 @@ async function handleApply(body: any) {
       processing_fee: 0,
       term_months: durationMonths,
       monthly_repayment: monthlyRepayment,
-      status: "pending",
+      status: allGuarantorIds.length > 0 ? "awaiting_guarantor_consent" : "pending",
       purpose: purpose || null,
       expected_completion_date: addMonths(new Date(), durationMonths).toISOString(),
       guarantor_id: guarantorId || null,
@@ -188,21 +188,26 @@ async function handleApply(body: any) {
     );
   }
 
-  const approvalRes = await (admin.from("approvals") as any).insert({
-    entity_type: "loan",
-    entity_id: loanRes.data.id,
-    status: "pending",
-    current_stage: 1,
-    total_stages: 4,
-    submitted_by: employee.userId,
-  });
+  // Only create approval record if no guarantors are required
+  // If guarantors are required, approval record will be created after all guarantors consent
+  let approvalRes;
+  if (allGuarantorIds.length === 0) {
+    approvalRes = await (admin.from("approvals") as any).insert({
+      entity_type: "loan",
+      entity_id: loanRes.data.id,
+      status: "pending",
+      current_stage: 1,
+      total_stages: 4,
+      submitted_by: employee.userId,
+    });
 
-  if (approvalRes.error) {
-    await admin.from("loans").delete().eq("id", loanRes.data.id);
-    return NextResponse.json(
-      { error: approvalRes.error.message ?? "Could not start approval workflow." },
-      { status: 500 }
-    );
+    if (approvalRes.error) {
+      await admin.from("loans").delete().eq("id", loanRes.data.id);
+      return NextResponse.json(
+        { error: approvalRes.error.message ?? "Could not start approval workflow." },
+        { status: 500 }
+      );
+    }
   }
 
   // Persist all guarantors and notify them

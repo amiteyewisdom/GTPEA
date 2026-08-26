@@ -307,6 +307,13 @@ export const menuItems: MenuItem[] = [
     roles: ['union_rep'],
   },
   {
+    id: 'guarantor-approvals',
+    label: 'Guarantor Approvals',
+    icon: Shield,
+    path: '/guarantor-approvals',
+    roles: ['union_rep', 'administrator', 'super_admin'],
+  },
+  {
     id: 'recommendations',
     label: 'Recommendations',
     icon: Star,
@@ -334,6 +341,20 @@ export const menuItems: MenuItem[] = [
     label: 'Apply for Facility',
     icon: BadgeCent,
     path: '/apply-loan',
+    roles: ['employee'],
+  },
+  {
+    id: 'become-guarantor',
+    label: 'Become Guarantor',
+    icon: Shield,
+    path: '/become-guarantor',
+    roles: ['employee'],
+  },
+  {
+    id: 'guarantor-requests',
+    label: 'Guarantor Requests',
+    icon: UserCheck,
+    path: '/guarantor-requests',
     roles: ['employee'],
   },
   {

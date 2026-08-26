@@ -1,0 +1,49 @@
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import BecomeGuarantorClient from "@/features/guarantors/BecomeGuarantorClient";
+
+export default async function BecomeGuarantorPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("full_name, role")
+    .eq("user_id", user.id)
+    .single();
+
+  if (profileError || !profile) {
+    redirect("/dashboard");
+  }
+
+  const typedProfile = profile as { full_name: string; role: string };
+
+  const employeeRes = await supabase
+    .from("employees")
+    .select("id, guarantor_status, guarantor_application_date, guarantor_notes, guarantor_approved_at, blacklist_reason")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const employee = employeeRes.data as {
+    id: string;
+    guarantor_status: string | null;
+    guarantor_application_date: string | null;
+    guarantor_notes: string | null;
+    guarantor_approved_at: string | null;
+    blacklist_reason: string | null;
+  } | null;
+
+  return (
+    <BecomeGuarantorClient
+      employee={employee}
+      userName={typedProfile.full_name}
+    />
+  );
+}

@@ -30,6 +30,7 @@ export default async function ApplyLoanPage() {
       .from("employees")
       .select("id, first_name, last_name, employee_no, savings(account_number)")
       .eq("status", "active")
+      .eq("guarantor_status", "approved")
       .order("first_name"),
   ]);
 

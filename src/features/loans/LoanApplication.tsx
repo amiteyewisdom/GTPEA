@@ -246,20 +246,6 @@ export function LoanApplication({
     );
   }
 
-  if (savingsBalance === 0) {
-    return (
-      <GlassCard className="p-8 mb-6 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-50 border border-red-200 mb-4">
-          <AlertCircle className="w-7 h-7 text-red-500" />
-        </div>
-        <h3 className="text-lg font-bold text-brand-text mb-2">No Savings Balance</h3>
-        <p className="text-brand-text-secondary text-sm max-w-sm mx-auto">
-          You need to have savings before you can apply for a loan. Please make a deposit to your savings account first.
-        </p>
-      </GlassCard>
-    );
-  }
-
   return (
     <GlassCard id="loan-application" className="p-6 mb-6">
       <div className="space-y-6">

@@ -15,9 +15,23 @@ export default async function ProfilePage() {
     .eq("user_id", user!.id)
     .single();
 
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("guarantor_status")
+    .eq("user_id", user!.id)
+    .maybeSingle();
+
+  const typedProfile = profile as any;
+  const typedEmployee = employee as any;
+
+  const profileWithGuarantor = typedProfile ? {
+    ...typedProfile,
+    guarantor_status: typedEmployee?.guarantor_status || null
+  } : null;
+
   return (
     <ProfileClient
-      profile={profile}
+      profile={profileWithGuarantor}
       email={user?.email ?? ""}
     />
   );

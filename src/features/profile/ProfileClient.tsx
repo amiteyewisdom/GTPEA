@@ -13,6 +13,7 @@ interface ProfileData {
   avatar_url: string | null;
   phone: string | null;
   employee_id: string | null;
+  guarantor_status: string | null;
 }
 
 interface ProfileClientProps {
@@ -28,23 +29,53 @@ const ROLE_BADGE: Record<string, string> = {
   employee:      "bg-slate-100 text-slate-600",
 };
 
+const GUARANTOR_BADGE: Record<string, string> = {
+  approved: "bg-green-100 text-green-700",
+  pending: "bg-amber-100 text-amber-700",
+  suspended: "bg-red-100 text-red-700",
+  blacklisted: "bg-gray-100 text-gray-700",
+};
+
 export function ProfileClient({ profile, email }: ProfileClientProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
+  const [emailState, setEmailState] = useState(email);
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const displayRole = profile?.role === "super_admin" ? "administrator" : (profile?.role ?? "employee");
   const roleBadge = ROLE_BADGE[displayRole] ?? ROLE_BADGE.employee;
+  const guarantorBadge = profile?.guarantor_status ? GUARANTOR_BADGE[profile.guarantor_status] : null;
   const initial = (fullName?.[0] ?? "U").toUpperCase();
 
   const handleSave = async () => {
     setLoading(true);
     setMessage(null);
     const supabase = createClient() as any;
-    const { error } = await supabase.from("profiles").update({ full_name: fullName, phone }).eq("id", profile!.id);
+
+    // Update email in auth if changed
+    if (emailState !== email) {
+      const { error: emailError } = await supabase.auth.updateUser({
+        email: emailState
+      });
+      if (emailError) {
+        setMessage({ type: "error", text: emailError.message });
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Update profile
+    const { error } = await supabase.from("profiles").update({ 
+      full_name: fullName, 
+      phone,
+      avatar_url: avatarUrl || null
+    }).eq("id", profile!.id);
+    
     if (error) {
       setMessage({ type: "error", text: error.message });
     } else {
@@ -56,9 +87,45 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
     setLoading(false);
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setMessage(null);
+
+    try {
+      const supabase = createClient();
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile!.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+      setMessage({ type: "success", text: "Avatar uploaded successfully." });
+    } catch (error: any) {
+      setMessage({ type: "error", text: error.message || "Failed to upload avatar" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleCancel = () => {
     setFullName(profile?.full_name ?? "");
     setPhone(profile?.phone ?? "");
+    setEmailState(email);
+    setAvatarUrl(profile?.avatar_url ?? "");
     setEditing(false);
   };
 
@@ -83,15 +150,39 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
       {/* Header */}
       <GlassCard className="p-5">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-green/10 text-2xl font-bold text-brand-green ring-2 ring-brand-green/20">
-            {initial}
+          <div className="relative">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-green/20"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-green/10 text-2xl font-bold text-brand-green ring-2 ring-brand-green/20">
+                {initial}
+              </div>
+            )}
+            {editing && (
+              <label className="absolute bottom-0 right-0 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-brand-green text-white hover:bg-brand-green-dark">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+                <Edit2 className="h-3 w-3" />
+              </label>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-bold text-brand-text truncate">{fullName || "—"}</h2>
             <p className="text-sm text-brand-text-secondary truncate">{email}</p>
-            <span className={`mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadge}`}>
-              {displayRole.replace("_", " ")}
-            </span>
+            {guarantorBadge && (
+              <span className={`mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${guarantorBadge}`}>
+                Guarantor: {profile?.guarantor_status?.replace("_", " ")}
+              </span>
+            )}
           </div>
           {!editing ? (
             <button
@@ -129,11 +220,11 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
             <label className="mb-1 block text-xs font-medium text-brand-text-secondary">Email Address</label>
             <input
               type="email"
-              value={email}
-              disabled
-              className="w-full rounded-lg border border-brand-card-border bg-slate-50 px-3 py-2.5 text-sm text-brand-text"
+              value={emailState}
+              onChange={(e) => setEmailState(e.target.value)}
+              disabled={!editing}
+              className="w-full rounded-lg border border-brand-card-border bg-white px-3 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green disabled:bg-slate-50 disabled:text-brand-text"
             />
-            <p className="mt-1 text-xs text-brand-text-secondary">Email cannot be changed here</p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-brand-text-secondary">Phone Number</label>
@@ -153,15 +244,6 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
               value={profile?.employee_id ?? "—"}
               disabled
               className="w-full rounded-lg border border-brand-card-border bg-slate-50 px-3 py-2.5 text-sm font-mono text-brand-text"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-brand-text-secondary">Role</label>
-            <input
-              type="text"
-              value={displayRole.replace("_", " ")}
-              disabled
-              className="w-full rounded-lg border border-brand-card-border bg-slate-50 px-3 py-2.5 text-sm capitalize text-brand-text"
             />
           </div>
         </div>
