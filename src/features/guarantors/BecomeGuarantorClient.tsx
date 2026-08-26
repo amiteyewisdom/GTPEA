@@ -72,7 +72,7 @@ export default function BecomeGuarantorClient({
               Apply to Become a Guarantor
             </h2>
             <p className="text-sm text-brand-text-secondary mb-6 max-w-md mx-auto">
-              As a guarantor, you can support other employees' loan applications. This is a
+              As a guarantor, you can support other employees&apos; loan applications. This is a
               serious responsibility that requires approval from the Union Representative.
             </p>
 
