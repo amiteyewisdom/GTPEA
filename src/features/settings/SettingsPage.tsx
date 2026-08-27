@@ -68,7 +68,6 @@ export default function SettingsPage({ currentRole }: SettingsPageProps) {
 
         {/* Settings Content */}
         <div className="lg:col-span-3">
-          {activeTab === 'profile' && <ProfileSettings />}
           {activeTab === 'security' && <SecuritySettings />}
           {activeTab === 'notifications' && <NotificationSettings />}
           {activeTab === 'interest' && <InterestRateSettings />}
@@ -85,7 +84,6 @@ export default function SettingsPage({ currentRole }: SettingsPageProps) {
 
 function getAvailableTabs(role: UserRole) {
   const commonTabs = [
-    { id: 'profile', label: 'Profile', icon: User },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
@@ -106,9 +104,7 @@ function getAvailableTabs(role: UserRole) {
     union_rep: [],
     chairperson: [],
     facility_committee: [],
-    employee: [
-      { id: 'password', label: 'Password', icon: Lock },
-    ],
+    employee: [],
   };
 
   return [...commonTabs, ...(roleSpecificTabs[role] || [])];
