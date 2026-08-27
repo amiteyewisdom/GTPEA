@@ -112,8 +112,19 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
         .from('avatars')
         .getPublicUrl(filePath);
 
+      // Save the avatar URL to the database
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", profile!.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
       setAvatarUrl(publicUrl);
-      setMessage({ type: "success", text: "Avatar uploaded successfully." });
+      setMessage({ type: "success", text: "Avatar uploaded and saved successfully." });
+      router.refresh();
     } catch (error: any) {
       setMessage({ type: "error", text: error.message || "Failed to upload avatar" });
     } finally {
