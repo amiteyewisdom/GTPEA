@@ -46,6 +46,7 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   const displayRole = profile?.role === "super_admin" ? "administrator" : (profile?.role ?? "employee");
   const roleBadge = ROLE_BADGE[displayRole] ?? ROLE_BADGE.employee;
@@ -112,6 +113,8 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
         .from('avatars')
         .getPublicUrl(filePath);
 
+      console.log('Avatar public URL:', publicUrl);
+
       // Save the avatar URL to the database
       const { error: updateError } = await (supabase as any)
         .from("profiles")
@@ -123,9 +126,11 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
       }
 
       setAvatarUrl(publicUrl);
+      setImageError(false);
       setMessage({ type: "success", text: "Avatar uploaded and saved successfully." });
-      router.refresh();
+      setTimeout(() => router.refresh(), 500);
     } catch (error: any) {
+      console.error('Avatar upload error:', error);
       setMessage({ type: "error", text: error.message || "Failed to upload avatar" });
     } finally {
       setUploading(false);
@@ -162,11 +167,19 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
       <GlassCard className="p-5">
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
-            {avatarUrl ? (
+            {avatarUrl && !imageError ? (
               <img
                 src={avatarUrl}
                 alt="Avatar"
                 className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-green/20"
+                onError={() => {
+                  console.error('Image failed to load:', avatarUrl);
+                  setImageError(true);
+                }}
+                onLoad={() => {
+                  console.log('Image loaded successfully:', avatarUrl);
+                  setImageError(false);
+                }}
               />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-green/10 text-2xl font-bold text-brand-green ring-2 ring-brand-green/20">
