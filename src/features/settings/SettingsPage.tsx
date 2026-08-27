@@ -152,6 +152,51 @@ function ProfileSettings() {
 
 function SecuritySettings() {
   const [showPassword, setShowPassword] = useState(false);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const response = await fetch('/api/sessions');
+      const data = await response.json();
+      setSessions(data.sessions || []);
+    } catch (error) {
+      console.error('Failed to fetch sessions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      await fetch('/api/sessions/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      await fetchSessions();
+    } catch (error) {
+      console.error('Failed to revoke session:', error);
+    }
+  };
+
+  const formatTimeAgo = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  };
 
   return (
     <GlassCard className="p-6">
@@ -184,11 +229,24 @@ function SecuritySettings() {
         {/* Active Sessions */}
         <div>
           <h3 className="text-lg font-medium text-white mb-4">Active Sessions</h3>
-          <div className="space-y-3">
-            <SessionItem device="Chrome on Windows" location="New York, USA" time="Current session" current />
-            <SessionItem device="Safari on iPhone" location="New York, USA" time="2 hours ago" />
-            <SessionItem device="Firefox on Mac" location="Boston, USA" time="1 day ago" />
-          </div>
+          {loading ? (
+            <p className="text-brand-text-secondary text-sm">Loading sessions...</p>
+          ) : sessions.length === 0 ? (
+            <p className="text-brand-text-secondary text-sm">No active sessions</p>
+          ) : (
+            <div className="space-y-3">
+              {sessions.map((session) => (
+                <SessionItem
+                  key={session.id}
+                  device={`${session.browser} on ${session.os}`}
+                  location={`${session.location_city}, ${session.location_country}`}
+                  time={session.is_current ? 'Current session' : formatTimeAgo(session.created_at)}
+                  current={session.is_current}
+                  onRevoke={() => handleRevokeSession(session.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end">
@@ -541,7 +599,7 @@ function NotificationSection({ title, items }: any) {
   );
 }
 
-function SessionItem({ device, location, time, current }: any) {
+function SessionItem({ device, location, time, current, onRevoke }: any) {
   return (
     <div className={`flex items-center justify-between p-3 rounded-lg ${current ? 'bg-brand-accent/10 border border-brand-accent/30' : 'bg-brand-card-bg border border-brand-card-border'}`}>
       <div>
@@ -549,7 +607,10 @@ function SessionItem({ device, location, time, current }: any) {
         <p className="text-brand-text-secondary text-xs">{location} • {time}</p>
       </div>
       {!current && (
-        <button className="text-brand-danger text-sm hover:text-brand-danger/80 transition-all">
+        <button 
+          onClick={onRevoke}
+          className="text-brand-danger text-sm hover:text-brand-danger/80 transition-all"
+        >
           Revoke
         </button>
       )}

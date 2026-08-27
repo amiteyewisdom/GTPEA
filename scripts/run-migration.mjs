@@ -3,7 +3,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const migrationPath = join(__dirname, "../supabase/migrations/setup_avatars_storage_policies.sql");
+const migrationPath = join(__dirname, "../supabase/migrations/add_sessions_table.sql");
 const sql = readFileSync(migrationPath, "utf8");
 
 console.log("Paste the SQL below into Supabase → SQL Editor → Run:\n");

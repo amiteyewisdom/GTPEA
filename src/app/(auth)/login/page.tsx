@@ -35,7 +35,28 @@ export default function LoginPage() {
       return;
     }
 
-    console.log("Sign in successful, redirecting to dashboard");
+    console.log("Sign in successful, tracking session");
+    // Track the session
+    try {
+      const userAgent = navigator.userAgent;
+      const ipAddress = await fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => data.ip)
+        .catch(() => 'unknown');
+
+      await fetch('/api/sessions/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_agent: userAgent,
+          ip_address: ipAddress,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to track session:", err);
+    }
+
+    console.log("Redirecting to dashboard");
     window.location.href = "/dashboard";
   };
 
