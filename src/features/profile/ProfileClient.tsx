@@ -98,7 +98,7 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
       const supabase = createClient();
       const fileExt = file.name.split('.').pop();
       const fileName = `${profile!.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const filePath = fileName;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
