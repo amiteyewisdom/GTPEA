@@ -113,7 +113,7 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
         .getPublicUrl(filePath);
 
       // Save the avatar URL to the database
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from("profiles")
         .update({ avatar_url: publicUrl })
         .eq("id", profile!.id);
