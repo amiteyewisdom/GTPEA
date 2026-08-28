@@ -222,7 +222,7 @@ export default function LoginPage() {
         top: isDesktop ? "50%" : "auto",
         left: isDesktop ? "auto" : "0",
         transform: isDesktop ? "translateY(-50%)" : "none",
-        width: isDesktop ? "400px" : "100%",
+        width: isDesktop ? "440px" : "100%",
         zIndex: 2,
         padding: isDesktop ? "0" : "24px",
       }}>
@@ -232,18 +232,18 @@ export default function LoginPage() {
           WebkitBackdropFilter: isDesktop ? "blur(24px)" : "none",
           border: isDesktop ? "1px solid rgba(255, 255, 255, 0.25)" : "1px solid rgba(255, 255, 255, 0.5)",
           borderRadius: "20px",
-          padding: "16px",
+          padding: "24px",
           boxShadow: isDesktop ? "0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(201, 164, 76, 0.15)" : "0 8px 32px rgba(0, 0, 0, 0.1)",
         }}>
           <div style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            marginBottom: "16px",
+            marginBottom: "24px",
           }}>
             <div style={{
-              width: "48px",
-              height: "48px",
+              width: "56px",
+              height: "56px",
               backgroundColor: "rgba(255, 255, 255, 0.9)",
               borderRadius: "12px",
               display: "flex",
@@ -251,7 +251,7 @@ export default function LoginPage() {
               justifyContent: "center",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
               border: "1px solid rgba(255, 255, 255, 0.3)",
-              marginBottom: "8px",
+              marginBottom: "12px",
             }}>
               <img
                 src="/images/gtpea-logo.jpeg"
@@ -260,7 +260,7 @@ export default function LoginPage() {
               />
             </div>
             <h2 style={{
-              fontSize: "20px",
+              fontSize: "24px",
               fontWeight: "700",
               color: isDesktop ? "#FFFFFF" : "#0F172A",
               margin: 0,
@@ -270,7 +270,7 @@ export default function LoginPage() {
             </h2>
           </div>
 
-          <form style={{ display: "flex", flexDirection: "column", gap: "12px" }} onSubmit={handleSubmit}>
+          <form style={{ display: "flex", flexDirection: "column", gap: "16px" }} onSubmit={handleSubmit}>
             {error && (
               <div style={{
                 borderRadius: "8px",
@@ -315,13 +315,13 @@ export default function LoginPage() {
                   autoComplete="email"
                   style={{
                     width: "100%",
-                    height: "48px",
-                    paddingLeft: "42px",
-                    paddingRight: "14px",
+                    height: "52px",
+                    paddingLeft: "46px",
+                    paddingRight: "16px",
                     border: isDesktop ? "1px solid rgba(255, 255, 255, 0.3)" : "1px solid #D9E1EA",
                     borderRadius: "8px",
                     color: isDesktop ? "#0F172A" : "#0F172A",
-                    fontSize: "14px",
+                    fontSize: "15px",
                     backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "#FFFFFF",
                     transition: "border-color 0.2s, box-shadow 0.2s",
                   }}
@@ -368,13 +368,13 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   style={{
                     width: "100%",
-                    height: "48px",
-                    paddingLeft: "42px",
-                    paddingRight: "42px",
+                    height: "52px",
+                    paddingLeft: "46px",
+                    paddingRight: "46px",
                     border: isDesktop ? "1px solid rgba(255, 255, 255, 0.3)" : "1px solid #D9E1EA",
                     borderRadius: "8px",
                     color: isDesktop ? "#0F172A" : "#0F172A",
-                    fontSize: "14px",
+                    fontSize: "15px",
                     backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "#FFFFFF",
                     transition: "border-color 0.2s, box-shadow 0.2s",
                   }}
@@ -445,11 +445,11 @@ export default function LoginPage() {
               disabled={loading}
               style={{
                 width: "100%",
-                height: "48px",
+                height: "52px",
                 backgroundColor: "#16A34A",
                 color: "#FFFFFF",
                 fontWeight: "600",
-                fontSize: "15px",
+                fontSize: "16px",
                 borderRadius: "8px",
                 cursor: loading ? "not-allowed" : "pointer",
                 opacity: loading ? 0.7 : 1,
@@ -466,9 +466,9 @@ export default function LoginPage() {
           <div style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
-            marginTop: "12px",
-            padding: "8px",
+            gap: "12px",
+            marginTop: "20px",
+            padding: "12px",
             backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.12)" : "#F7F8FA",
             borderRadius: "8px",
             border: isDesktop ? "1px solid rgba(255, 255, 255, 0.25)" : "none",
@@ -485,8 +485,8 @@ export default function LoginPage() {
           </div>
 
           <div style={{
-            marginTop: "12px",
-            paddingTop: "10px",
+            marginTop: "20px",
+            paddingTop: "16px",
             textAlign: "center",
             borderTop: isDesktop ? "1px solid rgba(255, 255, 255, 0.15)" : "1px solid rgba(0, 0, 0, 0.1)",
           }}>
