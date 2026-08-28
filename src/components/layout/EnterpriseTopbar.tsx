@@ -8,6 +8,7 @@ import LogoutButton from "./LogoutButton";
 
 type EnterpriseTopbarProps = {
   userName?: string;
+  avatarUrl?: string | null;
   userRole?: string;
   onMenuClick?: () => void;
   sidebarWidth?: string;
@@ -15,6 +16,7 @@ type EnterpriseTopbarProps = {
 
 export default function EnterpriseTopbar({
   userName = "",
+  avatarUrl,
   userRole = "",
   onMenuClick,
   sidebarWidth = "17.5rem",
@@ -87,9 +89,17 @@ export default function EnterpriseTopbar({
               aria-label="User menu"
               aria-expanded={showUserMenu}
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green/10 font-bold text-brand-green">
-                {userInitial}
-              </div>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Avatar"
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green/10 font-bold text-brand-green">
+                  {userInitial}
+                </div>
+              )}
               <div className="hidden text-left md:block">
                 <p className="text-sm font-medium text-brand-text">{userName}</p>
                 <p className="text-xs text-brand-text-secondary">{roleLabel}</p>

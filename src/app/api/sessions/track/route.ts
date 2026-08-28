@@ -100,16 +100,36 @@ function parseUserAgent(userAgent: string) {
 }
 
 async function getLocationFromIP(ip: string) {
-  // Simplified location detection
-  // In production, use a service like ip-api.com, ipinfo.io, or MaxMind
-  try {
-    const response = await fetch(`https://ipapi.co/${ip}/json/`);
-    const data = await response.json();
-    return {
-      country: data.country_name || "Unknown",
-      city: data.city || "Unknown",
-    };
-  } catch {
-    return { country: "Unknown", city: "Unknown" };
+  // Try multiple geolocation services for better reliability
+  const services = [
+    async () => {
+      const response = await fetch(`https://ipapi.co/${ip}/json/`);
+      const data = await response.json();
+      return {
+        country: data.country_name || data.country || "Unknown",
+        city: data.city || "Unknown",
+      };
+    },
+    async () => {
+      const response = await fetch(`https://ipinfo.io/${ip}/json`);
+      const data = await response.json();
+      return {
+        country: data.country || "Unknown",
+        city: data.city || "Unknown",
+      };
+    },
+  ];
+
+  for (const service of services) {
+    try {
+      const result = await service();
+      if (result.country !== "Unknown" || result.city !== "Unknown") {
+        return result;
+      }
+    } catch {
+      continue;
+    }
   }
+
+  return { country: "Unknown", city: "Unknown" };
 }

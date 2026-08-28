@@ -11,6 +11,7 @@ type EnterpriseLayoutProps = {
   children: React.ReactNode;
   currentRole: UserRole;
   userName?: string;
+  avatarUrl?: string | null;
   pendingCount?: number;
 };
 
@@ -45,6 +46,7 @@ export default function EnterpriseLayout({
   children,
   currentRole,
   userName = "User",
+  avatarUrl,
   pendingCount = 0,
 }: EnterpriseLayoutProps) {
   const { isOpen, isCollapsed, open, close, toggleCollapse } = useSidebarState();
@@ -56,6 +58,7 @@ export default function EnterpriseLayout({
         <EnterpriseSidebar
           currentRole={currentRole}
           userName={userName}
+          avatarUrl={avatarUrl}
           isOpen={isOpen}
           onClose={close}
           isCollapsed={isCollapsed}
@@ -71,6 +74,7 @@ export default function EnterpriseLayout({
         <LayoutErrorBoundary componentName="EnterpriseTopbar">
           <EnterpriseTopbar
             userName={userName}
+            avatarUrl={avatarUrl}
             userRole={currentRole}
             onMenuClick={open}
             sidebarWidth={sidebarWidth}

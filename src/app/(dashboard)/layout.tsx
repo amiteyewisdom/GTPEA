@@ -64,6 +64,7 @@ export default async function DashboardLayout({
       <EnterpriseLayout
         currentRole={(role as UserRole) || "employee"}
         userName={profile?.full_name ?? user.email ?? "User"}
+        avatarUrl={profile?.avatar_url}
         pendingCount={pendingCount}
       >
         {children}

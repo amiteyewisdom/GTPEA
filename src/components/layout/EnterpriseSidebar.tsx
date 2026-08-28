@@ -12,6 +12,7 @@ const BADGE_PATHS = ['/approvals', '/loan-reviews', '/final-approvals'];
 type EnterpriseSidebarProps = {
   currentRole: UserRole;
   userName?: string;
+  avatarUrl?: string | null;
   isOpen?: boolean;
   onClose?: () => void;
   isCollapsed?: boolean;
@@ -22,6 +23,7 @@ type EnterpriseSidebarProps = {
 export default function EnterpriseSidebar({
   currentRole,
   userName = "User",
+  avatarUrl,
   isOpen = false,
   onClose,
   isCollapsed = false,
@@ -128,9 +130,17 @@ export default function EnterpriseSidebar({
           {!isCollapsed ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green/10 text-sm font-bold text-brand-green">
-                  {userInitial}
-                </div>
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Avatar"
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green/10 text-sm font-bold text-brand-green">
+                    {userInitial}
+                  </div>
+                )}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-brand-text">{userName}</p>
                   <p className="truncate text-xs text-brand-text-secondary">
@@ -153,9 +163,17 @@ export default function EnterpriseSidebar({
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green/10 text-sm font-bold text-brand-green">
-                {userInitial}
-              </div>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Avatar"
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green/10 text-sm font-bold text-brand-green">
+                  {userInitial}
+                </div>
+              )}
               <Link
                 href="/profile"
                 onClick={onClose}
