@@ -227,31 +227,31 @@ export default function LoginPage() {
         padding: isDesktop ? "0" : "24px",
       }}>
         <div style={{ 
-          background: isDesktop ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.95)",
-          backdropFilter: isDesktop ? "blur(24px)" : "none",
-          WebkitBackdropFilter: isDesktop ? "blur(24px)" : "none",
-          border: isDesktop ? "1px solid rgba(255, 255, 255, 0.25)" : "1px solid rgba(255, 255, 255, 0.5)",
+          background: isDesktop ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.2)",
+          backdropFilter: isDesktop ? "blur(24px)" : "blur(20px)",
+          WebkitBackdropFilter: isDesktop ? "blur(24px)" : "blur(20px)",
+          border: isDesktop ? "1px solid rgba(255, 255, 255, 0.25)" : "1px solid rgba(255, 255, 255, 0.3)",
           borderRadius: "20px",
-          padding: "24px",
-          boxShadow: isDesktop ? "0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(201, 164, 76, 0.15)" : "0 8px 32px rgba(0, 0, 0, 0.1)",
+          padding: isDesktop ? "24px" : "16px",
+          boxShadow: isDesktop ? "0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(201, 164, 76, 0.15)" : "0 8px 32px rgba(0, 0, 0, 0.2)",
         }}>
           <div style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            marginBottom: "24px",
+            marginBottom: isDesktop ? "24px" : "16px",
           }}>
             <div style={{
-              width: "56px",
-              height: "56px",
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              width: isDesktop ? "56px" : "48px",
+              height: isDesktop ? "56px" : "48px",
+              backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.7)",
               borderRadius: "12px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
               border: "1px solid rgba(255, 255, 255, 0.3)",
-              marginBottom: "12px",
+              marginBottom: isDesktop ? "12px" : "8px",
             }}>
               <img
                 src="/images/gtpea-logo.jpeg"
@@ -260,17 +260,17 @@ export default function LoginPage() {
               />
             </div>
             <h2 style={{
-              fontSize: "24px",
+              fontSize: isDesktop ? "24px" : "20px",
               fontWeight: "700",
-              color: isDesktop ? "#FFFFFF" : "#0F172A",
+              color: isDesktop ? "#FFFFFF" : "#FFFFFF",
               margin: 0,
-              textShadow: isDesktop ? "0 2px 4px rgba(0, 0, 0, 0.3)" : "none",
+              textShadow: isDesktop ? "0 2px 4px rgba(0, 0, 0, 0.3)" : "0 2px 4px rgba(0, 0, 0, 0.5)",
             }}>
               Welcome back
             </h2>
           </div>
 
-          <form style={{ display: "flex", flexDirection: "column", gap: "16px" }} onSubmit={handleSubmit}>
+          <form style={{ display: "flex", flexDirection: "column", gap: isDesktop ? "16px" : "12px" }} onSubmit={handleSubmit}>
             {error && (
               <div style={{
                 borderRadius: "8px",
@@ -315,14 +315,14 @@ export default function LoginPage() {
                   autoComplete="email"
                   style={{
                     width: "100%",
-                    height: "52px",
-                    paddingLeft: "46px",
-                    paddingRight: "16px",
-                    border: isDesktop ? "1px solid rgba(255, 255, 255, 0.3)" : "1px solid #D9E1EA",
+                    height: isDesktop ? "52px" : "48px",
+                    paddingLeft: isDesktop ? "46px" : "42px",
+                    paddingRight: isDesktop ? "16px" : "14px",
+                    border: isDesktop ? "1px solid rgba(255, 255, 255, 0.3)" : "1px solid rgba(255, 255, 255, 0.4)",
                     borderRadius: "8px",
-                    color: isDesktop ? "#0F172A" : "#0F172A",
-                    fontSize: "15px",
-                    backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "#FFFFFF",
+                    color: isDesktop ? "#0F172A" : "#FFFFFF",
+                    fontSize: isDesktop ? "15px" : "14px",
+                    backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.25)",
                     transition: "border-color 0.2s, box-shadow 0.2s",
                   }}
                   onFocus={(e) => {
@@ -342,9 +342,9 @@ export default function LoginPage() {
                 display: "block",
                 fontSize: "14px",
                 fontWeight: "600",
-                color: isDesktop ? "rgba(255, 255, 255, 0.95)" : "#0F172A",
+                color: isDesktop ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.9)",
                 marginBottom: "8px",
-                textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "none",
+                textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)",
               }}>
                 PASSWORD
               </label>
@@ -368,14 +368,14 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   style={{
                     width: "100%",
-                    height: "52px",
-                    paddingLeft: "46px",
-                    paddingRight: "46px",
-                    border: isDesktop ? "1px solid rgba(255, 255, 255, 0.3)" : "1px solid #D9E1EA",
+                    height: isDesktop ? "52px" : "48px",
+                    paddingLeft: isDesktop ? "46px" : "42px",
+                    paddingRight: isDesktop ? "46px" : "42px",
+                    border: isDesktop ? "1px solid rgba(255, 255, 255, 0.3)" : "1px solid rgba(255, 255, 255, 0.4)",
                     borderRadius: "8px",
-                    color: isDesktop ? "#0F172A" : "#0F172A",
-                    fontSize: "15px",
-                    backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "#FFFFFF",
+                    color: isDesktop ? "#0F172A" : "#FFFFFF",
+                    fontSize: isDesktop ? "15px" : "14px",
+                    backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.25)",
                     transition: "border-color 0.2s, box-shadow 0.2s",
                   }}
                   onFocus={(e) => {
@@ -413,7 +413,7 @@ export default function LoginPage() {
               justifyContent: "space-between",
               fontSize: "14px",
             }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", color: isDesktop ? "rgba(255, 255, 255, 0.95)" : "#0F172A", cursor: "pointer", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "none" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", color: isDesktop ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.9)", cursor: "pointer", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)" }}>
                 <input
                   type="checkbox"
                   style={{
@@ -445,11 +445,11 @@ export default function LoginPage() {
               disabled={loading}
               style={{
                 width: "100%",
-                height: "52px",
+                height: isDesktop ? "52px" : "48px",
                 backgroundColor: "#16A34A",
                 color: "#FFFFFF",
                 fontWeight: "600",
-                fontSize: "16px",
+                fontSize: isDesktop ? "16px" : "15px",
                 borderRadius: "8px",
                 cursor: loading ? "not-allowed" : "pointer",
                 opacity: loading ? 0.7 : 1,
@@ -467,30 +467,30 @@ export default function LoginPage() {
             display: "flex",
             alignItems: "center",
             gap: "12px",
-            marginTop: "20px",
-            padding: "12px",
-            backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.12)" : "#F7F8FA",
+            marginTop: isDesktop ? "20px" : "16px",
+            padding: isDesktop ? "12px" : "10px",
+            backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.15)",
             borderRadius: "8px",
-            border: isDesktop ? "1px solid rgba(255, 255, 255, 0.25)" : "none",
+            border: isDesktop ? "1px solid rgba(255, 255, 255, 0.25)" : "1px solid rgba(255, 255, 255, 0.3)",
           }}>
-            <Shield style={{ width: "20px", height: "20px", color: isDesktop ? "rgba(255, 255, 255, 0.8)" : "#64748B" }} />
+            <Shield style={{ width: "20px", height: "20px", color: isDesktop ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.9)" }} />
             <div>
-              <p style={{ fontSize: "13px", fontWeight: "600", color: isDesktop ? "rgba(255, 255, 255, 0.95)" : "#0F172A", margin: "0 0 2px 0", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "none" }}>
+              <p style={{ fontSize: "13px", fontWeight: "600", color: isDesktop ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.95)", margin: "0 0 2px 0", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)" }}>
                 Secure access
               </p>
-              <p style={{ fontSize: "12px", color: isDesktop ? "rgba(255, 255, 255, 0.8)" : "#64748B", margin: 0 }}>
+              <p style={{ fontSize: "12px", color: isDesktop ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.85)", margin: 0 }}>
                 Your information is protected with secure authentication and encrypted communication.
               </p>
             </div>
           </div>
 
           <div style={{
-            marginTop: "20px",
-            paddingTop: "16px",
+            marginTop: isDesktop ? "20px" : "16px",
+            paddingTop: isDesktop ? "16px" : "12px",
             textAlign: "center",
-            borderTop: isDesktop ? "1px solid rgba(255, 255, 255, 0.15)" : "1px solid rgba(0, 0, 0, 0.1)",
+            borderTop: isDesktop ? "1px solid rgba(255, 255, 255, 0.15)" : "1px solid rgba(255, 255, 255, 0.25)",
           }}>
-            <p style={{ fontSize: "12px", color: isDesktop ? "rgba(255, 255, 255, 0.7)" : "#64748B", margin: 0, textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "none" }}>
+            <p style={{ fontSize: "12px", color: isDesktop ? "rgba(255, 255, 255, 0.7)" : "rgba(255, 255, 255, 0.8)", margin: 0, textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)" }}>
               © {new Date().getFullYear()} Savings & Loan Management System
             </p>
           </div>
