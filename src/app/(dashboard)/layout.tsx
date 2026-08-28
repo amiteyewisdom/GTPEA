@@ -70,8 +70,11 @@ export default async function DashboardLayout({
         {children}
       </EnterpriseLayout>
     );
-  } catch (error) {
-    console.error('Dashboard layout error:', error);
+  } catch (error: any) {
+    // Don't log redirect errors - they're expected Next.js behavior
+    if (!error?.digest?.startsWith('NEXT_REDIRECT')) {
+      console.error('Dashboard layout error:', error);
+    }
     redirect("/login");
   }
 }
