@@ -18,6 +18,17 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '30 days')
 );
 
+-- Add new columns if they don't exist (for existing tables)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_sessions' AND column_name = 'device_model') THEN
+        ALTER TABLE user_sessions ADD COLUMN device_model TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_sessions' AND column_name = 'location_region') THEN
+        ALTER TABLE user_sessions ADD COLUMN location_region TEXT;
+    END IF;
+END $$;
+
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(session_token);
@@ -25,6 +36,12 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires
 
 -- Enable RLS
 ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view own sessions" ON user_sessions;
+DROP POLICY IF EXISTS "Users can insert own sessions" ON user_sessions;
+DROP POLICY IF EXISTS "Users can update own sessions" ON user_sessions;
+DROP POLICY IF EXISTS "Users can delete own sessions" ON user_sessions;
 
 -- Policy: Users can view their own sessions
 CREATE POLICY "Users can view own sessions"
