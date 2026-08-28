@@ -40,8 +40,10 @@ export async function POST(request: Request) {
         device_type: deviceInfo.device,
         browser: deviceInfo.browser,
         os: deviceInfo.os,
+        device_model: deviceInfo.deviceModel,
         location_country: location.country,
         location_city: location.city,
+        location_region: location.region,
         is_current: true,
       })
       .select()
@@ -62,41 +64,72 @@ function parseUserAgent(userAgent: string) {
   let device = "Desktop";
   let browser = "Unknown";
   let os = "Unknown";
+  let deviceModel = "";
 
-  // Device type
+  // Device type and model
   if (/mobile|android|iphone|ipad/i.test(ua)) {
     device = "Mobile";
+    // Try to detect specific mobile devices
+    if (/iphone/i.test(ua)) {
+      deviceModel = "iPhone";
+      const match = ua.match(/iphone os ([\d_]+)/);
+      if (match) deviceModel += ` ${match[1].replace(/_/g, '.')}`;
+    } else if (/ipad/i.test(ua)) {
+      deviceModel = "iPad";
+    } else if (/android/i.test(ua)) {
+      const match = ua.match(/android ([\d.]+)/);
+      deviceModel = `Android ${match ? match[1] : ''}`;
+    }
   } else if (/tablet|ipad/i.test(ua)) {
     device = "Tablet";
+    deviceModel = "iPad";
   }
 
-  // Browser
+  // Browser with version
   if (/chrome/i.test(ua) && !/edge|opr/i.test(ua)) {
-    browser = "Chrome";
+    const match = ua.match(/chrome\/([\d.]+)/);
+    browser = match ? `Chrome ${match[1]}` : "Chrome";
   } else if (/safari/i.test(ua) && !/chrome/i.test(ua)) {
-    browser = "Safari";
+    const match = ua.match(/version\/([\d.]+)/);
+    browser = match ? `Safari ${match[1]}` : "Safari";
   } else if (/firefox/i.test(ua)) {
-    browser = "Firefox";
+    const match = ua.match(/firefox\/([\d.]+)/);
+    browser = match ? `Firefox ${match[1]}` : "Firefox";
   } else if (/edge/i.test(ua)) {
-    browser = "Edge";
+    const match = ua.match(/edge\/([\d.]+)/);
+    browser = match ? `Edge ${match[1]}` : "Edge";
   } else if (/opr/i.test(ua)) {
-    browser = "Opera";
+    const match = ua.match(/opr\/([\d.]+)/);
+    browser = match ? `Opera ${match[1]}` : "Opera";
   }
 
-  // OS
+  // OS with version
   if (/windows/i.test(ua)) {
-    os = "Windows";
+    if (/windows nt 10.0/i.test(ua)) {
+      os = "Windows 10/11";
+    } else if (/windows nt 6.3/i.test(ua)) {
+      os = "Windows 8.1";
+    } else if (/windows nt 6.2/i.test(ua)) {
+      os = "Windows 8";
+    } else if (/windows nt 6.1/i.test(ua)) {
+      os = "Windows 7";
+    } else {
+      os = "Windows";
+    }
   } else if (/mac|macintosh|mac os x/i.test(ua)) {
-    os = "macOS";
+    const match = ua.match(/mac os x ([\d_]+)/);
+    os = match ? `macOS ${match[1].replace(/_/g, '.')}` : "macOS";
   } else if (/linux/i.test(ua)) {
     os = "Linux";
   } else if (/android/i.test(ua)) {
-    os = "Android";
+    const match = ua.match(/android ([\d.]+)/);
+    os = match ? `Android ${match[1]}` : "Android";
   } else if (/iphone|ipad|ios/i.test(ua)) {
-    os = "iOS";
+    const match = ua.match(/os ([\d_]+)/);
+    os = match ? `iOS ${match[1].replace(/_/g, '.')}` : "iOS";
   }
 
-  return { device, browser, os };
+  return { device, browser, os, deviceModel };
 }
 
 async function getLocationFromIP(ip: string) {
@@ -112,6 +145,7 @@ async function getLocationFromIP(ip: string) {
       return {
         country: data.country_name || data.country || "Unknown",
         city: data.city || "Unknown",
+        region: data.region || "",
       };
     },
     async () => {
@@ -122,6 +156,7 @@ async function getLocationFromIP(ip: string) {
       return {
         country: data.country || "Unknown",
         city: data.city || "Unknown",
+        region: data.region || "",
       };
     },
   ];
@@ -140,5 +175,5 @@ async function getLocationFromIP(ip: string) {
   }
 
   console.log('All services failed, returning Unknown');
-  return { country: "Unknown", city: "Unknown" };
+  return { country: "Unknown", city: "Unknown", region: "" };
 }
