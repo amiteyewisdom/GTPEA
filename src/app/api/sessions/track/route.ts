@@ -16,11 +16,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { user_agent, ip_address } = body;
 
+    console.log('Session track request:', { user_agent, ip_address });
+
     // Parse user agent to get device info
     const deviceInfo = parseUserAgent(user_agent);
+    console.log('Device info:', deviceInfo);
 
     // Get location from IP (simplified - in production use a proper geolocation service)
     const location = await getLocationFromIP(ip_address);
+    console.log('Location:', location);
 
     // Mark all other sessions as not current
     await (supabase as any)
@@ -50,11 +54,13 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
+      console.error('Session insert error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ session });
   } catch (error: any) {
+    console.error('Session track error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
