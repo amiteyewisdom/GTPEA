@@ -100,19 +100,25 @@ function parseUserAgent(userAgent: string) {
 }
 
 async function getLocationFromIP(ip: string) {
+  console.log('Getting location for IP:', ip);
+
   // Try multiple geolocation services for better reliability
   const services = [
     async () => {
+      console.log('Trying ipapi.co...');
       const response = await fetch(`https://ipapi.co/${ip}/json/`);
       const data = await response.json();
+      console.log('ipapi.co response:', data);
       return {
         country: data.country_name || data.country || "Unknown",
         city: data.city || "Unknown",
       };
     },
     async () => {
+      console.log('Trying ipinfo.io...');
       const response = await fetch(`https://ipinfo.io/${ip}/json`);
       const data = await response.json();
+      console.log('ipinfo.io response:', data);
       return {
         country: data.country || "Unknown",
         city: data.city || "Unknown",
@@ -123,13 +129,16 @@ async function getLocationFromIP(ip: string) {
   for (const service of services) {
     try {
       const result = await service();
+      console.log('Service result:', result);
       if (result.country !== "Unknown" || result.city !== "Unknown") {
         return result;
       }
-    } catch {
+    } catch (error) {
+      console.error('Service error:', error);
       continue;
     }
   }
 
+  console.log('All services failed, returning Unknown');
   return { country: "Unknown", city: "Unknown" };
 }
