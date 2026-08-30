@@ -34,7 +34,40 @@ export default function SignUpPage() {
       return;
     }
 
+    if (!employeeId) {
+      setError("Employee ID is required.");
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
+
+    // Check if employee is approved
+    try {
+      const response = await fetch('/api/auth/check-employee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeId, email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Employee verification failed.");
+        setLoading(false);
+        return;
+      }
+
+      if (!data.approved) {
+        setError("Your employee ID is not approved for registration. Please contact your administrator.");
+        setLoading(false);
+        return;
+      }
+    } catch (error) {
+      setError("Failed to verify employee. Please try again.");
+      setLoading(false);
+      return;
+    }
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,

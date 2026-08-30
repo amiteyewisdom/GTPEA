@@ -5,7 +5,7 @@ import { Eye, EyeOff, Lock, Mail, Shield, CheckCircle, Zap } from "lucide-react"
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -26,40 +26,38 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    await supabase.auth.signOut();
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError(signInError.message || "Unable to sign in.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      const userAgent = navigator.userAgent;
-      const ipAddress = await fetch('https://api.ipify.org?format=json')
-        .then(res => res.json())
-        .then(data => data.ip)
-        .catch(() => 'unknown');
-
-      await fetch('/api/sessions/track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_agent: userAgent,
-          ip_address: ipAddress,
+          identifier,
+          password,
         }),
       });
-    } catch (err) {
-      console.error("Failed to track session:", err);
-    }
 
-    window.location.href = "/dashboard";
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Unable to sign in.");
+        setLoading(false);
+        return;
+      }
+
+      // Handle different login flows
+      if (data.isFirstLogin) {
+        window.location.href = "/change-password";
+      } else if (data.requiresPhoneSetup) {
+        window.location.href = "/change-password";
+      } else if (data.requiresOtp) {
+        window.location.href = "/verify-otp";
+      } else {
+        window.location.href = "/dashboard";
+      }
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -285,7 +283,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="email" style={{
+              <label htmlFor="identifier" style={{
                 display: "block",
                 fontSize: "14px",
                 fontWeight: "600",
@@ -293,10 +291,10 @@ export default function LoginPage() {
                 marginBottom: "8px",
                 textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "none",
               }}>
-                EMAIL ADDRESS
+                EMPLOYEE ID OR EMAIL
               </label>
               <div style={{ position: "relative" }}>
-                <Mail style={{
+                <Shield style={{
                   position: "absolute",
                   left: "16px",
                   top: "50%",
@@ -306,13 +304,13 @@ export default function LoginPage() {
                   color: "#64748B",
                 }} />
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
+                  id="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="Enter your Employee ID or email"
                   required
-                  autoComplete="email"
+                  autoComplete="username"
                   style={{
                     width: "100%",
                     height: isDesktop ? "52px" : "48px",

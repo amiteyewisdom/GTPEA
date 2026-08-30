@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
 export default function ChangePasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,10 @@ export default function ChangePasswordPage() {
     }
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (!phoneNumber || phoneNumber.length < 10) {
+      setError("Please enter a valid phone number.");
       return;
     }
 
@@ -53,18 +58,47 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    const { error: profileError } = await (supabase
-      .from("profiles") as any)
-      .update({ must_change_password: false })
-      .eq("user_id", userData.user.id);
+    // Update employee record with phone number and mark first login as complete
+    const { error: employeeError } = await (supabase
+      .from("employees") as any)
+      .update({ 
+        phone_number: phoneNumber,
+        is_first_login: false,
+        password_changed_at: new Date().toISOString()
+      })
+      .eq("email", userData.user.email);
 
-    if (profileError) {
-      setError(profileError.message);
+    if (employeeError) {
+      setError(employeeError.message);
       setLoading(false);
       return;
     }
 
-    window.location.href = "/dashboard";
+    // Send OTP and redirect to verification page
+    try {
+      const otpResponse = await fetch("/api/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phoneNumber,
+          userId: userData.user.id,
+        }),
+      });
+
+      const otpData = await otpResponse.json();
+
+      if (!otpResponse.ok) {
+        setError(otpData.error || "Failed to send OTP. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Redirect to OTP verification page
+      window.location.href = "/verify-otp";
+    } catch (err) {
+      setError("Failed to send OTP. Please try again.");
+      setLoading(false);
+    }
   };
 
   const inputSx = { "& .MuiOutlinedInput-root": { height: 48 } };
@@ -98,7 +132,7 @@ export default function ChangePasswordPage() {
           </Typography>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          For security, you must set a new password before continuing.
+          For security, you must set a new password and provide your phone number for OTP verification before continuing.
         </Typography>
 
         {error && (
@@ -135,6 +169,17 @@ export default function ChangePasswordPage() {
             required
             fullWidth
             sx={inputSx}
+          />
+          <TextField
+            label="Phone Number"
+            type="tel"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            required
+            fullWidth
+            placeholder="024XXXXXXXX"
+            sx={inputSx}
+            helperText="Enter your mobile number for OTP verification"
           />
           <Button
             type="submit"

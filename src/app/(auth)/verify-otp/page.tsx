@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ShieldCheck } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
 
@@ -11,18 +12,73 @@ export default function VerifyOtpPage() {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [userId, setUserId] = useState("");
 
   useEffect(() => {
-    sendCode();
+    // Get user info and phone number from session
+    const initPage = async () => {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      
+      if (userData.user) {
+        setUserId(userData.user.id);
+        
+        if (!userData.user.email) {
+          setError("User email not found. Please contact support.");
+          return;
+        }
+        
+        // Try to get phone number from employee record first
+        const { data: employeeData } = await (supabase
+          .from("employees") as any)
+          .select("phone_number")
+          .eq("email", userData.user.email)
+          .maybeSingle();
+        
+        if (employeeData && employeeData.phone_number) {
+          setPhoneNumber(employeeData.phone_number);
+          await sendCode();
+          return;
+        }
+        
+        // If not an employee, get phone number from profiles
+        const { data: profileData } = await (supabase
+          .from("profiles") as any)
+          .select("phone_number")
+          .eq("email", userData.user.email)
+          .maybeSingle();
+        
+        if (profileData && profileData.phone_number) {
+          setPhoneNumber(profileData.phone_number);
+          await sendCode();
+        } else {
+          setError("Phone number not found. Please contact support.");
+        }
+      } else {
+        window.location.href = "/login";
+      }
+    };
+    
+    initPage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function sendCode() {
+    if (!phoneNumber || !userId) {
+      setError("Missing required information. Please try logging in again.");
+      return;
+    }
+
     setResending(true);
     setError("");
     setInfo("");
     try {
-      const response = await fetch("/api/auth/otp/send", { method: "POST" });
+      const response = await fetch("/api/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phoneNumber, userId }),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not send verification code.");
       setInfo(data.message ?? "Verification code sent.");
@@ -39,10 +95,10 @@ export default function VerifyOtpPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/auth/otp/verify", {
+      const response = await fetch("/api/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ userId, code }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Verification failed.");
