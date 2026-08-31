@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       // Check if this email belongs to an employee
       const { data: employee } = await admin
         .from("employees")
-        .select("id, employee_no, is_first_login, phone_number, password_changed_at")
+        .select("id, email, employee_no, is_first_login, phone_number, password_changed_at")
         .eq("email", email)
         .maybeSingle();
 

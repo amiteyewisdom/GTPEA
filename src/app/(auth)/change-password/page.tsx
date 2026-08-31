@@ -51,6 +51,11 @@ export default function ChangePasswordPage() {
       return;
     }
 
+    console.log("[change-password] User data:", {
+      email: userData.user.email,
+      userId: userData.user.id,
+    });
+
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
       setError(updateError.message);
