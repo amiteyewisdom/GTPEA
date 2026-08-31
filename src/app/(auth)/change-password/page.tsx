@@ -59,20 +59,30 @@ export default function ChangePasswordPage() {
     }
 
     // Update employee record with phone number and mark first login as complete
+    const updateData = { 
+      phone_number: phoneNumber,
+      is_first_login: false,
+      password_changed_at: new Date().toISOString()
+    };
+    
+    console.log("[change-password] Updating employee record:", {
+      email: userData.user.email,
+      updateData,
+    });
+
     const { error: employeeError } = await (supabase
       .from("employees") as any)
-      .update({ 
-        phone_number: phoneNumber,
-        is_first_login: false,
-        password_changed_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq("email", userData.user.email);
 
     if (employeeError) {
+      console.error("[change-password] Employee update error:", employeeError);
       setError(employeeError.message);
       setLoading(false);
       return;
     }
+
+    console.log("[change-password] Employee record updated successfully");
 
     // Send OTP and redirect to verification page
     try {

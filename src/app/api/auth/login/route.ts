@@ -43,6 +43,13 @@ export async function POST(request: Request) {
       email = employee.email;
       phoneNumber = employee.phone_number;
       
+      // Debug logging
+      console.log("[/api/auth/login] Employee data:", {
+        employee_no: employee.employee_no,
+        is_first_login: employee.is_first_login,
+        password_changed_at: employee.password_changed_at,
+      });
+      
       // Use database field to determine if first login
       // If password_changed_at is null, user hasn't changed password yet
       isFirstLogin = !employee.password_changed_at;
@@ -61,6 +68,13 @@ export async function POST(request: Request) {
       if (employee) {
         // This is an employee logging in with email
         phoneNumber = employee.phone_number;
+        
+        // Debug logging
+        console.log("[/api/auth/login] Employee data (email login):", {
+          email: employee.email,
+          is_first_login: employee.is_first_login,
+          password_changed_at: employee.password_changed_at,
+        });
         
         // Use database field to determine if first login
         // If password_changed_at is null, user hasn't changed password yet
