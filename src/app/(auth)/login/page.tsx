@@ -48,7 +48,7 @@ export default function LoginPage() {
       if (data.isFirstLogin) {
         window.location.href = "/change-password";
       } else if (data.requiresPhoneSetup) {
-        window.location.href = "/change-password";
+        window.location.href = "/setup-phone";
       } else if (data.requiresOtp) {
         window.location.href = "/verify-otp";
       } else {

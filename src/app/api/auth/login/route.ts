@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       // Employee login flow
       const { data: employee, error: employeeError } = await admin
         .from("employees")
-        .select("id, email, is_first_login, phone_number")
+        .select("id, email, is_first_login, phone_number, password_changed_at")
         .eq("employee_no", identifier)
         .single();
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       // Check if this email belongs to an employee
       const { data: employee } = await admin
         .from("employees")
-        .select("id, is_first_login, phone_number")
+        .select("id, is_first_login, phone_number, password_changed_at")
         .eq("email", email)
         .maybeSingle();
 
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if first login (employees only)
+    // Check if first login (employees only) - user needs to change password
     if (isEmployee && isFirstLogin) {
       return NextResponse.json({
         success: true,
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Send OTP
+    // User has already changed password and has phone number - send OTP only
     try {
       const otpResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/otp/send`, {
         method: "POST",
