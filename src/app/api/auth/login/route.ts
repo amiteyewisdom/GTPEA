@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       // Employee login flow
       const { data: employee, error: employeeError } = await admin
         .from("employees")
-        .select("id, email, is_first_login, phone_number, password_changed_at")
+        .select("id, email, employee_no, is_first_login, phone_number, password_changed_at")
         .eq("employee_no", identifier)
         .single();
 
@@ -44,6 +44,15 @@ export async function POST(request: Request) {
       phoneNumber = employee.phone_number;
       isFirstLogin = employee.is_first_login;
       isEmployee = true;
+      
+      // Check if user is using default password
+      const defaultPassword = `GTP${employee.employee_no}@2024`;
+      const isDefaultPassword = password === defaultPassword;
+      
+      if (isDefaultPassword) {
+        // User is using default password - force first-time setup
+        isFirstLogin = true;
+      }
     } else {
       // Non-employee (email) login flow
       email = identifier;
@@ -51,7 +60,7 @@ export async function POST(request: Request) {
       // Check if this email belongs to an employee
       const { data: employee } = await admin
         .from("employees")
-        .select("id, is_first_login, phone_number, password_changed_at")
+        .select("id, employee_no, is_first_login, phone_number, password_changed_at")
         .eq("email", email)
         .maybeSingle();
 
@@ -60,6 +69,15 @@ export async function POST(request: Request) {
         phoneNumber = employee.phone_number;
         isFirstLogin = employee.is_first_login;
         isEmployee = true;
+        
+        // Check if user is using default password
+        const defaultPassword = `GTP${employee.employee_no}@2024`;
+        const isDefaultPassword = password === defaultPassword;
+        
+        if (isDefaultPassword) {
+          // User is using default password - force first-time setup
+          isFirstLogin = true;
+        }
       } else {
         // Non-employee: get phone number from profiles
         const { data: profile } = await admin

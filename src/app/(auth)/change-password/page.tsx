@@ -128,11 +128,11 @@ export default function ChangePasswordPage() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
           <LockReset sx={{ fontSize: 28, color: "#818CF8" }} />
           <Typography variant="h5" fontWeight={700}>
-            Set a New Password
+            Complete Your Setup
           </Typography>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          For security, you must set a new password and provide your phone number for OTP verification before continuing.
+          For your security, please set a new password and provide your phone number for OTP verification.
         </Typography>
 
         {error && (
@@ -162,7 +162,7 @@ export default function ChangePasswordPage() {
             }}
           />
           <TextField
-            label="Confirm Password"
+            label="Confirm New Password"
             type={showPw ? "text" : "password"}
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
@@ -189,7 +189,7 @@ export default function ChangePasswordPage() {
             disabled={loading}
             sx={{ height: 48, fontWeight: 700, mt: 0.5 }}
           >
-            {loading ? <CircularProgress size={20} color="inherit" /> : "Update Password"}
+            {loading ? <CircularProgress size={20} color="inherit" /> : "Continue to OTP Verification"}
           </Button>
         </Box>
       </Box>

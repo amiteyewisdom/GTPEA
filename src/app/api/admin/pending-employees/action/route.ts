@@ -102,6 +102,28 @@ export async function POST(request: Request) {
         );
       }
 
+      // Create employee record with default password
+      const defaultPassword = `GTP${pendingEmployee.employee_no}@2024`; // Default password format
+      
+      // Create auth user with default password
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: pendingEmployee.email,
+        password: defaultPassword,
+        email_confirm: true,
+        user_metadata: {
+          employee_no: pendingEmployee.employee_no,
+          full_name: `${pendingEmployee.first_name} ${pendingEmployee.last_name}`,
+        },
+      });
+
+      if (authError) {
+        console.error("[/api/admin/pending-employees/action] Auth user creation error:", authError);
+        return NextResponse.json(
+          { error: "Failed to create user account." },
+          { status: 500 }
+        );
+      }
+
       // Create employee record
       const { error: employeeError } = await admin
         .from("employees")
