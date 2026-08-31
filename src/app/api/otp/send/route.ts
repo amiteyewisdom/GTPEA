@@ -42,20 +42,44 @@ export async function POST(request: Request) {
       );
     }
 
-    // Send SMS with OTP
-    const smsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/sms/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        phoneNumber: formatPhoneNumber(phoneNumber),
-        message: `Your GTP verification code is: ${otp}. This code expires in 5 minutes. Do not share this code with anyone.`,
-      }),
+    // Send SMS with OTP using Nalo SMS API directly
+    const authKey = process.env.NALO_SMS_AUTH_KEY;
+    const senderId = process.env.NALO_SMS_SENDER_ID || "GTP";
+
+    if (!authKey) {
+      console.error("[/api/otp/send] SMS authentication key not configured");
+      return NextResponse.json(
+        { error: "SMS service not configured. Please contact administrator." },
+        { status: 500 }
+      );
+    }
+
+    // Format phone number to international format (Ghana: +233)
+    let formattedPhone = formatPhoneNumber(phoneNumber);
+    if (formattedPhone.startsWith("0")) {
+      formattedPhone = "233" + formattedPhone.substring(1);
+    } else if (!formattedPhone.startsWith("233")) {
+      formattedPhone = "233" + formattedPhone;
+    }
+
+    // Build URL with query parameters for Nalo SMS
+    const baseUrl = "https://sms.nalosolutions.com/smsbackend/clientapi/Resl_Nalo/send-message/";
+    const params = new URLSearchParams({
+      key: authKey,
+      type: "0",
+      destination: formattedPhone,
+      dlr: "1",
+      source: senderId,
+      message: `Your GTP verification code is: ${otp}. This code expires in 5 minutes. Do not share this code with anyone.`,
     });
 
-    const smsData = await smsResponse.json();
+    const url = `${baseUrl}?${params.toString()}`;
+
+    // Send SMS using fetch
+    const smsResponse = await fetch(url);
 
     if (!smsResponse.ok) {
-      console.error("[/api/otp/send] SMS error:", smsData);
+      console.error("[/api/otp/send] SMS API error:", smsResponse.statusText);
       return NextResponse.json(
         { error: "Failed to send SMS. Please try again." },
         { status: 500 }
