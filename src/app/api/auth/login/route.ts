@@ -42,17 +42,11 @@ export async function POST(request: Request) {
 
       email = employee.email;
       phoneNumber = employee.phone_number;
-      isFirstLogin = employee.is_first_login;
+      
+      // Use database field to determine if first login
+      // If password_changed_at is null, user hasn't changed password yet
+      isFirstLogin = !employee.password_changed_at;
       isEmployee = true;
-      
-      // Check if user is using default password
-      const defaultPassword = `GTP${employee.employee_no}@2024`;
-      const isDefaultPassword = password === defaultPassword;
-      
-      if (isDefaultPassword) {
-        // User is using default password - force first-time setup
-        isFirstLogin = true;
-      }
     } else {
       // Non-employee (email) login flow
       email = identifier;
@@ -67,17 +61,11 @@ export async function POST(request: Request) {
       if (employee) {
         // This is an employee logging in with email
         phoneNumber = employee.phone_number;
-        isFirstLogin = employee.is_first_login;
+        
+        // Use database field to determine if first login
+        // If password_changed_at is null, user hasn't changed password yet
+        isFirstLogin = !employee.password_changed_at;
         isEmployee = true;
-        
-        // Check if user is using default password
-        const defaultPassword = `GTP${employee.employee_no}@2024`;
-        const isDefaultPassword = password === defaultPassword;
-        
-        if (isDefaultPassword) {
-          // User is using default password - force first-time setup
-          isFirstLogin = true;
-        }
       } else {
         // Non-employee: get phone number from profiles
         const { data: profile } = await admin
