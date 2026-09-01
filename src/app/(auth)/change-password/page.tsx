@@ -27,26 +27,32 @@ export default function ChangePasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    console.log("[change-password] Form submitted");
     setError("");
 
     if (password !== confirm) {
+      console.log("[change-password] Passwords do not match");
       setError("Passwords do not match.");
       return;
     }
     if (password.length < 8) {
+      console.log("[change-password] Password too short");
       setError("Password must be at least 8 characters.");
       return;
     }
     if (!phoneNumber || phoneNumber.length < 10) {
+      console.log("[change-password] Invalid phone number");
       setError("Please enter a valid phone number.");
       return;
     }
 
+    console.log("[change-password] Validation passed, starting update process");
     setLoading(true);
     const supabase = createClient();
 
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) {
+      console.error("[change-password] User session error:", userError);
       setError("Your session has expired. Please sign in again.");
       setLoading(false);
       return;
