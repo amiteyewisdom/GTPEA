@@ -29,7 +29,7 @@ export default async function GuarantorApprovalsPage() {
     redirect("/dashboard");
   }
 
-  // Fetch pending guarantor applications (only those who have actually applied)
+  // Fetch pending guarantor applications
   const applicationsRes = await supabase
     .from("employees")
     .select(`
@@ -42,8 +42,7 @@ export default async function GuarantorApprovalsPage() {
       guarantor_notes
     `)
     .eq("guarantor_status", "pending")
-    .not("guarantor_application_date", "is", null)
-    .order("guarantor_application_date", { ascending: false });
+    .order("guarantor_application_date", { ascending: true, nullsFirst: true });
 
   console.log("[GuarantorApprovals] Query error:", applicationsRes.error);
   console.log("[GuarantorApprovals] Applications found:", (applicationsRes.data as any)?.length || 0);
