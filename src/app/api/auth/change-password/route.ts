@@ -41,22 +41,14 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("[/api/auth/change-password] User data:", {
-      email: user.email,
-      userId: user.id,
-    });
-
     // Update password in Supabase auth
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
-      console.error("[/api/auth/change-password] Auth update error:", updateError);
       return NextResponse.json(
         { error: updateError.message },
         { status: 500 }
       );
     }
-
-    console.log("[/api/auth/change-password] Auth password updated successfully");
 
     // Check if phone number is already used by another employee
     const { data: existingEmployee } = await admin
@@ -67,7 +59,6 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (existingEmployee) {
-      console.error("[/api/auth/change-password] Phone number already in use by:", existingEmployee.email);
       return NextResponse.json(
         { error: "This phone number is already registered to another account." },
         { status: 400 }
@@ -83,7 +74,6 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (existingProfile) {
-      console.error("[/api/auth/change-password] Phone number already in use by profile:", existingProfile.user_id);
       return NextResponse.json(
         { error: "This phone number is already registered to another account." },
         { status: 400 }
@@ -96,31 +86,18 @@ export async function POST(request: Request) {
       is_first_login: false,
       password_changed_at: new Date().toISOString()
     };
-    
-    console.log("[/api/auth/change-password] Updating employee record:", {
-      email: user.email,
-      updateData,
-    });
 
-    const { error: employeeError, count } = await admin
+    const { error: employeeError } = await admin
       .from("employees")
       .update(updateData)
-      .eq("email", user.email)
-      .select();
+      .eq("email", user.email);
 
     if (employeeError) {
-      console.error("[/api/auth/change-password] Employee update error:", employeeError);
-      console.error("[/api/auth/change-password] Error details:", JSON.stringify(employeeError, null, 2));
       return NextResponse.json(
         { error: employeeError.message },
         { status: 500 }
       );
     }
-
-    console.log("[/api/auth/change-password] Employee record updated successfully:", {
-      count,
-      affectedRows: count,
-    });
 
     // Also update phone number in profiles table
     const { error: profileError } = await admin
@@ -129,10 +106,8 @@ export async function POST(request: Request) {
       .eq("user_id", user.id);
 
     if (profileError) {
-      console.error("[/api/auth/change-password] Profile update error:", profileError);
       // Don't fail the whole process if profile update fails, just log it
-    } else {
-      console.log("[/api/auth/change-password] Profile phone number updated successfully");
+      console.error("[/api/auth/change-password] Profile update error:", profileError);
     }
 
     // Send OTP

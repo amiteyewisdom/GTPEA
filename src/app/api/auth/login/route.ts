@@ -44,24 +44,10 @@ export async function POST(request: Request) {
       email = employee.email;
       phoneNumber = employee.phone_number;
       
-      // Debug logging
-      console.log("[/api/auth/login] Employee data:", {
-        employee_no: employee.employee_no,
-        is_first_login: employee.is_first_login,
-        password_changed_at: employee.password_changed_at,
-        calculated_isFirstLogin: !employee.password_changed_at,
-      });
-      
       // Use database field to determine if first login
       // If password_changed_at is null, user hasn't changed password yet
       isFirstLogin = !employee.password_changed_at;
       isEmployee = true;
-
-      console.log("[/api/auth/login] Decision for employee login:", {
-        isFirstLogin,
-        phoneNumber: phoneNumber ? "present" : "missing",
-        willRedirectTo: isFirstLogin ? "change-password" : (phoneNumber ? "OTP" : "setup-phone"),
-      });
     } else {
       // Non-employee (email) login flow
       email = identifier;
@@ -77,24 +63,10 @@ export async function POST(request: Request) {
         // This is an employee logging in with email
         phoneNumber = employee.phone_number;
         
-        // Debug logging
-        console.log("[/api/auth/login] Employee data (email login):", {
-          email: employee.email,
-          is_first_login: employee.is_first_login,
-          password_changed_at: employee.password_changed_at,
-          calculated_isFirstLogin: !employee.password_changed_at,
-        });
-        
         // Use database field to determine if first login
         // If password_changed_at is null, user hasn't changed password yet
         isFirstLogin = !employee.password_changed_at;
         isEmployee = true;
-
-        console.log("[/api/auth/login] Decision for email login:", {
-          isFirstLogin,
-          phoneNumber: phoneNumber ? "present" : "missing",
-          willRedirectTo: isFirstLogin ? "change-password" : (phoneNumber ? "OTP" : "setup-phone"),
-        });
       } else {
         // Non-employee: get phone number from profiles
         const { data: profile } = await admin
@@ -124,7 +96,6 @@ export async function POST(request: Request) {
 
     // Check if first login (employees only) - user needs to change password
     if (isEmployee && isFirstLogin) {
-      console.log("[/api/auth/login] First login detected, redirecting to change password");
       return NextResponse.json({
         success: true,
         isFirstLogin: true,
@@ -143,16 +114,11 @@ export async function POST(request: Request) {
 
     // User has already changed password and has phone number - send OTP only
     try {
-      const startTime = Date.now();
-      
       // Generate OTP
       const otp = generateOTP();
       const expiresAt = getOTPExpiration(5); // 5 minutes expiration
 
-      console.log("[/api/auth/login] OTP generated at:", new Date().toISOString());
-
       // Store OTP in database
-      const dbStartTime = Date.now();
       const { error: otpError } = await admin
         .from("otp_codes")
         .upsert({
@@ -171,8 +137,6 @@ export async function POST(request: Request) {
           { status: 500 }
         );
       }
-
-      console.log("[/api/auth/login] Database write took:", Date.now() - dbStartTime, "ms");
 
       // Send SMS with OTP using Nalo SMS API directly
       const authKey = process.env.NALO_SMS_AUTH_KEY;
@@ -207,14 +171,8 @@ export async function POST(request: Request) {
 
       const url = `${baseUrl}?${params.toString()}`;
 
-      console.log("[/api/auth/login] Sending SMS to:", formattedPhone);
-      const smsStartTime = Date.now();
-
       // Send SMS using fetch
       const smsResponse = await fetch(url);
-
-      const smsDuration = Date.now() - smsStartTime;
-      console.log("[/api/auth/login] SMS API call took:", smsDuration, "ms");
 
       if (!smsResponse.ok) {
         console.error("[/api/auth/login] SMS API error:", smsResponse.statusText);
@@ -223,9 +181,6 @@ export async function POST(request: Request) {
           { status: 500 }
         );
       }
-
-      const totalDuration = Date.now() - startTime;
-      console.log("[/api/auth/login] Total OTP process took:", totalDuration, "ms");
 
       return NextResponse.json({
         success: true,
