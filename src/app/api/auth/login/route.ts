@@ -143,11 +143,16 @@ export async function POST(request: Request) {
 
     // User has already changed password and has phone number - send OTP only
     try {
+      const startTime = Date.now();
+      
       // Generate OTP
       const otp = generateOTP();
       const expiresAt = getOTPExpiration(5); // 5 minutes expiration
 
+      console.log("[/api/auth/login] OTP generated at:", new Date().toISOString());
+
       // Store OTP in database
+      const dbStartTime = Date.now();
       const { error: otpError } = await admin
         .from("otp_codes")
         .upsert({
@@ -166,6 +171,8 @@ export async function POST(request: Request) {
           { status: 500 }
         );
       }
+
+      console.log("[/api/auth/login] Database write took:", Date.now() - dbStartTime, "ms");
 
       // Send SMS with OTP using Nalo SMS API directly
       const authKey = process.env.NALO_SMS_AUTH_KEY;
@@ -200,8 +207,14 @@ export async function POST(request: Request) {
 
       const url = `${baseUrl}?${params.toString()}`;
 
+      console.log("[/api/auth/login] Sending SMS to:", formattedPhone);
+      const smsStartTime = Date.now();
+
       // Send SMS using fetch
       const smsResponse = await fetch(url);
+
+      const smsDuration = Date.now() - smsStartTime;
+      console.log("[/api/auth/login] SMS API call took:", smsDuration, "ms");
 
       if (!smsResponse.ok) {
         console.error("[/api/auth/login] SMS API error:", smsResponse.statusText);
@@ -210,6 +223,9 @@ export async function POST(request: Request) {
           { status: 500 }
         );
       }
+
+      const totalDuration = Date.now() - startTime;
+      console.log("[/api/auth/login] Total OTP process took:", totalDuration, "ms");
 
       return NextResponse.json({
         success: true,

@@ -202,11 +202,17 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-bold text-brand-text truncate">{fullName || "—"}</h2>
             <p className="text-sm text-brand-text-secondary truncate">{email}</p>
-            {guarantorBadge && (
-              <span className={`mt-1.5 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${guarantorBadge}`}>
-                Guarantor: {profile?.guarantor_status?.replace("_", " ")}
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadge}`}>
+                {displayRole}
               </span>
-            )}
+              {guarantorBadge && (
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${guarantorBadge}`}>
+                  <CheckCircle className="h-3 w-3" />
+                  Guarantor: {profile?.guarantor_status?.replace("_", " ")}
+                </span>
+              )}
+            </div>
           </div>
           {!editing ? (
             <button

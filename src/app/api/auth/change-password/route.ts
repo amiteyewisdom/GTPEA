@@ -58,6 +58,38 @@ export async function POST(request: Request) {
 
     console.log("[/api/auth/change-password] Auth password updated successfully");
 
+    // Check if phone number is already used by another employee
+    const { data: existingEmployee } = await admin
+      .from("employees")
+      .select("id, email")
+      .eq("phone_number", phoneNumber)
+      .neq("email", user.email)
+      .maybeSingle();
+
+    if (existingEmployee) {
+      console.error("[/api/auth/change-password] Phone number already in use by:", existingEmployee.email);
+      return NextResponse.json(
+        { error: "This phone number is already registered to another account." },
+        { status: 400 }
+      );
+    }
+
+    // Check if phone number is already used in profiles
+    const { data: existingProfile } = await admin
+      .from("profiles")
+      .select("user_id")
+      .eq("phone", phoneNumber)
+      .neq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingProfile) {
+      console.error("[/api/auth/change-password] Phone number already in use by profile:", existingProfile.user_id);
+      return NextResponse.json(
+        { error: "This phone number is already registered to another account." },
+        { status: 400 }
+      );
+    }
+
     // Update employee record with phone number and mark first login as complete
     const updateData = { 
       phone_number: phoneNumber,
