@@ -63,12 +63,6 @@ export async function POST(request: Request) {
         // This is an employee logging in with email
         phoneNumber = employee.phone_number;
         
-        console.log("[/api/auth/login] Employee found for email login:", {
-          email: employee.email,
-          phone_number: phoneNumber,
-          password_changed_at: employee.password_changed_at,
-        });
-        
         // Use database field to determine if first login
         // If password_changed_at is null, user hasn't changed password yet
         isFirstLogin = !employee.password_changed_at;
