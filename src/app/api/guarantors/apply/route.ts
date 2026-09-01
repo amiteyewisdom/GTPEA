@@ -16,20 +16,28 @@ export async function POST(request: Request) {
     }
 
     // Check if user is a board member or admin - they cannot be guarantors
-    const profileRes = await supabase
+    const adminClient = createAdminClient();
+    const { data: profileData, error: profileError } = await adminClient
       .from("profiles")
       .select("role")
       .eq("user_id", employee.userId)
       .single();
 
-    if (profileRes.error || !profileRes.data) {
+    if (profileError) {
       return NextResponse.json(
         { error: "Failed to check user role." },
         { status: 500 }
       );
     }
 
-    const profile = (profileRes.data as any) as { role: string };
+    if (!profileData) {
+      return NextResponse.json(
+        { error: "Profile not found." },
+        { status: 404 }
+      );
+    }
+
+    const profile = profileData as { role: string };
     const restrictedRoles = ["super_admin", "administrator", "chairperson", "fund_manager"];
     
     if (restrictedRoles.includes(profile.role)) {
@@ -67,10 +75,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const admin = createAdminClient();
-
     // Get employee name for notification
-    const employeeRes = await admin
+    const employeeRes = await adminClient
       .from("employees")
       .select("first_name, last_name")
       .eq("id", employee.employeeId)
@@ -80,7 +86,7 @@ export async function POST(request: Request) {
     const employeeName = employeeData ? `${employeeData.first_name} ${employeeData.last_name}` : "An employee";
 
     // Update employee with pending guarantor status
-    const updateRes = await admin
+    const updateRes = await adminClient
       .from("employees")
       .update({
         guarantor_status: "pending",
@@ -97,7 +103,7 @@ export async function POST(request: Request) {
     }
 
     // Notify union reps about the application
-    const unionRepsRes = await admin
+    const unionRepsRes = await adminClient
       .from("profiles")
       .select("user_id")
       .eq("role", "union_rep");
@@ -113,7 +119,7 @@ export async function POST(request: Request) {
       }));
 
       if (notifications.length > 0) {
-        await admin.from("notifications").insert(notifications);
+        await adminClient.from("notifications").insert(notifications);
       }
     }
 
