@@ -8,10 +8,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const employee = await getLoggedInEmployee(supabase);
 
-    console.log("[/api/guarantors/apply] Employee data:", employee);
-
     if (!employee) {
-      console.error("[/api/guarantors/apply] Employee profile not found");
       return NextResponse.json(
         { error: "Employee profile not found." },
         { status: 400 }
@@ -26,7 +23,6 @@ export async function POST(request: Request) {
       .single();
 
     if (existingRes.error) {
-      console.error("[/api/guarantors/apply] Failed to check guarantor status:", existingRes.error);
       return NextResponse.json(
         { error: "Failed to check guarantor status." },
         { status: 500 }
@@ -34,17 +30,13 @@ export async function POST(request: Request) {
     }
 
     const existing = existingRes.data as { guarantor_status: string | null; is_blacklisted: boolean | null };
-    console.log("[/api/guarantors/apply] Existing status:", existing);
-
     if (existing.is_blacklisted) {
-      console.error("[/api/guarantors/apply] User is blacklisted");
       return NextResponse.json(
         { error: "You are blacklisted from becoming a guarantor. Please contact the union representative for more information." },
         { status: 400 }
       );
     }
     if (existing.guarantor_status && existing.guarantor_status !== "suspended") {
-      console.error("[/api/guarantors/apply] Already has guarantor status:", existing.guarantor_status);
       return NextResponse.json(
         { error: "You already have a pending or approved guarantor application." },
         { status: 400 }

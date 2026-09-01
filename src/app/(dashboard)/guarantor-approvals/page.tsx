@@ -39,11 +39,7 @@ export default async function GuarantorApprovalsPage() {
       employee_no,
       guarantor_status,
       guarantor_application_date,
-      guarantor_notes,
-      profiles!inner (
-        full_name,
-        user_id
-      )
+      guarantor_notes
     `)
     .eq("guarantor_status", "pending")
     .order("guarantor_application_date", { ascending: false });

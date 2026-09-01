@@ -13,10 +13,6 @@ interface GuarantorApplication {
   guarantor_status: string;
   guarantor_application_date: string;
   guarantor_notes: string | null;
-  profiles: {
-    full_name: string;
-    user_id: string;
-  };
 }
 
 interface GuarantorApprovalsClientProps {
