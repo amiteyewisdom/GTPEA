@@ -29,7 +29,7 @@ export default async function GuarantorApprovalsPage() {
     redirect("/dashboard");
   }
 
-  // Fetch pending guarantor applications
+  // Fetch pending guarantor applications (only those who have actually applied)
   const applicationsRes = await supabase
     .from("employees")
     .select(`
@@ -42,6 +42,7 @@ export default async function GuarantorApprovalsPage() {
       guarantor_notes
     `)
     .eq("guarantor_status", "pending")
+    .not("guarantor_application_date", "is", null)
     .order("guarantor_application_date", { ascending: false });
 
   const applications = applicationsRes.data || [];
