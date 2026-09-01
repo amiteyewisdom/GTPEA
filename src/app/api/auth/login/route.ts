@@ -124,6 +124,7 @@ export async function POST(request: Request) {
 
     // Check if first login (employees only) - user needs to change password
     if (isEmployee && isFirstLogin) {
+      console.log("[/api/auth/login] First login detected, redirecting to change password");
       return NextResponse.json({
         success: true,
         isFirstLogin: true,

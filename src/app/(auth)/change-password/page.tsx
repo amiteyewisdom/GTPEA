@@ -46,100 +46,33 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    console.log("[change-password] Validation passed, starting update process");
+    console.log("[change-password] Validation passed, calling API");
     setLoading(true);
-    const supabase = createClient();
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) {
-      console.error("[change-password] User session error:", userError);
-      setError("Your session has expired. Please sign in again.");
-      setLoading(false);
-      return;
-    }
-
-    console.log("[change-password] User data:", {
-      email: userData.user.email,
-      userId: userData.user.id,
-    });
-
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-    if (updateError) {
-      console.error("[change-password] Auth update error:", updateError);
-      setError(updateError.message);
-      setLoading(false);
-      return;
-    }
-
-    console.log("[change-password] Auth password updated successfully");
-
-    // Update employee record with phone number and mark first login as complete
-    const updateData = { 
-      phone_number: phoneNumber,
-      is_first_login: false,
-      password_changed_at: new Date().toISOString()
-    };
-    
-    console.log("[change-password] Updating employee record:", {
-      email: userData.user.email,
-      updateData,
-    });
-
-    const { error: employeeError, count } = await (supabase
-      .from("employees") as any)
-      .update(updateData)
-      .eq("email", userData.user.email)
-      .select();
-
-    if (employeeError) {
-      console.error("[change-password] Employee update error:", employeeError);
-      console.error("[change-password] Error details:", JSON.stringify(employeeError, null, 2));
-      setError(employeeError.message);
-      setLoading(false);
-      return;
-    }
-
-    console.log("[change-password] Employee record updated successfully:", {
-      count,
-      affectedRows: count,
-    });
-
-    // Also update phone number in profiles table
-    const { error: profileError } = await (supabase
-      .from("profiles") as any)
-      .update({ phone: phoneNumber })
-      .eq("user_id", userData.user.id);
-
-    if (profileError) {
-      console.error("[change-password] Profile update error:", profileError);
-      // Don't fail the whole process if profile update fails, just log it
-    } else {
-      console.log("[change-password] Profile phone number updated successfully");
-    }
-
-    // Send OTP and redirect to verification page
     try {
-      const otpResponse = await fetch("/api/otp/send", {
+      const response = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          password,
           phoneNumber,
-          userId: userData.user.id,
         }),
       });
 
-      const otpData = await otpResponse.json();
+      const data = await response.json();
 
-      if (!otpResponse.ok) {
-        setError(otpData.error || "Failed to send OTP. Please try again.");
+      if (!response.ok) {
+        console.error("[change-password] API error:", data);
+        setError(data.error || "Failed to update password. Please try again.");
         setLoading(false);
         return;
       }
 
-      // Redirect to OTP verification page
+      console.log("[change-password] API success, redirecting to OTP");
       window.location.href = "/verify-otp";
     } catch (err) {
-      setError("Failed to send OTP. Please try again.");
+      console.error("[change-password] Network error:", err);
+      setError("Failed to update password. Please try again.");
       setLoading(false);
     }
   };
