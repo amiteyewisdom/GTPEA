@@ -15,6 +15,30 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if user is a board member or admin - they cannot be guarantors
+    const profileRes = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", employee.userId)
+      .single();
+
+    if (profileRes.error || !profileRes.data) {
+      return NextResponse.json(
+        { error: "Failed to check user role." },
+        { status: 500 }
+      );
+    }
+
+    const profile = (profileRes.data as any) as { role: string };
+    const restrictedRoles = ["super_admin", "administrator", "chairperson", "fund_manager"];
+    
+    if (restrictedRoles.includes(profile.role)) {
+      return NextResponse.json(
+        { error: "Board members and administrators cannot apply to become guarantors." },
+        { status: 403 }
+      );
+    }
+
     // Check if already has a guarantor status
     const existingRes = await supabase
       .from("employees")
