@@ -16,7 +16,7 @@ export default function VerifyOtpPage() {
   const [userId, setUserId] = useState("");
 
   useEffect(() => {
-    // Get user info and phone number from session
+    // Get user info from session
     const initPage = async () => {
       const supabase = createClient();
       const { data: userData } = await supabase.auth.getUser();
@@ -38,20 +38,22 @@ export default function VerifyOtpPage() {
         
         if (employeeData && employeeData.phone_number) {
           setPhoneNumber(employeeData.phone_number);
-          await sendCode();
+          // Don't auto-send code since it's already sent from login
+          setInfo("Verification code sent to your phone.");
           return;
         }
         
         // If not an employee, get phone number from profiles
         const { data: profileData } = await (supabase
           .from("profiles") as any)
-          .select("phone_number")
-          .eq("email", userData.user.email)
+          .select("phone")
+          .eq("user_id", userData.user.id)
           .maybeSingle();
         
-        if (profileData && profileData.phone_number) {
-          setPhoneNumber(profileData.phone_number);
-          await sendCode();
+        if (profileData && profileData.phone) {
+          setPhoneNumber(profileData.phone);
+          // Don't auto-send code since it's already sent from login
+          setInfo("Verification code sent to your phone.");
         } else {
           setError("Phone number not found. Please contact support.");
         }
