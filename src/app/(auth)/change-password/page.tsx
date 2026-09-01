@@ -59,10 +59,13 @@ export default function ChangePasswordPage() {
 
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
+      console.error("[change-password] Auth update error:", updateError);
       setError(updateError.message);
       setLoading(false);
       return;
     }
+
+    console.log("[change-password] Auth password updated successfully");
 
     // Update employee record with phone number and mark first login as complete
     const updateData = { 
@@ -76,19 +79,24 @@ export default function ChangePasswordPage() {
       updateData,
     });
 
-    const { error: employeeError } = await (supabase
+    const { error: employeeError, count } = await (supabase
       .from("employees") as any)
       .update(updateData)
-      .eq("email", userData.user.email);
+      .eq("email", userData.user.email)
+      .select();
 
     if (employeeError) {
       console.error("[change-password] Employee update error:", employeeError);
+      console.error("[change-password] Error details:", JSON.stringify(employeeError, null, 2));
       setError(employeeError.message);
       setLoading(false);
       return;
     }
 
-    console.log("[change-password] Employee record updated successfully");
+    console.log("[change-password] Employee record updated successfully:", {
+      count,
+      affectedRows: count,
+    });
 
     // Also update phone number in profiles table
     const { error: profileError } = await (supabase
