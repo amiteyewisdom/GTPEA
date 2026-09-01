@@ -46,7 +46,7 @@ export default async function GuarantorApprovalsPage() {
     .order("guarantor_application_date", { ascending: false });
 
   console.log("[GuarantorApprovals] Query error:", applicationsRes.error);
-  console.log("[GuarantorApprovals] Applications found:", applicationsRes.data?.length || 0);
+  console.log("[GuarantorApprovals] Applications found:", (applicationsRes.data as any)?.length || 0);
   console.log("[GuarantorApprovals] Applications data:", JSON.stringify(applicationsRes.data, null, 2));
 
   const applications = applicationsRes.data || [];
