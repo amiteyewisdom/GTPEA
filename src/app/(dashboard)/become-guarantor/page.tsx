@@ -30,7 +30,7 @@ export default async function BecomeGuarantorPage() {
   const employeeRes = await supabase
     .from("employees")
     .select("id, guarantor_status, guarantor_application_date, guarantor_notes, guarantor_approved_at, blacklist_reason")
-    .eq("id", typedProfile.employee_id)
+    .eq("employee_no", typedProfile.employee_id)
     .maybeSingle();
 
   console.log("[BecomeGuarantor] Employee lookup result:", employeeRes);
