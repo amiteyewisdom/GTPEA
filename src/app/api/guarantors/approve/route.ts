@@ -54,18 +54,20 @@ export async function POST(request: Request) {
     // Get employee details for notification
     const employeeRes = await admin
       .from("employees")
-      .select("user_id, first_name, last_name")
+      .select("id, user_id, first_name, last_name")
       .eq("id", employee_id)
       .single();
 
     if (employeeRes.error || !employeeRes.data) {
+      console.error("[/api/guarantors/approve] Employee lookup error:", employeeRes.error);
+      console.error("[/api/guarantors/approve] Looking for employee_id:", employee_id);
       return NextResponse.json(
         { error: "Employee not found." },
         { status: 404 }
       );
     }
 
-    const employee = employeeRes.data as { user_id: string; first_name: string; last_name: string };
+    const employee = employeeRes.data as { id: string; user_id: string; first_name: string; last_name: string };
 
     // Update guarantor status
     const updateData: any = {
