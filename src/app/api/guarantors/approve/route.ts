@@ -33,13 +33,13 @@ export async function POST(request: Request) {
     }
 
     // Check if approver has permission
-    const profileRes = await supabase
+    const approverProfileRes = await supabase
       .from("profiles")
       .select("role")
       .eq("user_id", approver.userId)
       .single();
 
-    const profile = profileRes.data as { role: string } | null;
+    const profile = approverProfileRes.data as { role: string } | null;
     const role = profile?.role || "employee";
 
     if (role !== "union_rep" && role !== "administrator" && role !== "super_admin") {
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     // Get employee details for notification
     const employeeRes = await admin
       .from("employees")
-      .select("id, user_id, first_name, last_name")
+      .select("id, first_name, last_name")
       .eq("id", employee_id)
       .single();
 
@@ -67,7 +67,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const employee = employeeRes.data as { id: string; user_id: string; first_name: string; last_name: string };
+    const employee = employeeRes.data as { id: string; first_name: string; last_name: string };
+
+    // Get user_id from profiles table for notification
+    const employeeProfileRes = await admin
+      .from("profiles")
+      .select("user_id")
+      .eq("employee_id", employee_id)
+      .maybeSingle();
+
+    const userId = employeeProfileRes.data?.user_id;
 
     // Update guarantor status
     const updateData: any = {
@@ -114,7 +123,7 @@ export async function POST(request: Request) {
     }
 
     await admin.from("notifications").insert({
-      user_id: employee.user_id,
+      user_id: userId,
       type: notificationType,
       title: notificationTitle,
       message: notificationMessage,
