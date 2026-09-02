@@ -15,13 +15,24 @@ interface GuarantorApplication {
   guarantor_notes: string | null;
 }
 
+interface ApprovedGuarantor {
+  id: string;
+  first_name: string;
+  last_name: string;
+  employee_no: string;
+  guarantor_status: string;
+  guarantor_approved_at: string;
+}
+
 interface GuarantorApprovalsClientProps {
   applications: GuarantorApplication[];
+  approvedGuarantors: ApprovedGuarantor[];
   userRole: string;
 }
 
 export default function GuarantorApprovalsClient({
   applications,
+  approvedGuarantors,
   userRole,
 }: GuarantorApprovalsClientProps) {
   const [loading, setLoading] = useState<string | null>(null);
@@ -87,14 +98,17 @@ export default function GuarantorApprovalsClient({
         </div>
       )}
 
-      {applications.length === 0 ? (
-        <GlassCard className="p-8 text-center">
-          <Shield className="w-12 h-12 text-brand-text-secondary mx-auto mb-4" />
-          <p className="text-brand-text-secondary">No pending guarantor applications</p>
-        </GlassCard>
-      ) : (
-        <div className="space-y-4">
-          {applications.map((application) => (
+      {/* Pending Applications Section */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-brand-text mb-4">Pending Applications</h2>
+        {applications.length === 0 ? (
+          <GlassCard className="p-8 text-center">
+            <Shield className="w-12 h-12 text-brand-text-secondary mx-auto mb-4" />
+            <p className="text-brand-text-secondary">No pending guarantor applications</p>
+          </GlassCard>
+        ) : (
+          <div className="space-y-4">
+            {applications.map((application) => (
             <GlassCard key={application.id} className="p-6">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div className="flex-1">
@@ -186,7 +200,44 @@ export default function GuarantorApprovalsClient({
             </GlassCard>
           ))}
         </div>
-      )}
+        )}
+      </div>
+
+      {/* Approved Guarantors Section */}
+      <div>
+        <h2 className="text-lg font-semibold text-brand-text mb-4">Approved Guarantors</h2>
+        {approvedGuarantors.length === 0 ? (
+          <GlassCard className="p-8 text-center">
+            <Shield className="w-12 h-12 text-brand-text-secondary mx-auto mb-4" />
+            <p className="text-brand-text-secondary">No approved guarantors yet</p>
+          </GlassCard>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {approvedGuarantors.map((guarantor) => (
+              <GlassCard key={guarantor.id} className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-50 text-green-600 font-bold">
+                    {guarantor.first_name[0]}{guarantor.last_name[0]}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-brand-text">
+                      {guarantor.first_name} {guarantor.last_name}
+                    </h3>
+                    <p className="text-sm text-brand-text-secondary">
+                      Employee No: {guarantor.employee_no}
+                    </p>
+                  </div>
+                </div>
+                {guarantor.guarantor_approved_at && (
+                  <p className="text-xs text-brand-text-secondary mt-2">
+                    Approved: {formatDate(guarantor.guarantor_approved_at, "dd MMM yyyy")}
+                  </p>
+                )}
+              </GlassCard>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -46,9 +46,26 @@ export default async function GuarantorApprovalsPage() {
 
   const applications = applicationsRes.data || [];
 
+  // Fetch approved guarantors
+  const approvedGuarantorsRes = await supabase
+    .from("employees")
+    .select(`
+      id,
+      first_name,
+      last_name,
+      employee_no,
+      guarantor_status,
+      guarantor_approved_at
+    `)
+    .eq("guarantor_status", "approved")
+    .order("guarantor_approved_at", { ascending: false });
+
+  const approvedGuarantors = approvedGuarantorsRes.data || [];
+
   return (
     <GuarantorApprovalsClient
       applications={applications}
+      approvedGuarantors={approvedGuarantors}
       userRole={typedProfile.role}
     />
   );

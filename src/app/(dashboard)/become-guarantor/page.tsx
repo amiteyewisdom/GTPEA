@@ -15,7 +15,7 @@ export default async function BecomeGuarantorPage() {
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("full_name, role")
+    .select("full_name, role, employee_id")
     .eq("user_id", user.id)
     .single();
 
@@ -23,12 +23,12 @@ export default async function BecomeGuarantorPage() {
     redirect("/dashboard");
   }
 
-  const typedProfile = profile as { full_name: string; role: string };
+  const typedProfile = profile as { full_name: string; role: string; employee_id: string };
 
   const employeeRes = await supabase
     .from("employees")
     .select("id, guarantor_status, guarantor_application_date, guarantor_notes, guarantor_approved_at, blacklist_reason")
-    .eq("user_id", user.id)
+    .eq("id", typedProfile.employee_id)
     .maybeSingle();
 
   const employee = employeeRes.data as {

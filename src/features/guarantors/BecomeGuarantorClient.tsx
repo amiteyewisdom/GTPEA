@@ -77,6 +77,30 @@ export default function BecomeGuarantorClient({
     );
   }
 
+  // If status is approved, show approved guarantor badge
+  if (status === "approved") {
+    return (
+      <GlassCard className="p-8">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4">
+            <CheckCircle className="w-8 h-8 text-green-500" />
+          </div>
+          <h2 className="text-xl font-bold text-brand-text mb-2">
+            You are an Approved Guarantor
+          </h2>
+          <p className="text-sm text-brand-text-secondary mb-4">
+            Congratulations! You can now be selected as a guarantor for loan applications.
+          </p>
+          {employee?.guarantor_approved_at && (
+            <p className="text-xs text-brand-text-secondary">
+              Approved on: {new Date(employee.guarantor_approved_at).toLocaleDateString()}
+            </p>
+          )}
+        </div>
+      </GlassCard>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
@@ -130,48 +154,6 @@ export default function BecomeGuarantorClient({
                 <CheckCircle className="w-4 h-4" />
                 Application submitted successfully!
               </div>
-            )}
-          </div>
-        </GlassCard>
-      )}
-
-      {status === "pending" && (
-        <GlassCard className="p-8">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 mb-4">
-              <Clock className="w-8 h-8 text-amber-500" />
-            </div>
-            <h2 className="text-xl font-bold text-brand-text mb-2">
-              Application Under Review
-            </h2>
-            <p className="text-sm text-brand-text-secondary mb-4">
-              Your guarantor application is being reviewed by the Union Representative.
-            </p>
-            {employee?.guarantor_application_date && (
-              <p className="text-xs text-brand-text-secondary">
-                Applied on: {new Date(employee.guarantor_application_date).toLocaleDateString()}
-              </p>
-            )}
-          </div>
-        </GlassCard>
-      )}
-
-      {status === "approved" && (
-        <GlassCard className="p-8">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4">
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-            <h2 className="text-xl font-bold text-brand-text mb-2">
-              You are an Approved Guarantor
-            </h2>
-            <p className="text-sm text-brand-text-secondary mb-4">
-              Congratulations! You can now be selected as a guarantor for loan applications.
-            </p>
-            {employee?.guarantor_approved_at && (
-              <p className="text-xs text-brand-text-secondary">
-                Approved on: {new Date(employee.guarantor_approved_at).toLocaleDateString()}
-              </p>
             )}
           </div>
         </GlassCard>
