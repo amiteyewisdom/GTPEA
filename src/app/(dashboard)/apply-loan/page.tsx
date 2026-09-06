@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { LoanApplication } from "@/features/loans/LoanApplication";
 import { getLoggedInEmployee } from "@/lib/loans/employee";
 import type { Metadata } from "next";
@@ -9,6 +10,7 @@ export const metadata: Metadata = { title: "Apply for a Facility" };
 
 export default async function ApplyLoanPage() {
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   const employee = await getLoggedInEmployee(supabase);
 
@@ -26,7 +28,7 @@ export default async function ApplyLoanPage() {
       .select("first_name, last_name, employee_no, department, date_joined, savings(account_number)")
       .eq("id", employee!.employeeId)
       .single(),
-    supabase
+    admin
       .from("employees")
       .select("id, first_name, last_name, employee_no")
       .eq("status", "active")
