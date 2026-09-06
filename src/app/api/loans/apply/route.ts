@@ -225,7 +225,7 @@ async function handleApply(body: any) {
         account_number: g.account_number || null,
         consent_status: "pending",
       }))
-    );
+    ).select();
 
     console.log("[/api/loans/apply] Guarantors insert result:", guarantorsInsertRes);
 
