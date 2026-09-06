@@ -71,7 +71,8 @@ export default async function GuarantorRequestsPage() {
     .eq("consent_status", "pending");
 
   console.log("[GuarantorRequests] Employee ID:", employee.id);
-  console.log("[GuarantorRequests] Query result:", JSON.stringify(requestsRes, null, 2));
+  console.log("[GuarantorRequests] Query error:", requestsRes.error);
+  console.log("[GuarantorRequests] Query result:", JSON.stringify(requestsRes.data, null, 2));
 
   const requests = requestsRes.data || [];
 
