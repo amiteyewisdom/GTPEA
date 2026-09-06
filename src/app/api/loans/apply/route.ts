@@ -164,7 +164,7 @@ async function handleApply(body: any) {
       processing_fee: 0,
       term_months: durationMonths,
       monthly_repayment: monthlyRepayment,
-      status: allGuarantorIds.length > 0 ? "awaiting_guarantor_consent" : "pending",
+      status: "pending",
       purpose: purpose || null,
       expected_completion_date: addMonths(new Date(), durationMonths).toISOString(),
       guarantor_id: guarantorId || null,
