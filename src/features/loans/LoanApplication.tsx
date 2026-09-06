@@ -127,8 +127,8 @@ export function LoanApplication({
   const usedGuarantorIds = [guarantorId, ...additionalGuarantors.map((g) => g.id)].filter(Boolean);
 
   const addAdditionalGuarantor = () => {
-    if (additionalGuarantors.length >= 1) return;
-    setAdditionalGuarantors([...additionalGuarantors, { id: "", account: "", amount: "" }]);
+    // No additional guarantors allowed - only 1 guarantor required
+    return;
   };
 
   const updateAdditionalGuarantor = (index: number, patch: Partial<{ id: string; account: string; amount: string }>) => {
@@ -535,15 +535,6 @@ export function LoanApplication({
             );
           })}
 
-          {guarantorId && requiresGuarantor && additionalGuarantors.length < 1 && (
-            <button
-              type="button"
-              onClick={addAdditionalGuarantor}
-              className="text-xs font-semibold text-brand-green hover:text-brand-green-dark flex items-center gap-1"
-            >
-              + Add another guarantor ({1 - additionalGuarantors.length} remaining)
-            </button>
-          )}
         </div>
 
         {/* Loan Summary */}
