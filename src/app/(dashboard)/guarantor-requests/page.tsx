@@ -43,6 +43,14 @@ export default async function GuarantorRequestsPage() {
     redirect("/dashboard");
   }
 
+  // Debug: Check all loan_guarantors for this employee
+  const allGuarantorsRes = await supabase
+    .from("loan_guarantors")
+    .select("*")
+    .eq("guarantor_id", employee.id);
+
+  console.log("[GuarantorRequests] All loan_guarantors for employee:", JSON.stringify(allGuarantorsRes.data, null, 2));
+
   // Fetch pending guarantor consent requests
   const requestsRes = await supabase
     .from("loan_guarantors")
