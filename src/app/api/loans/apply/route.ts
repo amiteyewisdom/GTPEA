@@ -29,15 +29,12 @@ async function handleApply(body: any) {
   const guarantorId = body?.guarantor_id ? String(body.guarantor_id) : null;
   const guarantorName = body?.guarantor_name ? String(body.guarantor_name) : null;
   const guarantorStaffId = body?.guarantor_staff_id ? String(body.guarantor_staff_id) : null;
-  const guarantorAccount = body?.guarantor_account ? String(body.guarantor_account) : null;
-  const guarantorAmount = body?.guarantor_amount ? Number(body.guarantor_amount) : null;
   const additionalGuarantors = Array.isArray(body?.additional_guarantors)
     ? body.additional_guarantors
         .filter((g: any) => g?.guarantor_id)
         .map((g: any) => ({
           guarantor_id: String(g.guarantor_id),
           account_number: g?.guarantor_account ? String(g.guarantor_account) : null,
-          amount: g?.guarantor_amount ? Number(g.guarantor_amount) : null,
         }))
     : [];
 
@@ -127,8 +124,8 @@ async function handleApply(body: any) {
   const activeLoanBalance = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.outstanding_balance ?? 0), 0);
   const requiresGuarantor = product.requires_guarantor && savingsBalance <= activeLoanBalance;
 
-  if (allGuarantorIds.length > 2) {
-    return NextResponse.json({ error: "You can list at most 2 guarantors." }, { status: 400 });
+  if (allGuarantorIds.length > 1) {
+    return NextResponse.json({ error: "You can list at most 1 guarantor." }, { status: 400 });
   }
 
   if (requiresGuarantor && allGuarantorIds.length === 0) {
@@ -171,11 +168,9 @@ async function handleApply(body: any) {
       purpose: purpose || null,
       expected_completion_date: addMonths(new Date(), durationMonths).toISOString(),
       guarantor_id: guarantorId || null,
-      guarantor_account: guarantorAccount || null,
-      guarantor_amount: guarantorAmount || null,
       notes:
         guarantorName && guarantorStaffId
-          ? `Guarantor: ${guarantorName} (${guarantorStaffId})${guarantorAccount ? ` - Ac/No: ${guarantorAccount}` : ""}`
+          ? `Guarantor: ${guarantorName} (${guarantorStaffId})`
           : null,
     })
     .select("id, loan_ref, status, amount_requested, term_months")
@@ -212,7 +207,7 @@ async function handleApply(body: any) {
 
   // Persist all guarantors and notify them
   const primary = guarantorId
-    ? { guarantor_id: guarantorId, account_number: guarantorAccount, amount: guarantorAmount }
+    ? { guarantor_id: guarantorId, account_number: null }
     : null;
   const allGuarantorRows = [
     ...(primary ? [primary] : []),
@@ -225,7 +220,6 @@ async function handleApply(body: any) {
         loan_id: loanRes.data.id,
         guarantor_id: g.guarantor_id,
         account_number: g.account_number || null,
-        amount: g.amount || null,
       }))
     );
 
