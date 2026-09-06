@@ -214,14 +214,23 @@ async function handleApply(body: any) {
     ...additionalGuarantors,
   ];
 
+  console.log("[/api/loans/apply] All guarantor rows:", allGuarantorRows);
+  console.log("[/api/loans/apply] Loan ID:", loanRes.data.id);
+
   if (allGuarantorRows.length > 0) {
-    await (admin.from("loan_guarantors") as any).insert(
+    const guarantorsInsertRes = await (admin.from("loan_guarantors") as any).insert(
       allGuarantorRows.map((g) => ({
         loan_id: loanRes.data.id,
         guarantor_id: g.guarantor_id,
         account_number: g.account_number || null,
       }))
     );
+
+    console.log("[/api/loans/apply] Guarantors insert result:", guarantorsInsertRes);
+
+    if (guarantorsInsertRes.error) {
+      console.error("[/api/loans/apply] Failed to insert guarantors:", guarantorsInsertRes.error);
+    }
 
     for (const g of allGuarantorRows) {
       const { data: guarantor } = await admin
