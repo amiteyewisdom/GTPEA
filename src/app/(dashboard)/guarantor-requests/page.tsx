@@ -15,7 +15,7 @@ export default async function GuarantorRequestsPage() {
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("full_name, role")
+    .select("full_name, role, employee_id")
     .eq("user_id", user.id)
     .single();
 
@@ -23,14 +23,8 @@ export default async function GuarantorRequestsPage() {
     redirect("/dashboard");
   }
 
-  // Get employee ID from profile
-  const profileWithEmployeeId = await supabase
-    .from("profiles")
-    .select("employee_id")
-    .eq("user_id", user.id)
-    .single();
-
-  const employeeId = profileWithEmployeeId.data?.employee_id;
+  const typedProfile = profile as { full_name: string; role: string; employee_id: string };
+  const employeeId = typedProfile.employee_id;
 
   if (!employeeId) {
     redirect("/dashboard");
