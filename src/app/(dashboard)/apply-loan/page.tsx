@@ -56,6 +56,9 @@ export default async function ApplyLoanPage() {
       account_number: e.savings?.[0]?.account_number ?? null,
     }));
 
+  console.log("[ApplyLoan] Current employee ID:", employee!.employeeId);
+  console.log("[ApplyLoan] Filtered guarantor employees:", guarantorEmployees);
+
   const raw = employeeDetailsRes.data as any;
   const employeeDetails = raw
     ? {
