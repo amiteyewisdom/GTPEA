@@ -279,7 +279,7 @@ export function LoanApplication({
           )}
 
           {/* How much can I borrow */}
-          {maxBorrowable !== undefined && (
+          {maxBorrowable !== undefined && maxBorrowable > 0 && (
             <div className="bg-brand-green/10 border border-brand-green/30 rounded-lg p-3 min-w-[220px]">
               <p className="text-xs text-brand-text-secondary mb-1 font-medium">Maximum You Can Borrow</p>
               <p className="text-xl font-bold text-brand-green">{formatCurrency(maxBorrowable)}</p>

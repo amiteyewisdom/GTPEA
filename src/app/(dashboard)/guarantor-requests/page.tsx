@@ -23,11 +23,24 @@ export default async function GuarantorRequestsPage() {
     redirect("/dashboard");
   }
 
-  // Get employee ID
+  // Get employee ID from profile
+  const profileWithEmployeeId = await supabase
+    .from("profiles")
+    .select("employee_id")
+    .eq("user_id", user.id)
+    .single();
+
+  const employeeId = profileWithEmployeeId.data?.employee_id;
+
+  if (!employeeId) {
+    redirect("/dashboard");
+  }
+
+  // Get employee record
   const employeeRes = await supabase
     .from("employees")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("id", employeeId)
     .maybeSingle();
 
   const employee = employeeRes.data as { id: string } | null;
