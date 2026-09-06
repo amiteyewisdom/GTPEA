@@ -91,9 +91,7 @@ export function LoanApplication({
   const duration = durationStr === "" ? 0 : Number(durationStr);
   const [purpose, setPurpose] = useState("");
   const [guarantorId, setGuarantorId] = useState("");
-  const [guarantorAmountStr, setGuarantorAmountStr] = useState("");
   const [guarantorAccount, setGuarantorAccount] = useState("");
-  const [additionalGuarantors, setAdditionalGuarantors] = useState<{ id: string; account: string; amount: string }[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -117,36 +115,10 @@ export function LoanApplication({
     }
   }, [selectedGuarantor]);
 
-  const guarantorAmount = guarantorAmountStr === "" ? principal : Number(guarantorAmountStr);
-
   const requiresGuarantor =
     savingsBalance !== undefined && activeLoanBalance !== undefined
       ? savingsBalance <= activeLoanBalance
       : selectedProduct?.requires_guarantor ?? false;
-
-  const usedGuarantorIds = [guarantorId, ...additionalGuarantors.map((g) => g.id)].filter(Boolean);
-
-  const addAdditionalGuarantor = () => {
-    // No additional guarantors allowed - only 1 guarantor required
-    return;
-  };
-
-  const updateAdditionalGuarantor = (index: number, patch: Partial<{ id: string; account: string; amount: string }>) => {
-    const next = [...additionalGuarantors];
-    next[index] = { ...next[index], ...patch };
-    if (patch.id) {
-      const emp = guarantorEmployees.find((e) => e.id === patch.id);
-      next[index].account = emp?.account_number ?? "";
-      next[index].amount = String(principal);
-    }
-    setAdditionalGuarantors(next);
-  };
-
-  const removeAdditionalGuarantor = (index: number) => {
-    const next = [...additionalGuarantors];
-    next.splice(index, 1);
-    setAdditionalGuarantors(next);
-  };
 
   const calcMethod = selectedProduct?.interest_calc_method ?? "reducing_balance";
 
@@ -172,8 +144,7 @@ export function LoanApplication({
   const amountWarn = amountWarning(principal, maxBorrowable);
   const termValidation = termError(selectedProduct, duration);
   const guarantorMissing = requiresGuarantor && !guarantorId;
-  const noSavings = savingsBalance === 0;
-  const formValid = !amountValidation && !termValidation && Boolean(selectedProduct) && principal > 0 && !guarantorMissing && !noSavings;
+  const formValid = !amountValidation && !termValidation && Boolean(selectedProduct) && principal > 0 && !guarantorMissing;
 
   const handleProductChange = (nextProductId: string) => {
     const product = loanProducts.find((item) => item.id === nextProductId);
@@ -206,14 +177,6 @@ export function LoanApplication({
           guarantor_name: selectedGuarantor ? `${selectedGuarantor.first_name} ${selectedGuarantor.last_name}` : null,
           guarantor_staff_id: selectedGuarantor?.employee_no,
           guarantor_account: guarantorAccount || null,
-          guarantor_amount: guarantorAmount || null,
-          additional_guarantors: additionalGuarantors
-            .filter((g) => g.id)
-            .map((g) => ({
-              guarantor_id: g.id,
-              guarantor_account: g.account || null,
-              guarantor_amount: g.amount === "" ? principal : Number(g.amount),
-            })),
         }),
       });
 
@@ -465,75 +428,10 @@ export function LoanApplication({
                   </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-brand-text-secondary mb-1">Guarantor Amount Approved (GH₵)</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={guarantorAmountStr}
-                  placeholder={String(principal)}
-                  onChange={(e) => setGuarantorAmountStr(e.target.value.replace(/[^0-9.]/g, ""))}
-                  className="w-1/2 sm:w-1/3 px-3 py-2 bg-white border border-brand-card-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
-                />
-              </div>
             </div>
           ) : requiresGuarantor ? (
             <p className="text-xs text-red-600">This product requires a guarantor before submission.</p>
           ) : null}
-
-          {additionalGuarantors.map((entry, index) => {
-            const emp = guarantorEmployees.find((e) => e.id === entry.id);
-            return (
-              <div key={index} className="space-y-3 rounded-lg border border-brand-card-border bg-brand-card-bg/50 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-brand-text-secondary">Additional Guarantor {index + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeAdditionalGuarantor(index)}
-                    className="text-xs text-red-600 hover:text-red-800"
-                  >
-                    Remove
-                  </button>
-                </div>
-                <select
-                  value={entry.id}
-                  onChange={(e) => updateAdditionalGuarantor(index, { id: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
-                >
-                  <option value="">Select a guarantor</option>
-                  {guarantorEmployees
-                    .filter((e) => !usedGuarantorIds.includes(e.id) || e.id === entry.id)
-                    .map((e) => (
-                      <option key={e.id} value={e.id}>
-                        {e.first_name} {e.last_name} ({e.employee_no})
-                      </option>
-                    ))}
-                </select>
-                {emp && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-brand-text-secondary" />
-                      <div>
-                        <p className="text-xs text-brand-text-secondary">Account No.</p>
-                        <p className="text-sm font-semibold text-brand-text">{entry.account || emp.account_number || "—"}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-brand-text-secondary mb-1">Amount Approved (GH₵)</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={entry.amount}
-                        placeholder={String(principal)}
-                        onChange={(e) => updateAdditionalGuarantor(index, { amount: e.target.value.replace(/[^0-9.]/g, "") })}
-                        className="w-full px-3 py-2 bg-white border border-brand-card-border rounded-lg text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
 
         </div>
 
