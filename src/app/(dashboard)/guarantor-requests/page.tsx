@@ -68,8 +68,10 @@ export default async function GuarantorRequestsPage() {
       )
     `)
     .eq("guarantor_id", employee.id)
-    .eq("consent_status", "pending")
-    .order("created_at", { ascending: false });
+    .eq("consent_status", "pending");
+
+  console.log("[GuarantorRequests] Employee ID:", employee.id);
+  console.log("[GuarantorRequests] Query result:", JSON.stringify(requestsRes, null, 2));
 
   const requests = requestsRes.data || [];
 
