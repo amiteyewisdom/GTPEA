@@ -60,7 +60,7 @@ export default async function GuarantorRequestsPage() {
         purpose,
         created_at,
         employee_id,
-        employees!inner (
+        employees!loans_employee_id_fkey (
           first_name,
           last_name,
           employee_no
