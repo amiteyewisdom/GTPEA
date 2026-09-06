@@ -223,6 +223,7 @@ async function handleApply(body: any) {
         loan_id: loanRes.data.id,
         guarantor_id: g.guarantor_id,
         account_number: g.account_number || null,
+        consent_status: "pending",
       }))
     );
 
