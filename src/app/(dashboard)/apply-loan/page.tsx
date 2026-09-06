@@ -34,6 +34,9 @@ export default async function ApplyLoanPage() {
       .order("first_name"),
   ]);
 
+  console.log("[ApplyLoan] Guarantor employees query result:", JSON.stringify(guarantorEmployeesRes, null, 2));
+  console.log("[ApplyLoan] Current employee ID:", employee!.employeeId);
+
   let savingsBalance = 0;
   let activeLoanBalance = 0;
 
