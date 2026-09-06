@@ -24,17 +24,17 @@ export default async function GuarantorRequestsPage() {
   }
 
   const typedProfile = profile as { full_name: string; role: string; employee_id: string };
-  const employeeId = typedProfile.employee_id;
+  const employeeNo = typedProfile.employee_id;
 
-  if (!employeeId) {
+  if (!employeeNo) {
     redirect("/dashboard");
   }
 
-  // Get employee record
+  // Get employee record by employee_no (not id, since employee_id in profiles is employee_no)
   const employeeRes = await supabase
     .from("employees")
     .select("id")
-    .eq("id", employeeId)
+    .eq("employee_no", employeeNo)
     .maybeSingle();
 
   const employee = employeeRes.data as { id: string } | null;
