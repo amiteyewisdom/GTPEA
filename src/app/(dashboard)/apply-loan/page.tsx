@@ -28,15 +28,11 @@ export default async function ApplyLoanPage() {
       .single(),
     supabase
       .from("employees")
-      .select("id, first_name, last_name, employee_no, savings(account_number)")
+      .select("id, first_name, last_name, employee_no")
       .eq("status", "active")
       .eq("guarantor_status", "approved")
       .order("first_name"),
   ]);
-
-  console.log("[ApplyLoan] Guarantor employees query result:", JSON.stringify(guarantorEmployeesRes, null, 2));
-  console.log("[ApplyLoan] Query error:", guarantorEmployeesRes.error);
-  console.log("[ApplyLoan] Data count:", guarantorEmployeesRes.data?.length);
 
   let savingsBalance = 0;
   let activeLoanBalance = 0;
@@ -51,11 +47,24 @@ export default async function ApplyLoanPage() {
   }
 
   const maxBorrowable = Math.max(0, savingsBalance * 3 - activeLoanBalance);
+
+  // Fetch savings account numbers for guarantors separately
+  const guarantorIds = (guarantorEmployeesRes.data ?? []).map((e: any) => e.id);
+  const savingsRes = await supabase
+    .from("savings")
+    .select("employee_id, account_number")
+    .eq("status", "active")
+    .in("employee_id", guarantorIds);
+
+  const savingsMap = new Map(
+    (savingsRes.data ?? []).map((s: any) => [s.employee_id, s.account_number])
+  );
+
   const guarantorEmployees = (guarantorEmployeesRes.data ?? [])
     .filter((e: any) => e.id !== employee!.employeeId)
     .map((e: any) => ({
       ...e,
-      account_number: e.savings?.[0]?.account_number ?? null,
+      account_number: savingsMap.get(e.id) ?? null,
     }));
 
   const raw = employeeDetailsRes.data as any;
