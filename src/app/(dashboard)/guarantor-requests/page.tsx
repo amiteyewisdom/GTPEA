@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import GuarantorRequestsClient from "@/features/guarantors/GuarantorRequestsClient";
 
 export default async function GuarantorRequestsPage() {
   const supabase = await createClient();
+  const admin = createAdminClient();
 
   const {
     data: { user },
@@ -44,7 +46,7 @@ export default async function GuarantorRequestsPage() {
   }
 
   // Debug: Check all loan_guarantors for this employee
-  const allGuarantorsRes = await supabase
+  const allGuarantorsRes = await admin
     .from("loan_guarantors")
     .select("*")
     .eq("guarantor_id", employee.id);
@@ -52,7 +54,7 @@ export default async function GuarantorRequestsPage() {
   console.log("[GuarantorRequests] All loan_guarantors for employee:", JSON.stringify(allGuarantorsRes.data, null, 2));
 
   // Fetch pending guarantor consent requests
-  const requestsRes = await supabase
+  const requestsRes = await admin
     .from("loan_guarantors")
     .select(`
       id,
