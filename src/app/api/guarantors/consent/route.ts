@@ -121,39 +121,64 @@ export async function POST(request: Request) {
       if (hasOneApproved) {
         console.log("[/api/guarantors/consent] Creating approval record for loan:", guarantorRequest.loan_id);
 
-        // At least one guarantor has consented, move loan to pending status
-        await admin
-          .from("loans")
-          .update({ status: "pending" })
-          .eq("id", guarantorRequest.loan_id);
+        try {
+          // At least one guarantor has consented, move loan to pending status
+          const loanUpdateRes = await admin
+            .from("loans")
+            .update({ status: "pending" })
+            .eq("id", guarantorRequest.loan_id);
 
-        // Create approval record
-        const loanRes = await admin
-          .from("loans")
-          .select("employee_id")
-          .eq("id", guarantorRequest.loan_id)
-          .single();
+          console.log("[/api/guarantors/consent] Loan status update error:", loanUpdateRes.error);
 
-        if (loanRes.data) {
-          const profileRes = await admin
-            .from("profiles")
-            .select("user_id")
-            .eq("employee_id", loanRes.data.employee_id)
+          // Create approval record
+          const loanRes = await admin
+            .from("loans")
+            .select("employee_id")
+            .eq("id", guarantorRequest.loan_id)
             .single();
 
-          if (profileRes.data) {
-            const approvalInsert = await admin.from("approvals").insert({
-              entity_type: "loan",
-              entity_id: guarantorRequest.loan_id,
-              status: "pending",
-              current_stage: 1,
-              total_stages: 3,
-              submitted_by: profileRes.data.user_id,
-            }).select();
+          console.log("[/api/guarantors/consent] Loan data:", loanRes.data);
+          console.log("[/api/guarantors/consent] Loan fetch error:", loanRes.error);
 
-            console.log("[/api/guarantors/consent] Approval record created:", approvalInsert.data);
-            console.log("[/api/guarantors/consent] Approval insert error:", approvalInsert.error);
+          if (loanRes.data) {
+            const profileRes = await admin
+              .from("profiles")
+              .select("user_id")
+              .eq("employee_id", loanRes.data.employee_id)
+              .single();
+
+            console.log("[/api/guarantors/consent] Profile data:", profileRes.data);
+            console.log("[/api/guarantors/consent] Profile fetch error:", profileRes.error);
+
+            if (profileRes.data) {
+              const approvalInsert = await admin.from("approvals").insert({
+                entity_type: "loan",
+                entity_id: guarantorRequest.loan_id,
+                status: "pending",
+                current_stage: 1,
+                total_stages: 3,
+                submitted_by: profileRes.data.user_id,
+              }).select();
+
+              console.log("[/api/guarantors/consent] Approval record created:", approvalInsert.data);
+              console.log("[/api/guarantors/consent] Approval insert error:", approvalInsert.error);
+
+              if (approvalInsert.error) {
+                console.error("[/api/guarantors/consent] Failed to create approval record:", approvalInsert.error);
+                throw new Error(`Failed to create approval record: ${approvalInsert.error.message}`);
+              }
+            } else {
+              console.log("[/api/guarantors/consent] No profile found for employee:", loanRes.data.employee_id);
+              throw new Error("No profile found for loan applicant");
+            }
+          } else {
+            console.log("[/api/guarantors/consent] No loan data found");
+            throw new Error("Loan not found");
           }
+        } catch (error) {
+          console.error("[/api/guarantors/consent] Error during approval record creation:", error);
+          // Continue with the response even if approval creation fails
+          // The user will be notified that guarantor consent was approved
         }
       } else {
         console.log("[/api/guarantors/consent] No guarantors have approved yet");
