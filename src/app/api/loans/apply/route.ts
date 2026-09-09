@@ -192,7 +192,7 @@ async function handleApply(body: any) {
       entity_id: loanRes.data.id,
       status: "pending",
       current_stage: 1,
-      total_stages: 4,
+      total_stages: 3,
       submitted_by: employee.userId,
     });
 
@@ -253,7 +253,9 @@ async function handleApply(body: any) {
   }
 
   return NextResponse.json({
-    message: "Facility application submitted. The Facility Committee will review it first.",
+    message: allGuarantorIds.length > 0
+      ? "Facility application submitted. Waiting for guarantor consent."
+      : "Facility application submitted. The Relief Committee will review it first.",
     loan: loanRes.data,
   });
 }
