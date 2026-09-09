@@ -1,8 +1,7 @@
 export const APPROVAL_STAGES = [
-  { stage: 1, role: "facility_committee", label: "Facility Committee" },
-  { stage: 2, role: "union_rep", label: "Relief Committee" },
-  { stage: 3, role: "fund_manager", label: "Fund Manager" },
-  { stage: 4, role: "chairperson", label: "Chairperson" },
+  { stage: 1, role: "union_rep", label: "Relief Committee" },
+  { stage: 2, role: "fund_manager", label: "Fund Manager" },
+  { stage: 3, role: "chairperson", label: "Chairperson" },
 ] as const;
 
 export type ApproverRole = (typeof APPROVAL_STAGES)[number]["role"];

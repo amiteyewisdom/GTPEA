@@ -12,7 +12,6 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   chairperson: 'Chairperson',
   chairman: 'Chairperson',
   union_rep: 'Trustee',
-  facility_committee: 'Facility Committee',
 };
 
 export const LOAN_STATUS_COLORS = {

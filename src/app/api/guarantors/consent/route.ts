@@ -140,7 +140,7 @@ export async function POST(request: Request) {
               entity_id: guarantorRequest.loan_id,
               status: "pending",
               current_stage: 1,
-              total_stages: 4,
+              total_stages: 3,
               submitted_by: profileRes.data.user_id,
             });
           }

@@ -94,7 +94,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
     }
   }, [selected]);
 
-  const isApproverRole = ["union_rep", "fund_manager", "chairperson", "facility_committee"].includes(userRole);
+  const isApproverRole = ["union_rep", "fund_manager", "chairperson"].includes(userRole);
   const [view, setView] = useState<"action" | "all">(isApproverRole ? "action" : "all");
 
   const STAGE_ROLE_MAP: Record<number, string> = Object.fromEntries(
@@ -136,7 +136,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
     }
 
     // ALL RELEVANT: approvers see all pending/in-pipeline approvals; employees see only their own
-    const isApprover = ["union_rep", "fund_manager", "chairperson", "facility_committee"].includes(userRole);
+    const isApprover = ["union_rep", "fund_manager", "chairperson"].includes(userRole);
     if (isApprover) {
       return matchesSearch;
     }

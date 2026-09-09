@@ -6,14 +6,14 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type UserRole = "super_admin" | "administrator" | "employee" | "fund_manager" | "chairperson" | "chairman" | "union_rep" | "facility_committee";
+export type UserRole = "super_admin" | "administrator" | "employee" | "fund_manager" | "chairperson" | "chairman" | "union_rep";
 export type EmployeeStatus = "active" | "inactive" | "suspended" | "terminated";
 export type LoanStatus = "pending" | "approved" | "disbursed" | "repaying" | "completed" | "rejected" | "defaulted";
 export type SavingsType = "regular" | "special" | "emergency" | "retirement";
 export type SavingsStatus = "active" | "frozen" | "closed" | "suspended";
 export type ApprovalStatus     = "pending" | "approved" | "rejected" | "escalated" | "on_hold";
 export type ApprovalEntityType = "loan" | "withdrawal" | "savings_adjustment" | "employee_onboarding" | "dividend";
-export type ApprovalStageRole  = "union_rep" | "fund_manager" | "chairperson" | "chairman" | "facility_committee";
+export type ApprovalStageRole  = "union_rep" | "fund_manager" | "chairperson" | "chairman";
 export type TransactionType    = "savings_deposit" | "savings_withdrawal" | "savings_adjustment" | "loan_disbursement" | "loan_repayment" | "withdrawal_disbursement" | "dividend_credit" | "interest_credit" | "transfer" | "fee" | "penalty";
 export type RepaymentStatus    = "pending" | "paid" | "overdue" | "partial" | "waived";
 export type Department         = "management" | "finance" | "operations" | "hr" | "it" | "sales" | "legal" | "audit";

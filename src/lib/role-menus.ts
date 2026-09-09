@@ -37,7 +37,6 @@ export type UserRole =
   | 'chairperson'
   | 'fund_manager'
   | 'union_rep'
-  | 'facility_committee'
   | 'employee';
 
 export interface MenuItem {
@@ -273,22 +272,6 @@ export const menuItems: MenuItem[] = [
     icon: Package,
     path: '/loan-products',
     roles: ['fund_manager'],
-  },
-
-  // Facility Committee
-  {
-    id: 'dashboard-facility',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-    path: '/dashboard',
-    roles: ['facility_committee'],
-  },
-  {
-    id: 'loan-reviews-facility',
-    label: 'Loan Reviews',
-    icon: ClipboardList,
-    path: '/approvals',
-    roles: ['facility_committee'],
   },
 
   // Union Representative

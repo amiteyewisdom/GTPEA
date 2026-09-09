@@ -387,13 +387,13 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     };
   });
 
-  const fundManagerQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 1);
+  const fundManagerQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 2);
   const chairpersonQueueItems = buildLoanApprovalQueue(approvals, memberOnlyLoans, 3);
-  const unionRepQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 2);
+  const unionRepQueue = buildLoanApprovalQueue(approvals, memberOnlyLoans, 1);
 
   // Only count union-rep actions tied to actual employee loans/withdrawals
   const unionRepActions = approvalActions.filter((a) => {
-    if (a.stage !== 2 && a.required_role !== "union_rep") return false;
+    if (a.stage !== 1 && a.required_role !== "union_rep") return false;
     const approval = a.approvals;
     if (!approval) return false;
     if (approval.entity_type === "loan") return loanMap.has(approval.entity_id);
