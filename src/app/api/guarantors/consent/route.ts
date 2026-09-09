@@ -103,18 +103,25 @@ export async function POST(request: Request) {
       });
     }
 
-    // If action is approved, check if all guarantors have consented
+    // If action is approved, check if at least one guarantor has consented
     if (action === "approved") {
       const allGuarantorsRes = await admin
         .from("loan_guarantors")
-        .select("consent_status")
+        .select("consent_status, guarantor_id")
         .eq("loan_id", guarantorRequest.loan_id);
 
       const allGuarantors = allGuarantorsRes.data || [];
-      const allApproved = allGuarantors.every((g: any) => g.consent_status === "approved");
+      const hasOneApproved = allGuarantors.some((g: any) => g.consent_status === "approved");
 
-      if (allApproved) {
-        // All guarantors have consented, move loan to pending status
+      console.log("[/api/guarantors/consent] Loan ID:", guarantorRequest.loan_id);
+      console.log("[/api/guarantors/consent] All guarantors for this loan:", allGuarantors);
+      console.log("[/api/guarantors/consent] Total guarantors:", allGuarantors.length);
+      console.log("[/api/guarantors/consent] Has at least one approved:", hasOneApproved);
+
+      if (hasOneApproved) {
+        console.log("[/api/guarantors/consent] Creating approval record for loan:", guarantorRequest.loan_id);
+
+        // At least one guarantor has consented, move loan to pending status
         await admin
           .from("loans")
           .update({ status: "pending" })
@@ -135,16 +142,21 @@ export async function POST(request: Request) {
             .single();
 
           if (profileRes.data) {
-            await admin.from("approvals").insert({
+            const approvalInsert = await admin.from("approvals").insert({
               entity_type: "loan",
               entity_id: guarantorRequest.loan_id,
               status: "pending",
               current_stage: 1,
               total_stages: 3,
               submitted_by: profileRes.data.user_id,
-            });
+            }).select();
+
+            console.log("[/api/guarantors/consent] Approval record created:", approvalInsert.data);
+            console.log("[/api/guarantors/consent] Approval insert error:", approvalInsert.error);
           }
         }
+      } else {
+        console.log("[/api/guarantors/consent] No guarantors have approved yet");
       }
     }
 
