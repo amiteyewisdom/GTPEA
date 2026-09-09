@@ -19,7 +19,6 @@ interface ApprovalAction {
   required_role: string;
   action: string;
   notes: string | null;
-  reason_code: string | null;
   actioned_at: string;
 }
 
@@ -484,11 +483,6 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                           <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${action.action === "approved" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{action.action.toUpperCase()}</span>
                         </div>
                         {action.notes && <p className="mt-1 text-xs text-brand-text-secondary">{action.notes}</p>}
-                        {action.reason_code && (
-                          <p className="mt-1 text-xs text-red-700">
-                            Reason: {REJECTION_REASON_CODES.find((r) => r.code === action.reason_code)?.label ?? action.reason_code}
-                          </p>
-                        )}
                         <p className="mt-1 text-xs text-brand-text-secondary">{formatDate(action.actioned_at, "dd MMM yyyy, HH:mm")}</p>
                       </div>
                     ))}

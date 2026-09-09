@@ -53,15 +53,33 @@ export async function processApprovalAction(input: {
   const alreadyActioned = !!existingRes.data;
 
   if (!alreadyActioned) {
-    const actionRes = await (admin.from("approval_actions") as any).insert({
+    const actionData: any = {
       approval_id: approval.id,
       stage: approval.current_stage,
       required_role: roleForStage(approval.current_stage) ?? userRole,
       action,
       actioned_by: userId,
       notes: notes || null,
-      reason_code: reasonCode || null,
-    });
+    };
+
+    // Only include reason_code if the column exists in the database
+    // This handles cases where the database schema hasn't been migrated
+    try {
+      const { data: columnCheck } = await admin
+        .from("approval_actions")
+        .select("reason_code")
+        .limit(1)
+        .single();
+
+      if (columnCheck !== null && 'reason_code' in columnCheck) {
+        actionData.reason_code = reasonCode || null;
+      }
+    } catch (error) {
+      // Column doesn't exist, skip adding reason_code
+      console.log("[processApprovalAction] reason_code column doesn't exist, skipping");
+    }
+
+    const actionRes = await (admin.from("approval_actions") as any).insert(actionData);
 
     if (actionRes.error) {
       console.error("[processApprovalAction] approval_actions insert error:", actionRes.error);

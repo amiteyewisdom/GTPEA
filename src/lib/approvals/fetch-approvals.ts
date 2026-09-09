@@ -11,7 +11,7 @@ export async function fetchApprovalsList() {
     .from("approvals")
     .select(
       `*,
-       approval_actions (stage, required_role, action, notes, reason_code, actioned_at)`,
+       approval_actions (stage, required_role, action, notes, actioned_at)`,
       { count: "exact" }
     )
     .order("submitted_at", { ascending: false });
