@@ -53,7 +53,7 @@ export default async function GuarantorRequestsPage() {
 
   console.log("[GuarantorRequests] All loan_guarantors for employee:", JSON.stringify(allGuarantorsRes.data, null, 2));
 
-  // Fetch pending guarantor consent requests
+  // Fetch all guarantor consent requests
   const requestsRes = await admin
     .from("loan_guarantors")
     .select(`
@@ -63,6 +63,7 @@ export default async function GuarantorRequestsPage() {
       amount,
       consent_status,
       consent_notes,
+      consent_responded_at,
       loans!inner (
         loan_ref,
         amount_requested,
@@ -77,8 +78,7 @@ export default async function GuarantorRequestsPage() {
         )
       )
     `)
-    .eq("guarantor_id", employee.id)
-    .eq("consent_status", "pending");
+    .eq("guarantor_id", employee.id);
 
   console.log("[GuarantorRequests] Employee ID:", employee.id);
   console.log("[GuarantorRequests] Query error:", requestsRes.error);

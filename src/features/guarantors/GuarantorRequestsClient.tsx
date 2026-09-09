@@ -12,6 +12,7 @@ interface GuarantorRequest {
   amount: number | null;
   consent_status: string;
   consent_notes: string | null;
+  consent_responded_at: string | null;
   loans: {
     loan_ref: string;
     amount_requested: number;
@@ -102,7 +103,7 @@ export default function GuarantorRequestsClient({
       {requests.length === 0 ? (
         <GlassCard className="p-8 text-center">
           <Shield className="w-12 h-12 text-brand-text-secondary mx-auto mb-4" />
-          <p className="text-brand-text-secondary">No pending guarantor consent requests</p>
+          <p className="text-brand-text-secondary">No guarantor consent requests</p>
         </GlassCard>
       ) : (
         <div className="space-y-4">
@@ -112,10 +113,21 @@ export default function GuarantorRequestsClient({
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
                     <BadgeCent className="w-5 h-5 text-brand-accent" />
-                    <div>
-                      <h3 className="font-semibold text-brand-text">
-                        {request.loans.loan_ref}
-                      </h3>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-brand-text">
+                          {request.loans.loan_ref}
+                        </h3>
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                          request.consent_status === "approved" 
+                            ? "bg-green-100 text-green-800" 
+                            : request.consent_status === "rejected"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}>
+                          {request.consent_status.charAt(0).toUpperCase() + request.consent_status.slice(1)}
+                        </span>
+                      </div>
                       <p className="text-sm text-brand-text-secondary">
                         {request.loans.employees.first_name} {request.loans.employees.last_name} ({request.loans.employees.employee_no})
                       </p>
@@ -167,46 +179,65 @@ export default function GuarantorRequestsClient({
                 </div>
 
                 <div className="flex flex-col gap-3 min-w-[200px]">
-                  <textarea
-                    value={notes[request.id] || ""}
-                    onChange={(e) =>
-                      setNotes((prev) => ({ ...prev, [request.id]: e.target.value }))
-                    }
-                    placeholder="Add notes (optional)..."
-                    rows={2}
-                    className="w-full rounded-lg border border-brand-card-border bg-white px-3 py-2 text-sm text-brand-text placeholder-brand-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-green/30"
-                  />
+                  {request.consent_status === "pending" ? (
+                    <>
+                      <textarea
+                        value={notes[request.id] || ""}
+                        onChange={(e) =>
+                          setNotes((prev) => ({ ...prev, [request.id]: e.target.value }))
+                        }
+                        placeholder="Add notes (optional)..."
+                        rows={2}
+                        className="w-full rounded-lg border border-brand-card-border bg-white px-3 py-2 text-sm text-brand-text placeholder-brand-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+                      />
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleAction(request.id, "approved")}
-                      disabled={loading === request.id}
-                      className="flex-1 flex items-center justify-center gap-2 bg-brand-green text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-green-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {loading === request.id ? (
-                        "Processing..."
-                      ) : (
-                        <>
-                          <Check className="w-4 h-4" />
-                          Approve
-                        </>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAction(request.id, "approved")}
+                          disabled={loading === request.id}
+                          className="flex-1 flex items-center justify-center gap-2 bg-brand-green text-white font-semibold py-2 px-4 rounded-lg hover:bg-brand-green-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {loading === request.id ? (
+                            "Processing..."
+                          ) : (
+                            <>
+                              <Check className="w-4 h-4" />
+                              Approve
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleAction(request.id, "rejected")}
+                          disabled={loading === request.id}
+                          className="flex-1 flex items-center justify-center gap-2 bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {loading === request.id ? (
+                            "Processing..."
+                          ) : (
+                            <>
+                              <X className="w-4 h-4" />
+                              Reject
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col gap-2 text-sm">
+                      {request.consent_responded_at && (
+                        <div className="flex items-center gap-2 text-brand-text-secondary">
+                          <Clock className="w-4 h-4" />
+                          Responded: {formatDate(request.consent_responded_at, "dd MMM yyyy")}
+                        </div>
                       )}
-                    </button>
-                    <button
-                      onClick={() => handleAction(request.id, "rejected")}
-                      disabled={loading === request.id}
-                      className="flex-1 flex items-center justify-center gap-2 bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {loading === request.id ? (
-                        "Processing..."
-                      ) : (
-                        <>
-                          <X className="w-4 h-4" />
-                          Reject
-                        </>
+                      {request.consent_notes && (
+                        <div className="p-3 bg-brand-background rounded-lg">
+                          <span className="text-xs text-brand-text-secondary">Notes</span>
+                          <p className="text-sm text-brand-text">{request.consent_notes}</p>
+                        </div>
                       )}
-                    </button>
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </GlassCard>
