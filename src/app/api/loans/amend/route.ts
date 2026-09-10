@@ -181,11 +181,9 @@ async function handleAmend(body: any) {
     entity_type: "loan",
     entity_id: loanId,
     status: "pending",
-    current_stage: startStage,
-    total_stages: APPROVAL_STAGES.length,
+    current_stage: 1, // Always start at stage 1 (union rep) after amendment
+    total_stages: 3,
     submitted_by: employee.userId,
-    rejection_stage: existingApproval?.rejection_stage || null,
-    rejection_reason: existingApproval?.rejection_reason || null,
   });
 
   if (approvalRes.error) {
@@ -193,9 +191,7 @@ async function handleAmend(body: any) {
     return NextResponse.json({ error: approvalRes.error.message }, { status: 500 });
   }
 
-  const message = startStage > 1
-    ? `Facility application amended. It will go directly to ${existingApproval?.rejection_stage === 2 ? 'Union Rep' : existingApproval?.rejection_stage === 3 ? 'Fund Manager' : 'Chairperson'} for review.`
-    : "Facility application amended. The Facility Committee will review it first.";
+  const message = "Facility application amended and resubmitted. It will go through the approval process again starting from the Union Rep.";
 
   return NextResponse.json({
     message,

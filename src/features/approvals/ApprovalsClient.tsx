@@ -149,7 +149,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
     setActionError(null);
     try {
       const payload = action === "rejected"
-        ? { approval_id: approvalId, action, notes, reason_code: rejectionReason }
+        ? { approval_id: approvalId, action, notes, reason_code: rejectionReason || notes }
         : { approval_id: approvalId, action, notes };
       const response = await fetch("/api/approvals/action", {
         method: "POST",

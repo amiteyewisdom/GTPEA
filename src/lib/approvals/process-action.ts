@@ -111,8 +111,12 @@ export async function processApprovalAction(input: {
 
   if (approval.entity_type === "loan") {
     if (action === "rejected") {
+      // Store rejection reason in notes field since rejection_reason column might not exist
       const loanRes = await (admin.from("loans") as any)
-        .update({ status: "rejected", rejection_reason_code: reasonCode || null })
+        .update({ 
+          status: "rejected",
+          notes: reasonCode || notes || "Loan rejected"
+        })
         .eq("id", approval.entity_id);
       if (loanRes.error) console.error("[processApprovalAction] loans update error:", loanRes.error);
     } else if (action === "approved" && isFinalStage) {
@@ -144,7 +148,10 @@ export async function processApprovalAction(input: {
       console.error("[processApprovalAction] withdrawal fetch error:", withdrawalRes.error);
     } else if (action === "rejected") {
       const wRes = await (admin.from("withdrawal_requests") as any)
-        .update({ status: "rejected", rejection_reason_code: reasonCode || null })
+        .update({ 
+          status: "rejected",
+          notes: reasonCode || notes || "Withdrawal rejected"
+        })
         .eq("id", withdrawal.id);
       if (wRes.error) console.error("[processApprovalAction] withdrawal update error:", wRes.error);
     } else if (action === "approved" && isFinalStage) {

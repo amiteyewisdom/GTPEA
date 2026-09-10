@@ -14,15 +14,25 @@ import {
   BadgeCent,
   PiggyBank,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  AlertCircle
 } from 'lucide-react';
 
 export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [showRejectionDialog, setShowRejectionDialog] = useState(false);
+  const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
 
   const handleApproval = async (approvalId: string, action: 'approved' | 'rejected' | 'on_hold') => {
+    if (action === 'rejected') {
+      setSelectedLoanId(approvalId);
+      setShowRejectionDialog(true);
+      return;
+    }
+
     setLoading(true);
     setMessage(null);
 
@@ -32,8 +42,8 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           approval_id: approvalId,
-          action: action === 'on_hold' ? 'rejected' : action,
-          notes: '',
+          action: action === 'on_hold' ? 'approved' : action,
+          notes: action === 'on_hold' ? 'Recommended for approval' : '',
         }),
       });
 
@@ -50,6 +60,41 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
       setLoading(false);
     }
   };
+
+  const handleRejection = async () => {
+    if (!selectedLoanId) return;
+    
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/approvals/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          approval_id: selectedLoanId,
+          action: 'rejected',
+          notes: rejectionReason,
+          reason_code: rejectionReason,
+        }),
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to process rejection');
+      }
+
+      setMessage({ type: 'success', text: payload.message || 'Loan rejected successfully' });
+      setShowRejectionDialog(false);
+      setRejectionReason('');
+      setSelectedLoanId(null);
+      router.refresh();
+    } catch (error) {
+      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Rejection failed' });
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -62,6 +107,42 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
         <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
           {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
           <p className="text-sm">{message.text}</p>
+        </div>
+      )}
+
+      {/* Rejection Dialog */}
+      {showRejectionDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-brand-text mb-4">Reject Loan Application</h3>
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Please provide a reason for rejection..."
+              rows={4}
+              className="w-full rounded-lg border border-brand-card-border bg-white px-3 py-2 text-sm text-brand-text placeholder-brand-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-green/30 mb-4"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowRejectionDialog(false);
+                  setRejectionReason('');
+                  setSelectedLoanId(null);
+                }}
+                disabled={loading}
+                className="px-4 py-2 rounded-lg border border-brand-card-border text-brand-text hover:bg-brand-hover transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejection}
+                disabled={loading || !rejectionReason.trim()}
+                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Processing...' : 'Reject'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -121,6 +202,22 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
           )) : (
             <p className="text-brand-text-secondary text-sm col-span-full">No pending loan reviews</p>
           )}
+        </div>
+      </GlassCard>
+
+      {/* Link to full approvals page */}
+      <GlassCard className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-brand-text">All Approvals</h3>
+            <p className="text-brand-text-secondary text-sm">View and manage all pending approvals</p>
+          </div>
+          <button
+            onClick={() => router.push('/approvals')}
+            className="px-4 py-2 bg-brand-green text-white rounded-lg hover:bg-brand-green-dark transition-colors"
+          >
+            Go to Approvals Page
+          </button>
         </div>
       </GlassCard>
 
