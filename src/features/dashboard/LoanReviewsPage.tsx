@@ -30,6 +30,11 @@ export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
 
+  const showMessage = (type: 'success' | 'error', text: string) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage(null), 5000);
+  };
+
   const handleApproval = async (approvalId: string, action: 'approved' | 'rejected' | 'on_hold') => {
     if (action === 'rejected') {
       setSelectedLoanId(approvalId);
@@ -56,10 +61,10 @@ export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
         throw new Error(payload?.error || 'Failed to process approval');
       }
 
-      setMessage({ type: 'success', text: payload.message || `Loan ${action} successfully` });
+      showMessage('success', payload.message || `Loan ${action} successfully`);
       router.refresh();
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Approval failed' });
+      showMessage('error', error instanceof Error ? error.message : 'Approval failed');
     } finally {
       setLoading(false);
     }
@@ -67,7 +72,7 @@ export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
 
   const handleRejection = async () => {
     if (!selectedLoanId) return;
-    
+
     setLoading(true);
     setMessage(null);
 
@@ -88,13 +93,13 @@ export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
         throw new Error(payload?.error || 'Failed to process rejection');
       }
 
-      setMessage({ type: 'success', text: payload.message || 'Loan rejected successfully' });
       setShowRejectionDialog(false);
       setRejectionReason('');
       setSelectedLoanId(null);
+      showMessage('success', payload.message || 'Loan rejected successfully');
       router.refresh();
     } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Rejection failed' });
+      showMessage('error', error instanceof Error ? error.message : 'Rejection failed');
     } finally {
       setLoading(false);
     }

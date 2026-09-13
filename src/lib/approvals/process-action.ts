@@ -94,8 +94,6 @@ export async function processApprovalAction(input: {
   if (action === "rejected") {
     approvalUpdates.status = "rejected";
     approvalUpdates.completed_at = new Date().toISOString();
-    approvalUpdates.rejection_stage = approval.current_stage;
-    approvalUpdates.rejection_reason = notes || reasonCode || null;
   } else if (action === "approved" && isFinalStage) {
     approvalUpdates.status = "approved";
     approvalUpdates.completed_at = new Date().toISOString();
@@ -111,12 +109,32 @@ export async function processApprovalAction(input: {
 
   if (approval.entity_type === "loan") {
     if (action === "rejected") {
-      // Store rejection reason in notes field since rejection_reason column might not exist
+      // Update loan status and store rejection reason
+      const loanUpdateData: any = {
+        status: "rejected",
+      };
+
+      // Try to use rejection_reason_code if it exists, otherwise use notes
+      try {
+        const { data: columnCheck } = await admin
+          .from("loans")
+          .select("rejection_reason_code")
+          .limit(1)
+          .single();
+
+        if (columnCheck !== null && 'rejection_reason_code' in columnCheck) {
+          loanUpdateData.rejection_reason_code = reasonCode || notes || "Loan rejected";
+        } else {
+          // Fallback to notes field
+          loanUpdateData.notes = reasonCode || notes || "Loan rejected";
+        }
+      } catch (error) {
+        // Column doesn't exist, use notes
+        loanUpdateData.notes = reasonCode || notes || "Loan rejected";
+      }
+
       const loanRes = await (admin.from("loans") as any)
-        .update({ 
-          status: "rejected",
-          notes: reasonCode || notes || "Loan rejected"
-        })
+        .update(loanUpdateData)
         .eq("id", approval.entity_id);
       if (loanRes.error) console.error("[processApprovalAction] loans update error:", loanRes.error);
     } else if (action === "approved" && isFinalStage) {
