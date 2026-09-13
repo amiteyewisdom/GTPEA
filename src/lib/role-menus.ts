@@ -218,10 +218,10 @@ export const menuItems: MenuItem[] = [
     roles: ['fund_manager'],
   },
   {
-    id: 'loan-reviews',
-    label: 'Loan Reviews',
-    icon: ClipboardList,
-    path: '/loan-reviews',
+    id: 'approvals-fm',
+    label: 'Approvals',
+    icon: CheckCircle,
+    path: '/approvals',
     roles: ['fund_manager'],
   },
   {
