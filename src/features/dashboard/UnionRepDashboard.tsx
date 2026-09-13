@@ -11,90 +11,13 @@ import {
   XCircle,
   Star,
   ClipboardList,
-  BadgeCent,
-  PiggyBank,
-  TrendingUp,
-  UserCheck,
-  AlertCircle
+  UserCheck
 } from 'lucide-react';
 
 export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [showRejectionDialog, setShowRejectionDialog] = useState(false);
-  const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
 
-  const handleApproval = async (approvalId: string, action: 'approved' | 'rejected' | 'on_hold') => {
-    if (action === 'rejected') {
-      setSelectedLoanId(approvalId);
-      setShowRejectionDialog(true);
-      return;
-    }
-
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch('/api/approvals/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          approval_id: approvalId,
-          action: action === 'on_hold' ? 'approved' : action,
-          notes: action === 'on_hold' ? 'Recommended for approval' : '',
-        }),
-      });
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error || 'Failed to process approval');
-      }
-
-      setMessage({ type: 'success', text: payload.message || `Loan ${action} successfully` });
-      router.refresh();
-    } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Approval failed' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRejection = async () => {
-    if (!selectedLoanId) return;
-    
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch('/api/approvals/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          approval_id: selectedLoanId,
-          action: 'rejected',
-          notes: rejectionReason,
-          reason_code: rejectionReason,
-        }),
-      });
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error || 'Failed to process rejection');
-      }
-
-      setMessage({ type: 'success', text: payload.message || 'Loan rejected successfully' });
-      setShowRejectionDialog(false);
-      setRejectionReason('');
-      setSelectedLoanId(null);
-      router.refresh();
-    } catch (error) {
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Rejection failed' });
-    } finally {
-      setLoading(false);
-    }
-  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -107,42 +30,6 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
         <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
           {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
           <p className="text-sm">{message.text}</p>
-        </div>
-      )}
-
-      {/* Rejection Dialog */}
-      {showRejectionDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-brand-text mb-4">Reject Loan Application</h3>
-            <textarea
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="Please provide a reason for rejection..."
-              rows={4}
-              className="w-full rounded-lg border border-brand-card-border bg-white px-3 py-2 text-sm text-brand-text placeholder-brand-text-secondary focus:outline-none focus:ring-2 focus:ring-brand-green/30 mb-4"
-            />
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => {
-                  setShowRejectionDialog(false);
-                  setRejectionReason('');
-                  setSelectedLoanId(null);
-                }}
-                disabled={loading}
-                className="px-4 py-2 rounded-lg border border-brand-card-border text-brand-text hover:bg-brand-hover transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRejection}
-                disabled={loading || !rejectionReason.trim()}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Processing...' : 'Reject'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -174,49 +61,18 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
         />
       </div>
 
-      {/* Employee Eligibility Queue */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-brand-text">Employee Eligibility Queue</h3>
-            <p className="text-brand-text-secondary text-sm">Review loan eligibility for each employee</p>
-          </div>
-          <UserCheck className="w-5 h-5 text-brand-accent" />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {stats.unionRepLoans.length > 0 ? stats.unionRepLoans.map((loan) => (
-            <EmployeeEligibilityCard
-              key={loan.id}
-              name={loan.name}
-              employeeId={loan.employeeId}
-              currentSavings={loan.currentSavings}
-              currentLoans={loan.currentLoans}
-              monthlyRepayments={loan.monthlyRepayments}
-              loanHistory={loan.loanHistory}
-              eligibilityScore={loan.eligibilityScore}
-              status={loan.status}
-              onApprove={(action: 'approved' | 'rejected' | 'on_hold') => handleApproval(loan.approvalId, action)}
-              loading={loading}
-            />
-          )) : (
-            <p className="text-brand-text-secondary text-sm col-span-full">No pending loan reviews</p>
-          )}
-        </div>
-      </GlassCard>
-
-      {/* Link to full approvals page */}
+      {/* Link to loan reviews page */}
       <GlassCard className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-xl font-semibold text-brand-text">All Approvals</h3>
-            <p className="text-brand-text-secondary text-sm">View and manage all pending approvals</p>
+            <h3 className="text-xl font-semibold text-brand-text">Loan Reviews</h3>
+            <p className="text-brand-text-secondary text-sm">Review and approve pending loan applications</p>
           </div>
           <button
-            onClick={() => router.push('/approvals')}
+            onClick={() => router.push('/loan-reviews')}
             className="px-4 py-2 bg-brand-green text-white rounded-lg hover:bg-brand-green-dark transition-colors"
           >
-            Go to Approvals Page
+            Go to Loan Reviews
           </button>
         </div>
       </GlassCard>
@@ -249,122 +105,6 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
   );
 }
 
-function EmployeeEligibilityCard({
-  name,
-  employeeId,
-  currentSavings,
-  currentLoans,
-  monthlyRepayments,
-  loanHistory,
-  eligibilityScore,
-  status,
-  onApprove,
-  loading
-}: any) {
-  const statusConfig = {
-    eligible: {
-      color: 'text-brand-success',
-      bgColor: 'bg-brand-success/20',
-      borderColor: 'border-brand-success/30',
-      label: 'Eligible'
-    },
-    review: {
-      color: 'text-brand-warning',
-      bgColor: 'bg-brand-warning/20',
-      borderColor: 'border-brand-warning/30',
-      label: 'Review Required'
-    },
-    caution: {
-      color: 'text-brand-warning',
-      bgColor: 'bg-brand-warning/20',
-      borderColor: 'border-brand-warning/30',
-      label: 'Caution'
-    },
-    ineligible: {
-      color: 'text-brand-danger',
-      bgColor: 'bg-brand-danger/20',
-      borderColor: 'border-brand-danger/30',
-      label: 'Not Eligible'
-    }
-  };
-
-  const config = statusConfig[status as keyof typeof statusConfig];
-
-  return (
-    <div className={`p-5 rounded-lg bg-brand-card-bg border ${config.borderColor} hover:bg-brand-hover transition-all`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold text-lg">
-            {name.charAt(0)}
-          </div>
-          <div>
-            <h4 className="text-brand-text font-semibold">{name}</h4>
-            <p className="text-brand-text-secondary text-xs">{employeeId}</p>
-          </div>
-        </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${config.bgColor} ${config.color}`}>
-          {config.label}
-        </span>
-      </div>
-
-      {/* Financial Metrics */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <MetricItem icon={PiggyBank} label="Savings" value={currentSavings} />
-        <MetricItem icon={BadgeCent} label="Loans" value={currentLoans} />
-        <MetricItem icon={TrendingUp} label="Monthly Repayment" value={monthlyRepayments} />
-        <MetricItem icon={Star} label="Eligibility Score" value={`${eligibilityScore}%`} highlight={eligibilityScore >= 80} />
-      </div>
-
-      {/* Loan History */}
-      <div className="mb-4 p-3 rounded-lg bg-brand-card-bg border border-brand-card-border">
-        <p className="text-brand-text-secondary text-xs mb-1">Loan History</p>
-        <p className="text-brand-text text-sm">{loanHistory}</p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => onApprove && onApprove('approved')}
-          disabled={loading}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-success/20 text-brand-success rounded-lg text-sm font-medium hover:bg-brand-success/30 transition-all disabled:opacity-50"
-        >
-          <CheckCircle className="w-4 h-4" />
-          Approve
-        </button>
-        <button
-          onClick={() => onApprove && onApprove('on_hold')}
-          disabled={loading}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-warning/20 text-brand-warning rounded-lg text-sm font-medium hover:bg-brand-warning/30 transition-all disabled:opacity-50"
-        >
-          <Star className="w-4 h-4" />
-          Recommend
-        </button>
-        <button
-          onClick={() => onApprove && onApprove('rejected')}
-          disabled={loading}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-brand-danger/20 text-brand-danger rounded-lg text-sm font-medium hover:bg-brand-danger/30 transition-all disabled:opacity-50"
-        >
-          <XCircle className="w-4 h-4" />
-          Reject
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function MetricItem({ icon: Icon, label, value, highlight }: any) {
-  return (
-    <div className="flex items-center gap-2">
-      <Icon className={`w-4 h-4 ${highlight ? 'text-brand-accent' : 'text-brand-text-secondary'}`} />
-      <div>
-        <p className="text-brand-text-secondary text-xs">{label}</p>
-        <p className={`text-sm font-medium ${highlight ? 'text-brand-accent' : 'text-brand-text'}`}>{value}</p>
-      </div>
-    </div>
-  );
-}
-
 function RecommendationRow({ employee, action, amount, date, status }: any) {
   const statusColors = {
     approved: 'text-brand-success',
@@ -392,3 +132,4 @@ function RecommendationRow({ employee, action, amount, date, status }: any) {
     </div>
   );
 }
+
