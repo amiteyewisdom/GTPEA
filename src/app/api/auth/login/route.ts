@@ -18,25 +18,87 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const admin = createAdminClient();
 
-    // Staff ID only login flow
-    const { data: employee, error: employeeError } = await admin
+    // Staff ID only login flow - try employees table first
+    let employee = null;
+    let employeeError = null;
+    let phoneNumber = null;
+    let isFirstLogin = false;
+    let authEmail = '';
+
+    // Try to find in employees table
+    const employeeResult = await admin
       .from("employees")
-      .select("id, employee_no, phone_number, password_changed_at")
+      .select("id, employee_no, phone_number, password_changed_at, email")
       .eq("employee_no", staffId)
       .single();
 
+    employee = employeeResult.data;
+    employeeError = employeeResult.error;
+
     if (employeeError || !employee) {
-      return NextResponse.json(
-        { error: "Invalid Staff ID or password." },
-        { status: 401 }
-      );
+      // If not found in employees, try profiles table (for admin accounts)
+      const { data: profile, error: profileError } = await admin
+        .from("profiles")
+        .select("user_id, employee_id, phone, role")
+        .eq("employee_id", staffId)
+        .single();
+
+      if (profileError || !profile) {
+        return NextResponse.json(
+          { error: "Invalid Staff ID or password." },
+          { status: 401 }
+        );
+      }
+
+      // For admin accounts, get corresponding employee record
+      const { data: adminEmployee, error: adminEmployeeError } = await admin
+        .from("employees")
+        .select("id, employee_no, phone_number, password_changed_at, email")
+        .eq("employee_no", staffId)
+        .single();
+
+      if (adminEmployeeError || !adminEmployee) {
+        // Create missing employee record for admin
+        const { error: createError } = await admin
+          .from("employees")
+          .insert({
+            employee_no: staffId,
+            first_name: profile.full_name?.split(' ')[0] || 'Admin',
+            last_name: profile.full_name?.split(' ').slice(1).join(' ') || 'User',
+            email: `${staffId.toLowerCase()}@staff.gtpea.local`,
+            phone: profile.phone || null,
+            department: 'management',
+            position: profile.role === 'super_admin' ? 'Super Administrator' : 'Administrator',
+            bank_account_no: null,
+            date_joined: new Date().toISOString().slice(0, 10),
+            salary: 0,
+            status: 'active',
+            password_changed_at: new Date().toISOString()
+          });
+
+        if (createError) {
+          return NextResponse.json(
+            { error: "Failed to create admin employee record." },
+            { status: 500 }
+          );
+        }
+
+        // Get the newly created employee
+        const { data: newEmployee } = await admin
+          .from("employees")
+          .select("id, employee_no, phone_number, password_changed_at, email")
+          .eq("employee_no", staffId)
+          .single();
+
+        employee = newEmployee;
+      } else {
+        employee = adminEmployee;
+      }
     }
 
-    const phoneNumber = employee.phone_number;
-    const isFirstLogin = !employee.password_changed_at;
-
-    // Use staff ID as email for Supabase auth (internal use only)
-    const authEmail = `${staffId.toLowerCase()}@staff.gtpea.local`;
+    phoneNumber = employee.phone_number;
+    isFirstLogin = !employee.password_changed_at;
+    authEmail = employee.email || `${staffId.toLowerCase()}@staff.gtpea.local`;
 
     // Sign in with email (Supabase auth uses email)
     const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
