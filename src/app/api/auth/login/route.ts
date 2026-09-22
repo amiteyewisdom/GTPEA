@@ -6,11 +6,11 @@ import { generateOTP, getOTPExpiration, formatPhoneNumber } from "@/utils/otp";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { identifier, password } = body;
+    const { staffId, password } = body;
 
-    if (!identifier || !password) {
+    if (!staffId || !password) {
       return NextResponse.json(
-        { error: "Employee ID or email and password are required." },
+        { error: "Staff ID and password are required." },
         { status: 400 }
       );
     }
@@ -18,72 +18,29 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const admin = createAdminClient();
 
-    // Detect if identifier is Employee ID or email
-    const isEmployeeId = !identifier.includes("@");
+    // Staff ID only login flow
+    const { data: employee, error: employeeError } = await admin
+      .from("employees")
+      .select("id, employee_no, phone_number, password_changed_at")
+      .eq("employee_no", staffId)
+      .single();
 
-    let email: string;
-    let phoneNumber: string | null = null;
-    let isFirstLogin = false;
-    let isEmployee = false;
-
-    if (isEmployeeId) {
-      // Employee login flow
-      const { data: employee, error: employeeError } = await admin
-        .from("employees")
-        .select("id, email, employee_no, is_first_login, phone_number, password_changed_at")
-        .eq("employee_no", identifier)
-        .single();
-
-      if (employeeError || !employee) {
-        return NextResponse.json(
-          { error: "Invalid Employee ID or password." },
-          { status: 401 }
-        );
-      }
-
-      email = employee.email;
-      phoneNumber = employee.phone_number;
-      
-      // Use database field to determine if first login
-      // If password_changed_at is null, user hasn't changed password yet
-      isFirstLogin = !employee.password_changed_at;
-      isEmployee = true;
-    } else {
-      // Non-employee (email) login flow
-      email = identifier;
-      
-      // Check if this email belongs to an employee
-      const { data: employee } = await admin
-        .from("employees")
-        .select("id, email, employee_no, is_first_login, phone_number, password_changed_at")
-        .eq("email", email)
-        .maybeSingle();
-
-      if (employee) {
-        // This is an employee logging in with email
-        phoneNumber = employee.phone_number;
-        
-        // Use database field to determine if first login
-        // If password_changed_at is null, user hasn't changed password yet
-        isFirstLogin = !employee.password_changed_at;
-        isEmployee = true;
-      } else {
-        // Non-employee: get phone number from profiles
-        const { data: profile } = await admin
-          .from("profiles")
-          .select("phone")
-          .eq("email", email)
-          .maybeSingle();
-
-        phoneNumber = profile?.phone || null;
-        isFirstLogin = false; // Non-employees don't have first login flow
-        isEmployee = false;
-      }
+    if (employeeError || !employee) {
+      return NextResponse.json(
+        { error: "Invalid Staff ID or password." },
+        { status: 401 }
+      );
     }
+
+    const phoneNumber = employee.phone_number;
+    const isFirstLogin = !employee.password_changed_at;
+
+    // Use staff ID as email for Supabase auth (internal use only)
+    const authEmail = `${staffId.toLowerCase()}@staff.gtpea.local`;
 
     // Sign in with email (Supabase auth uses email)
     const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: authEmail,
       password,
     });
 
@@ -94,8 +51,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if first login (employees only) - user needs to change password
-    if (isEmployee && isFirstLogin) {
+    // Check if first login - user needs to change password
+    if (isFirstLogin) {
       return NextResponse.json({
         success: true,
         isFirstLogin: true,

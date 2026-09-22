@@ -5,7 +5,7 @@ import { Eye, EyeOff, Lock, Mail, Shield, CheckCircle, Zap } from "lucide-react"
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
-  const [identifier, setIdentifier] = useState("");
+  const [staffId, setStaffId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,7 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          identifier,
+          staffId,
           password,
         }),
       });
@@ -283,7 +283,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="identifier" style={{
+              <label htmlFor="staffId" style={{
                 display: "block",
                 fontSize: "14px",
                 fontWeight: "600",
@@ -291,7 +291,7 @@ export default function LoginPage() {
                 marginBottom: "8px",
                 textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "none",
               }}>
-                EMPLOYEE ID OR EMAIL
+                STAFF ID
               </label>
               <div style={{ position: "relative" }}>
                 <Shield style={{
@@ -304,11 +304,11 @@ export default function LoginPage() {
                   color: "#64748B",
                 }} />
                 <input
-                  id="identifier"
+                  id="staffId"
                   type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Enter your Employee ID or email"
+                  value={staffId}
+                  onChange={(e) => setStaffId(e.target.value)}
+                  placeholder="Enter your Staff ID"
                   required
                   autoComplete="username"
                   style={{

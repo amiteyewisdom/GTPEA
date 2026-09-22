@@ -32,7 +32,6 @@ export default async function ProfilePage() {
   return (
     <ProfileClient
       profile={profileWithGuarantor}
-      email={user?.email ?? ""}
     />
   );
 }

@@ -18,7 +18,7 @@ interface ProfileData {
 
 interface ProfileClientProps {
   profile: ProfileData | null;
-  email: string;
+  email?: string; // Internal use only for Supabase auth (optional)
 }
 
 const ROLE_BADGE: Record<string, string> = {
@@ -41,12 +41,14 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
   const [editing, setEditing] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
-  const [emailState, setEmailState] = useState(email);
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [imageError, setImageError] = useState(false);
+
+  // Internal email for Supabase auth (not user-facing)
+  const internalEmail = email || (profile?.employee_id ? `${profile.employee_id.toLowerCase()}@staff.gtpea.local` : "");
 
   const displayRole = profile?.role === "super_admin" ? "administrator" : (profile?.role ?? "employee");
   const roleBadge = ROLE_BADGE[displayRole] ?? ROLE_BADGE.employee;
@@ -58,19 +60,7 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
     setMessage(null);
     const supabase = createClient() as any;
 
-    // Update email in auth if changed
-    if (emailState !== email) {
-      const { error: emailError } = await supabase.auth.updateUser({
-        email: emailState
-      });
-      if (emailError) {
-        setMessage({ type: "error", text: emailError.message });
-        setLoading(false);
-        return;
-      }
-    }
-
-    // Update profile
+    // Update profile (email is internal and not user-editable)
     const { error } = await supabase.from("profiles").update({ 
       full_name: fullName, 
       phone,
@@ -140,17 +130,12 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
   const handleCancel = () => {
     setFullName(profile?.full_name ?? "");
     setPhone(profile?.phone ?? "");
-    setEmailState(email);
     setAvatarUrl(profile?.avatar_url ?? "");
     setEditing(false);
   };
 
   const handlePasswordReset = async () => {
-    const supabase = createClient();
-    await (supabase as any).auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setMessage({ type: "success", text: "Password reset email sent. Check your inbox." });
+    setMessage({ type: "error", text: "Contact administrator to reset your password." });
     setTimeout(() => setMessage(null), 5000);
   };
 
@@ -201,7 +186,7 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-bold text-brand-text truncate">{fullName || "—"}</h2>
-            <p className="text-sm text-brand-text-secondary truncate">{email}</p>
+            <p className="text-sm text-brand-text-secondary truncate">Staff ID: {profile?.employee_id || "—"}</p>
             <div className="mt-1.5 flex flex-wrap gap-2">
               <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadge}`}>
                 {displayRole}
@@ -242,16 +227,6 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              disabled={!editing}
-              className="w-full rounded-lg border border-brand-card-border bg-white px-3 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green disabled:bg-slate-50 disabled:text-brand-text"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-brand-text-secondary">Email Address</label>
-            <input
-              type="email"
-              value={emailState}
-              onChange={(e) => setEmailState(e.target.value)}
               disabled={!editing}
               className="w-full rounded-lg border border-brand-card-border bg-white px-3 py-2.5 text-sm text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green disabled:bg-slate-50 disabled:text-brand-text"
             />
