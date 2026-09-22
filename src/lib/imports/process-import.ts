@@ -1,16 +1,16 @@
 import { parseCsv } from "@/lib/csv";
 import type { AppSupabase } from "@/lib/supabase/types";
 
-export type ImportType = "employees" | "savings" | "loans";
+export type ImportType = "employees" | "savings" | "loans" | "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands";
 
-const VALID_DEPARTMENTS = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit"] as const;
+const VALID_DEPARTMENTS = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit", "retail", "marketing", "supply chain", "wholesale"] as const;
 
 type Department = (typeof VALID_DEPARTMENTS)[number];
 
 function normalizeDepartment(input: string): Department {
   const raw = input.trim().toLowerCase().replace(/[&\/_-]/g, " ");
 
-  const aliases: Record<Department, string[]> = {
+  const aliases: Record<string, string[]> = {
     management: ["management", "mgt", "mgr", "managerial"],
     finance: ["finance", "fin", "account", "accounts", "accounting", "bac"],
     operations: [
@@ -37,6 +37,10 @@ function normalizeDepartment(input: string): Department {
     sales: ["sales", "marketing", "business development", "biz dev"],
     legal: ["legal", "compliance"],
     audit: ["audit", "internal audit"],
+    retail: ["retail", "retail sales"],
+    marketing: ["marketing", "market", "promotions"],
+    "supply chain": ["supply chain", "supply", "logistics", "procurement"],
+    wholesale: ["wholesale", "wholesale sales"],
   };
 
   if (VALID_DEPARTMENTS.includes(raw as Department)) return raw as Department;
@@ -130,6 +134,18 @@ export async function processImport(
       return importSavings(supabase, rows, userId);
     case "loans":
       return importLoans(supabase, rows);
+    case "gtpea-employees":
+      return importGTPEAEmployees(supabase, rows, userId);
+    case "gtpea-savings":
+      return importGTPEASavings(supabase, rows, userId);
+    case "gtpea-quick-cash":
+      return importGTPEAQuickCash(supabase, rows, userId);
+    case "gtpea-hire-purchase":
+      return importGTPEAHirePurchase(supabase, rows, userId);
+    case "gtpea-normal-loans":
+      return importGTPEANormalLoans(supabase, rows, userId);
+    case "gtpea-lands":
+      return importGTPEALands(supabase, rows, userId);
     default:
       return { imported: 0, skipped: 0, errors: ["Unknown import type."] };
   }
@@ -152,7 +168,7 @@ async function importEmployees(
     const { firstName, lastName: rawLastName } = resolveEmployeeName(row);
     const lastName = rawLastName || "-";
     const bankAccountNo = row["payee account"] || row["account number"] || row["bank account no"] || null;
-    const email = row.email || (employeeNo ? `${employeeNo.toLowerCase()}@staff.gtpea.local` : "");
+    const email = row.email || (employeeNo ? `${employeeNo.toLowerCase()}@staff.gtpea.local` : ""); // Internal email for Supabase auth
     const department = normalizeDepartment(row.department || row["coy"] || "operations");
     const position = row.position || "Staff";
     const joinDate = row["join date"] || new Date().toISOString().slice(0, 10);
@@ -405,6 +421,393 @@ async function importLoans(supabase: AppSupabase, rows: Record<string, string>[]
   return { imported, skipped, errors };
 }
 
+// GTPEA-specific import functions
+async function importGTPEAEmployees(
+  supabase: AppSupabase,
+  rows: Record<string, string>[],
+  userId: string
+): Promise<ImportResult> {
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
+
+    const staffId = row["staffid"] || row["StaffID"];
+    const fullName = row["fullname"] || row["FullName"];
+    const department = normalizeDepartment(row["department"] || row["Department"] || "operations");
+    const staffAccountNumber = row["staffaccountnumber"] || row["StaffAccountNumber"];
+    const phoneNumber = row["phonenumber"] || row["PhoneNumber"];
+
+    if (!staffId || !fullName) {
+      skipped++;
+      errors.push(`Row ${rowNo}: missing StaffID or FullName.`);
+      continue;
+    }
+
+    // Split full name into first and last name
+    const nameParts = fullName.trim().split(/\s+/);
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "-";
+
+    const { error } = await supabase.from("employees").upsert(
+      {
+        employee_no: staffId,
+        first_name: firstName,
+        last_name: lastName,
+        email: `${staffId.toLowerCase()}@staff.gtpea.local`, // Internal email for Supabase auth
+        phone: phoneNumber || null,
+        department,
+        position: "Staff",
+        bank_account_no: staffAccountNumber || null,
+        date_joined: new Date().toISOString().slice(0, 10),
+        salary: 0,
+        status: "active",
+        created_by: userId,
+      },
+      { onConflict: "employee_no" }
+    );
+
+    if (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error.message}`);
+    } else {
+      imported++;
+    }
+  }
+
+  return { imported, skipped, errors };
+}
+
+async function importGTPEASavings(
+  supabase: AppSupabase,
+  rows: Record<string, string>[],
+  userId: string
+): Promise<ImportResult> {
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
+
+    const staffId = row["staffid"] || row["StaffID"];
+    const fullName = row["fullname"] || row["FullName"];
+    const staffSavingAccountNumber = row["staffsavingaccountnumber"] || row["StaffSavingAccountNumber"];
+    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const reference = row["reference"] || row["Reference"];
+
+    if (!staffId || !Number.isFinite(balance)) {
+      skipped++;
+      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+      continue;
+    }
+
+    const { data: employee } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("employee_no", staffId)
+      .single();
+
+    if (!employee) {
+      skipped++;
+      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+      continue;
+    }
+
+    const { error } = await supabase.from("savings").upsert(
+      {
+        employee_id: employee.id,
+        account_number: staffSavingAccountNumber || `SAV-${staffId}`,
+        balance: balance,
+        type: "savings",
+        facility_account: facilityAccountNumber || null,
+        reference: reference || "Savings",
+        created_by: userId,
+      },
+      { onConflict: "account_number" }
+    );
+
+    if (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error.message}`);
+    } else {
+      imported++;
+    }
+  }
+
+  return { imported, skipped, errors };
+}
+
+async function importGTPEAQuickCash(
+  supabase: AppSupabase,
+  rows: Record<string, string>[],
+  userId: string
+): Promise<ImportResult> {
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
+
+    const staffId = row["staffid"] || row["StaffID"];
+    const fullName = row["fullname"] || row["FullName"];
+    const staffQuickCashAccountNumber = row["staffquickcashaccountnumber"] || row["StaffQuickCashAccountNumber"];
+    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const reference = row["reference"] || row["Reference"];
+
+    if (!staffId || !Number.isFinite(balance)) {
+      skipped++;
+      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+      continue;
+    }
+
+    const { data: employee } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("employee_no", staffId)
+      .single();
+
+    if (!employee) {
+      skipped++;
+      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+      continue;
+    }
+
+    const { error } = await supabase.from("savings").upsert(
+      {
+        employee_id: employee.id,
+        account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
+        balance: balance,
+        type: "quick_cash",
+        facility_account: facilityAccountNumber || null,
+        reference: reference || "Quick-Cash",
+        created_by: userId,
+      },
+      { onConflict: "account_number" }
+    );
+
+    if (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error.message}`);
+    } else {
+      imported++;
+    }
+  }
+
+  return { imported, skipped, errors };
+}
+
+async function importGTPEAHirePurchase(
+  supabase: AppSupabase,
+  rows: Record<string, string>[],
+  userId: string
+): Promise<ImportResult> {
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
+
+    const staffId = row["staffid"] || row["StaffID"];
+    const fullName = row["fullname"] || row["FullName"];
+    const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
+    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const reference = row["reference"] || row["Reference"];
+    const itemDescription = row["item description"] || row["Item Description"];
+
+    if (!staffId || !Number.isFinite(balance)) {
+      skipped++;
+      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+      continue;
+    }
+
+    const { data: employee } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("employee_no", staffId)
+      .single();
+
+    if (!employee) {
+      skipped++;
+      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+      continue;
+    }
+
+    const { error } = await supabase.from("loans").upsert(
+      {
+        loan_ref: `HP-${staffId}-${Date.now()}`,
+        employee_id: employee.id,
+        loan_product_id: 1, // Assuming HP product ID
+        amount_requested: balance,
+        amount_approved: balance,
+        outstanding_balance: balance,
+        interest_rate: 0.02,
+        term_months: 12,
+        monthly_repayment: balance / 12,
+        purpose: itemDescription || "Hire Purchase",
+        status: "active",
+        created_by: userId,
+      },
+      { onConflict: "loan_ref" }
+    );
+
+    if (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error.message}`);
+    } else {
+      imported++;
+    }
+  }
+
+  return { imported, skipped, errors };
+}
+
+async function importGTPEANormalLoans(
+  supabase: AppSupabase,
+  rows: Record<string, string>[],
+  userId: string
+): Promise<ImportResult> {
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
+
+    const staffId = row["staffid"] || row["StaffID"];
+    const fullName = row["fullname"] || row["FullName"];
+    const nlAccountNumber = row["nlaccountnumber"] || row["NLAccountNumber"];
+    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const reference = row["reference"] || row["Reference"];
+
+    if (!staffId || !Number.isFinite(balance)) {
+      skipped++;
+      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+      continue;
+    }
+
+    const { data: employee } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("employee_no", staffId)
+      .single();
+
+    if (!employee) {
+      skipped++;
+      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+      continue;
+    }
+
+    const { error } = await supabase.from("loans").upsert(
+      {
+        loan_ref: `NL-${staffId}-${Date.now()}`,
+        employee_id: employee.id,
+        loan_product_id: 2, // Assuming Normal Loan product ID
+        amount_requested: balance,
+        amount_approved: balance,
+        outstanding_balance: balance,
+        interest_rate: 0.02,
+        term_months: 12,
+        monthly_repayment: balance / 12,
+        purpose: "Normal Loan",
+        status: "active",
+        created_by: userId,
+      },
+      { onConflict: "loan_ref" }
+    );
+
+    if (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error.message}`);
+    } else {
+      imported++;
+    }
+  }
+
+  return { imported, skipped, errors };
+}
+
+async function importGTPEALands(
+  supabase: AppSupabase,
+  rows: Record<string, string>[],
+  userId: string
+): Promise<ImportResult> {
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
+
+    const staffId = row["staffid"] || row["StaffID"];
+    const fullName = row["fullname"] || row["FullName"];
+    const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
+    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const reference = row["reference"] || row["Reference"];
+    const item = row["item"] || row["Item"];
+
+    if (!staffId || !Number.isFinite(balance)) {
+      skipped++;
+      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+      continue;
+    }
+
+    const { data: employee } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("employee_no", staffId)
+      .single();
+
+    if (!employee) {
+      skipped++;
+      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+      continue;
+    }
+
+    const { error } = await supabase.from("loans").upsert(
+      {
+        loan_ref: `LAND-${staffId}-${Date.now()}`,
+        employee_id: employee.id,
+        loan_product_id: 3, // Assuming Land product ID
+        amount_requested: balance,
+        amount_approved: balance,
+        outstanding_balance: balance,
+        interest_rate: 0.02,
+        term_months: 24,
+        monthly_repayment: balance / 24,
+        purpose: item || "Land Purchase",
+        status: "active",
+        created_by: userId,
+      },
+      { onConflict: "loan_ref" }
+    );
+
+    if (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error.message}`);
+    } else {
+      imported++;
+    }
+  }
+
+  return { imported, skipped, errors };
+}
+
 export function getImportTemplate(type: ImportType): string {
   const templates = {
     employees: [
@@ -418,6 +821,30 @@ export function getImportTemplate(type: ImportType): string {
     loans: [
       ["Reference", "Employee No", "Product", "Amount Requested", "Interest Rate", "Term Months", "Monthly Repayment", "Status", "Purpose"],
       ["LN-001", "EMP-001", "Normal Loan", "10000", "0.02", "12", "850", "pending", "Emergency"],
+    ],
+    "gtpea-employees": [
+      ["StaffID", "FullName", "Department", "StaffAccountNumber", "PhoneNumber"],
+      ["P0770", "Sarah Yaa Agyeiwaa Abodi-Klenn", "Retail", "P0770", "0240000000"],
+    ],
+    "gtpea-savings": [
+      ["StaffID", "FullName", "StaffSavingAccountNumber", "FacilityAccountNumber", "Balance", "Reference"],
+      ["P0770", "Sarah Yaa Agyeiwaa Abodi-Klenn", "63101001P0770", "63101001", "21100", "Savings"],
+    ],
+    "gtpea-quick-cash": [
+      ["StaffID", "FullName", "StaffQuickCashAccountNumber", "FacilityAccountNumber", "Balance", "Reference"],
+      ["P0821", "Benjamin Kissi", "62131001P0821", "62131001", "510", "Quick-Cash"],
+    ],
+    "gtpea-hire-purchase": [
+      ["StaffID", "FullName", "SavingsAccountNumber", "FacilityAccountNumber", "Balance", "Reference", "Item Description"],
+      ["0767", "Franklina Ohene-Mensah", "621210010767", "62121001", "2967.25", "Hire Purchase", "SAMSUNG A56+HEAD - 128GB"],
+    ],
+    "gtpea-normal-loans": [
+      ["StaffID", "FullName", "NLAccountNumber", "FacilityAccountNumber", "Balance", "Reference"],
+      ["P0774", "ANSAH ESINAM PHYLLIS", "62101001P0774", "62101001", "11343.14", "Normal Loan"],
+    ],
+    "gtpea-lands": [
+      ["StaffID", "FullName", "SavingsAccountNumber", "FacilityAccountNumber", "Balance", "Reference", "Item"],
+      ["P0770", "Sarah Yaa Agyeiwaa Abodi-Klenn", "62141001P0770", "62141001", "31642.96", "Lands", "Kopodor Land"],
     ],
   };
 

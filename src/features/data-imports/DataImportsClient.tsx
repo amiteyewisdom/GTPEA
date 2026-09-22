@@ -61,6 +61,48 @@ export default function DataImportsClient({ initialHistory }: DataImportsClientP
             description="Upload loan applications and balances."
             onComplete={refreshHistory}
           />
+          
+          <div className="pt-4 border-t border-brand-card-border">
+            <h3 className="mb-4 text-lg font-semibold text-brand-text">GTPEA Data Import</h3>
+            <p className="mb-4 text-sm text-brand-text-secondary">Import data from GTPEA Excel template</p>
+          </div>
+          
+          <DataImportPanel
+            type="gtpea-employees"
+            title="Import GTPEA Employees"
+            description="Import employee records from GTPEA template (EmployeeRecordNew sheet)."
+            onComplete={refreshHistory}
+          />
+          <DataImportPanel
+            type="gtpea-savings"
+            title="Import GTPEA Savings"
+            description="Import savings from GTPEA template (SavingsNew sheet)."
+            onComplete={refreshHistory}
+          />
+          <DataImportPanel
+            type="gtpea-quick-cash"
+            title="Import GTPEA Quick Cash"
+            description="Import quick cash accounts from GTPEA template (QuickCashNew sheet)."
+            onComplete={refreshHistory}
+          />
+          <DataImportPanel
+            type="gtpea-hire-purchase"
+            title="Import GTPEA Hire Purchase"
+            description="Import hire purchase loans from GTPEA template (HP New sheet)."
+            onComplete={refreshHistory}
+          />
+          <DataImportPanel
+            type="gtpea-normal-loans"
+            title="Import GTPEA Normal Loans"
+            description="Import normal loans from GTPEA template (Normal Loans New sheet)."
+            onComplete={refreshHistory}
+          />
+          <DataImportPanel
+            type="gtpea-lands"
+            title="Import GTPEA Lands"
+            description="Import land purchase loans from GTPEA template (Lands New sheet)."
+            onComplete={refreshHistory}
+          />
         </div>
 
         <GlassCard className="p-6">

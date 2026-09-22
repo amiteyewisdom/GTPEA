@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { canImport, getStaffUser } from "@/lib/api/staff-auth";
 import { getImportTemplate, type ImportType } from "@/lib/imports/process-import";
 
-const IMPORT_TYPES = ["employees", "savings", "loans"] as const;
+const IMPORT_TYPES = ["employees", "savings", "loans", "gtpea-employees", "gtpea-savings", "gtpea-quick-cash", "gtpea-hire-purchase", "gtpea-normal-loans", "gtpea-lands"] as const;
 
 export async function GET(
   _request: Request,

@@ -41,7 +41,7 @@ export default function DataImportPanel({
 
   async function handleUpload() {
     if (!file) {
-      setError("Choose a CSV file first.");
+      setError("Choose a CSV or Excel file first.");
       return;
     }
 
@@ -102,7 +102,7 @@ export default function DataImportPanel({
       >
         <FileSpreadsheet className="mx-auto mb-4 h-12 w-12 text-brand-accent" />
         <p className="mb-2 font-medium text-brand-text">
-          {file ? file.name : "Drop a CSV file here"}
+          {file ? file.name : "Drop a CSV or Excel file here"}
         </p>
         <p className="mb-4 text-sm text-brand-text-secondary">or browse from your computer</p>
         <label className="inline-block cursor-pointer rounded-lg bg-brand-accent px-6 py-2.5 font-medium text-brand-primary transition-all hover:bg-brand-accent/80">
@@ -110,12 +110,12 @@ export default function DataImportPanel({
           <input
             ref={inputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             className="hidden"
             onChange={(event) => pickFile(event.target.files?.[0] ?? null)}
           />
         </label>
-        <p className="mt-4 text-xs text-brand-text-secondary">CSV format. Open in Excel if needed.</p>
+        <p className="mt-4 text-xs text-brand-text-secondary">CSV or Excel format (.xlsx, .xls)</p>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
