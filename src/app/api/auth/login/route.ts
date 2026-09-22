@@ -6,9 +6,14 @@ import { generateOTP, getOTPExpiration, formatPhoneNumber } from "@/utils/otp";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { staffId, password } = body;
+    console.log('[/api/auth/login] Received body:', body);
+    
+    // Support both old format (identifier) and new format (staffId)
+    const { staffId, identifier, password } = body;
+    const loginId = staffId || identifier;
 
-    if (!staffId || !password) {
+    if (!loginId || !password) {
+      console.log('[/api/auth/login] Missing credentials:', { loginId: !!loginId, password: !!password });
       return NextResponse.json(
         { error: "Staff ID and password are required." },
         { status: 400 }
@@ -25,47 +30,56 @@ export async function POST(request: Request) {
     let isFirstLogin = false;
     let authEmail = '';
 
+    console.log('[/api/auth/login] Looking up employee with:', loginId);
+
     // Try to find in employees table
     const employeeResult = await admin
       .from("employees")
       .select("id, employee_no, phone_number, password_changed_at, email")
-      .eq("employee_no", staffId)
+      .eq("employee_no", loginId)
       .single();
 
     employee = employeeResult.data;
     employeeError = employeeResult.error;
 
     if (employeeError || !employee) {
+      console.log('[/api/auth/login] Employee not found, trying profiles table');
+      
       // If not found in employees, try profiles table (for admin accounts)
       const { data: profile, error: profileError } = await admin
         .from("profiles")
-        .select("user_id, employee_id, phone, role")
-        .eq("employee_id", staffId)
+        .select("user_id, employee_id, phone, role, full_name")
+        .eq("employee_id", loginId)
         .single();
 
       if (profileError || !profile) {
+        console.log('[/api/auth/login] Profile not found either:', profileError?.message);
         return NextResponse.json(
           { error: "Invalid Staff ID or password." },
           { status: 401 }
         );
       }
 
+      console.log('[/api/auth/login] Found profile:', profile.role);
+
       // For admin accounts, get corresponding employee record
       const { data: adminEmployee, error: adminEmployeeError } = await admin
         .from("employees")
         .select("id, employee_no, phone_number, password_changed_at, email")
-        .eq("employee_no", staffId)
+        .eq("employee_no", loginId)
         .single();
 
       if (adminEmployeeError || !adminEmployee) {
+        console.log('[/api/auth/login] Creating employee record for admin');
+        
         // Create missing employee record for admin
         const { error: createError } = await admin
           .from("employees")
           .insert({
-            employee_no: staffId,
+            employee_no: loginId,
             first_name: profile.full_name?.split(' ')[0] || 'Admin',
             last_name: profile.full_name?.split(' ').slice(1).join(' ') || 'User',
-            email: `${staffId.toLowerCase()}@staff.gtpea.local`,
+            email: `${loginId.toLowerCase()}@staff.gtpea.local`,
             phone: profile.phone || null,
             department: 'management',
             position: profile.role === 'super_admin' ? 'Super Administrator' : 'Administrator',
@@ -77,6 +91,7 @@ export async function POST(request: Request) {
           });
 
         if (createError) {
+          console.log('[/api/auth/login] Failed to create employee:', createError.message);
           return NextResponse.json(
             { error: "Failed to create admin employee record." },
             { status: 500 }
@@ -87,7 +102,7 @@ export async function POST(request: Request) {
         const { data: newEmployee } = await admin
           .from("employees")
           .select("id, employee_no, phone_number, password_changed_at, email")
-          .eq("employee_no", staffId)
+          .eq("employee_no", loginId)
           .single();
 
         employee = newEmployee;
@@ -98,7 +113,9 @@ export async function POST(request: Request) {
 
     phoneNumber = employee.phone_number;
     isFirstLogin = !employee.password_changed_at;
-    authEmail = employee.email || `${staffId.toLowerCase()}@staff.gtpea.local`;
+    authEmail = employee.email || `${loginId.toLowerCase()}@staff.gtpea.local`;
+
+    console.log('[/api/auth/login] Attempting auth with email:', authEmail);
 
     // Sign in with email (Supabase auth uses email)
     const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -107,6 +124,7 @@ export async function POST(request: Request) {
     });
 
     if (signInError) {
+      console.log('[/api/auth/login] Auth failed:', signInError.message);
       return NextResponse.json(
         { error: "Invalid credentials." },
         { status: 401 }
