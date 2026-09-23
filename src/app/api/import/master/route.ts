@@ -65,34 +65,69 @@ export async function POST(request: Request) {
     results.employees = employeeResult;
 
     // 2. Process Savings
-    const savingsSheet = workbook.Sheets['SavingsNew'];
-    const savingsCsv = XLSX.utils.sheet_to_csv(savingsSheet);
-    const savingsResult = await processGTPEASavings(adminSupabase, savingsCsv, user.id);
-    results.savings = savingsResult;
+    try {
+      const savingsSheet = workbook.Sheets['SavingsNew'];
+      const savingsCsv = XLSX.utils.sheet_to_csv(savingsSheet);
+      console.log('[Master] Starting Savings processing...');
+      const savingsResult = await processGTPEASavings(adminSupabase, savingsCsv, user.id);
+      results.savings = savingsResult;
+      console.log('[Master] Savings completed:', savingsResult);
+    } catch (error) {
+      console.error('[Master] Savings processing error:', error);
+      results.savings = { imported: 0, skipped: 0, errors: [`Savings processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
+    }
 
     // 3. Process Quick Cash
-    const quickCashSheet = workbook.Sheets['QuickCashNew'];
-    const quickCashCsv = XLSX.utils.sheet_to_csv(quickCashSheet);
-    const quickCashResult = await processGTPEAQuickCash(adminSupabase, quickCashCsv, user.id);
-    results.quickCash = quickCashResult;
+    try {
+      const quickCashSheet = workbook.Sheets['QuickCashNew'];
+      const quickCashCsv = XLSX.utils.sheet_to_csv(quickCashSheet);
+      console.log('[Master] Starting Quick Cash processing...');
+      const quickCashResult = await processGTPEAQuickCash(adminSupabase, quickCashCsv, user.id);
+      results.quickCash = quickCashResult;
+      console.log('[Master] Quick Cash completed:', quickCashResult);
+    } catch (error) {
+      console.error('[Master] Quick Cash processing error:', error);
+      results.quickCash = { imported: 0, skipped: 0, errors: [`Quick Cash processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
+    }
 
     // 4. Process Hire Purchase
-    const hpSheet = workbook.Sheets['HP New'];
-    const hpCsv = XLSX.utils.sheet_to_csv(hpSheet);
-    const hpResult = await processGTPEAHirePurchase(adminSupabase, hpCsv, user.id);
-    results.hirePurchase = hpResult;
+    try {
+      const hpSheet = workbook.Sheets['HP New'];
+      const hpCsv = XLSX.utils.sheet_to_csv(hpSheet);
+      console.log('[Master] Starting Hire Purchase processing...');
+      const hpResult = await processGTPEAHirePurchase(adminSupabase, hpCsv, user.id);
+      results.hirePurchase = hpResult;
+      console.log('[Master] Hire Purchase completed:', hpResult);
+    } catch (error) {
+      console.error('[Master] Hire Purchase processing error:', error);
+      results.hirePurchase = { imported: 0, skipped: 0, errors: [`Hire Purchase processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
+    }
 
     // 5. Process Normal Loans
-    const normalLoansSheet = workbook.Sheets['Normal Loans New'];
-    const normalLoansCsv = XLSX.utils.sheet_to_csv(normalLoansSheet);
-    const normalLoansResult = await processGTPEANormalLoans(adminSupabase, normalLoansCsv, user.id);
-    results.normalLoans = normalLoansResult;
+    try {
+      const normalLoansSheet = workbook.Sheets['Normal Loans New'];
+      const normalLoansCsv = XLSX.utils.sheet_to_csv(normalLoansSheet);
+      console.log('[Master] Starting Normal Loans processing...');
+      const normalLoansResult = await processGTPEANormalLoans(adminSupabase, normalLoansCsv, user.id);
+      results.normalLoans = normalLoansResult;
+      console.log('[Master] Normal Loans completed:', normalLoansResult);
+    } catch (error) {
+      console.error('[Master] Normal Loans processing error:', error);
+      results.normalLoans = { imported: 0, skipped: 0, errors: [`Normal Loans processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
+    }
 
     // 6. Process Lands
-    const landsSheet = workbook.Sheets['Lands New'];
-    const landsCsv = XLSX.utils.sheet_to_csv(landsSheet);
-    const landsResult = await processGTPEALands(adminSupabase, landsCsv, user.id);
-    results.lands = landsResult;
+    try {
+      const landsSheet = workbook.Sheets['Lands New'];
+      const landsCsv = XLSX.utils.sheet_to_csv(landsSheet);
+      console.log('[Master] Starting Lands processing...');
+      const landsResult = await processGTPEALands(adminSupabase, landsCsv, user.id);
+      results.lands = landsResult;
+      console.log('[Master] Lands completed:', landsResult);
+    } catch (error) {
+      console.error('[Master] Lands processing error:', error);
+      results.lands = { imported: 0, skipped: 0, errors: [`Lands processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
+    }
 
     // Log the import
     const totalImported = Object.values(results).reduce((sum, r) => sum + r.imported, 0);
@@ -201,60 +236,41 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
   let skipped = 0;
   const errors: string[] = [];
 
-  // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
-  console.log('[Savings] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
-  
-  // Create alternative formats for lookup (with/without P prefix)
-  const alternativeIds = staffIds.map(id => {
-    if (id.startsWith('P')) return id.substring(1);
-    if (/^\d+$/.test(id)) return 'P' + id;
-    return id;
-  });
-  
-  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
-  
-  const { data: employees } = await supabase
-    .from("employees")
-    .select("id, employee_no")
-    .in("employee_no", allLookupIds);
-  
-  console.log('[Savings] Found employees:', employees?.length || 0);
-  
-  // Create map with both original and alternative formats
-  const employeeMap = new Map();
-  (employees || []).forEach((emp: any) => {
-    employeeMap.set(emp.employee_no, emp.id);
-    // Also map alternative formats
-    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
-    employeeMap.set(altId, emp.id);
-  });
+  console.log('[Savings] Total rows to process:', rows.length);
 
-  // Process in batches
-  const batchSize = 50;
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    const batchPromises = batch.map(async (row, batchIndex) => {
-      const rowNo = i + batchIndex + 2;
+  // Simplified: process one by one for better error handling
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
 
+    try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const staffSavingAccountNumber = row["staffsavingaccountnumber"] || row["StaffSavingAccountNumber"];
-      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
       const reference = row["reference"] || row["Reference"];
 
       if (!staffId || !Number.isFinite(balance)) {
-        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+        skipped++;
+        errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+        continue;
       }
 
-      const employeeId = employeeMap.get(staffId);
-      if (!employeeId) {
-        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
+      // Try both formats for staff ID lookup
+      const { data: employee } = await supabase
+        .from("employees")
+        .select("id")
+        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .single();
+
+      if (!employee) {
+        skipped++;
+        errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+        continue;
       }
 
       const { error } = await supabase.from("savings").upsert(
         {
-          employee_id: employeeId,
+          employee_id: employee.id,
           account_number: staffSavingAccountNumber || `SAV-${staffId}`,
           balance: balance,
           type: "savings",
@@ -264,19 +280,15 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
       );
 
       if (error) {
-        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
-      }
-      return { imported: true };
-    });
-
-    const results = await Promise.all(batchPromises);
-    results.forEach(result => {
-      if (result.imported) imported++;
-      if (result.skipped) {
         skipped++;
-        if (result.error) errors.push(result.error);
+        errors.push(`Row ${rowNo}: ${error.message}`);
+      } else {
+        imported++;
       }
-    });
+    } catch (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   console.log('[Savings] Completed:', imported, 'imported,', skipped, 'skipped');
@@ -292,60 +304,41 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
   let skipped = 0;
   const errors: string[] = [];
 
-  // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
-  console.log('[QuickCash] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
-  
-  // Create alternative formats for lookup (with/without P prefix)
-  const alternativeIds = staffIds.map(id => {
-    if (id.startsWith('P')) return id.substring(1);
-    if (/^\d+$/.test(id)) return 'P' + id;
-    return id;
-  });
-  
-  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
-  
-  const { data: employees } = await supabase
-    .from("employees")
-    .select("id, employee_no")
-    .in("employee_no", allLookupIds);
-  
-  console.log('[QuickCash] Found employees:', employees?.length || 0);
-  
-  // Create map with both original and alternative formats
-  const employeeMap = new Map();
-  (employees || []).forEach((emp: any) => {
-    employeeMap.set(emp.employee_no, emp.id);
-    // Also map alternative formats
-    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
-    employeeMap.set(altId, emp.id);
-  });
+  console.log('[QuickCash] Total rows to process:', rows.length);
 
-  // Process in batches
-  const batchSize = 50;
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    const batchPromises = batch.map(async (row, batchIndex) => {
-      const rowNo = i + batchIndex + 2;
+  // Simplified: process one by one for better error handling
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
 
+    try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const staffQuickCashAccountNumber = row["staffquickcashaccountnumber"] || row["StaffQuickCashAccountNumber"];
-      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
       const reference = row["reference"] || row["Reference"];
 
       if (!staffId || !Number.isFinite(balance)) {
-        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+        skipped++;
+        errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+        continue;
       }
 
-      const employeeId = employeeMap.get(staffId);
-      if (!employeeId) {
-        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
+      // Try both formats for staff ID lookup
+      const { data: employee } = await supabase
+        .from("employees")
+        .select("id")
+        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .single();
+
+      if (!employee) {
+        skipped++;
+        errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+        continue;
       }
 
       const { error } = await supabase.from("savings").upsert(
         {
-          employee_id: employeeId,
+          employee_id: employee.id,
           account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
           balance: balance,
           type: "quick_cash",
@@ -355,19 +348,15 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
       );
 
       if (error) {
-        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
-      }
-      return { imported: true };
-    });
-
-    const results = await Promise.all(batchPromises);
-    results.forEach(result => {
-      if (result.imported) imported++;
-      if (result.skipped) {
         skipped++;
-        if (result.error) errors.push(result.error);
+        errors.push(`Row ${rowNo}: ${error.message}`);
+      } else {
+        imported++;
       }
-    });
+    } catch (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   console.log('[QuickCash] Completed:', imported, 'imported,', skipped, 'skipped');
@@ -383,6 +372,8 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
   let skipped = 0;
   const errors: string[] = [];
 
+  console.log('[HirePurchase] Total rows to process:', rows.length);
+
   // Fetch loan product ID for Hire Purchase
   const { data: hpProduct } = await supabase
     .from("loan_products")
@@ -391,67 +382,43 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
     .single();
   
   const hpProductId = hpProduct?.id;
+  if (!hpProductId) {
+    return { imported: 0, skipped: rows.length, errors: ["Hire Purchase loan product not found in database"] };
+  }
 
-  // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
-  console.log('[HirePurchase] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
-  
-  // Create alternative formats for lookup (with/without P prefix)
-  const alternativeIds = staffIds.map(id => {
-    if (id.startsWith('P')) return id.substring(1);
-    if (/^\d+$/.test(id)) return 'P' + id;
-    return id;
-  });
-  
-  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
-  
-  const { data: employees } = await supabase
-    .from("employees")
-    .select("id, employee_no")
-    .in("employee_no", allLookupIds);
-  
-  console.log('[HirePurchase] Found employees:', employees?.length || 0);
-  
-  // Create map with both original and alternative formats
-  const employeeMap = new Map();
-  (employees || []).forEach((emp: any) => {
-    employeeMap.set(emp.employee_no, emp.id);
-    // Also map alternative formats
-    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
-    employeeMap.set(altId, emp.id);
-  });
+  // Simplified: process one by one for better error handling
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
 
-  // Process in batches
-  const batchSize = 50;
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    const batchPromises = batch.map(async (row, batchIndex) => {
-      const rowNo = i + batchIndex + 2;
-
+    try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
-      const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
-      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
-      const reference = row["reference"] || row["Reference"];
       const itemDescription = row["item description"] || row["Item Description"];
 
       if (!staffId || !Number.isFinite(balance)) {
-        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+        skipped++;
+        errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+        continue;
       }
 
-      const employeeId = employeeMap.get(staffId);
-      if (!employeeId) {
-        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
-      }
+      // Try both formats for staff ID lookup
+      const { data: employee } = await supabase
+        .from("employees")
+        .select("id")
+        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .single();
 
-      if (!hpProductId) {
-        return { skipped: true, error: `Row ${rowNo}: Hire Purchase loan product not found in database.` };
+      if (!employee) {
+        skipped++;
+        errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+        continue;
       }
 
       const { error } = await supabase.from("loans").upsert(
         {
           loan_ref: `HP-${staffId}-${Date.now()}-${rowNo}`,
-          employee_id: employeeId,
+          employee_id: employee.id,
           loan_product_id: hpProductId,
           amount_requested: balance,
           amount_approved: balance,
@@ -466,19 +433,15 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
       );
 
       if (error) {
-        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
-      }
-      return { imported: true };
-    });
-
-    const results = await Promise.all(batchPromises);
-    results.forEach(result => {
-      if (result.imported) imported++;
-      if (result.skipped) {
         skipped++;
-        if (result.error) errors.push(result.error);
+        errors.push(`Row ${rowNo}: ${error.message}`);
+      } else {
+        imported++;
       }
-    });
+    } catch (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   console.log('[HirePurchase] Completed:', imported, 'imported,', skipped, 'skipped');
@@ -494,6 +457,8 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
   let skipped = 0;
   const errors: string[] = [];
 
+  console.log('[NormalLoans] Total rows to process:', rows.length);
+
   // Fetch loan product ID for Normal Loan
   const { data: nlProduct } = await supabase
     .from("loan_products")
@@ -502,66 +467,42 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
     .single();
   
   const nlProductId = nlProduct?.id;
+  if (!nlProductId) {
+    return { imported: 0, skipped: rows.length, errors: ["Normal Loan product not found in database"] };
+  }
 
-  // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
-  console.log('[NormalLoans] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
-  
-  // Create alternative formats for lookup (with/without P prefix)
-  const alternativeIds = staffIds.map(id => {
-    if (id.startsWith('P')) return id.substring(1);
-    if (/^\d+$/.test(id)) return 'P' + id;
-    return id;
-  });
-  
-  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
-  
-  const { data: employees } = await supabase
-    .from("employees")
-    .select("id, employee_no")
-    .in("employee_no", allLookupIds);
-  
-  console.log('[NormalLoans] Found employees:', employees?.length || 0);
-  
-  // Create map with both original and alternative formats
-  const employeeMap = new Map();
-  (employees || []).forEach((emp: any) => {
-    employeeMap.set(emp.employee_no, emp.id);
-    // Also map alternative formats
-    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
-    employeeMap.set(altId, emp.id);
-  });
+  // Simplified: process one by one for better error handling
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
 
-  // Process in batches
-  const batchSize = 50;
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    const batchPromises = batch.map(async (row, batchIndex) => {
-      const rowNo = i + batchIndex + 2;
-
+    try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
-      const nlAccountNumber = row["nlaccountnumber"] || row["NLAccountNumber"];
-      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
-      const reference = row["reference"] || row["Reference"];
 
       if (!staffId || !Number.isFinite(balance)) {
-        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+        skipped++;
+        errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+        continue;
       }
 
-      const employeeId = employeeMap.get(staffId);
-      if (!employeeId) {
-        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
-      }
+      // Try both formats for staff ID lookup
+      const { data: employee } = await supabase
+        .from("employees")
+        .select("id")
+        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .single();
 
-      if (!nlProductId) {
-        return { skipped: true, error: `Row ${rowNo}: Normal Loan product not found in database.` };
+      if (!employee) {
+        skipped++;
+        errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+        continue;
       }
 
       const { error } = await supabase.from("loans").upsert(
         {
           loan_ref: `NL-${staffId}-${Date.now()}-${rowNo}`,
-          employee_id: employeeId,
+          employee_id: employee.id,
           loan_product_id: nlProductId,
           amount_requested: balance,
           amount_approved: balance,
@@ -576,19 +517,15 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
       );
 
       if (error) {
-        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
-      }
-      return { imported: true };
-    });
-
-    const results = await Promise.all(batchPromises);
-    results.forEach(result => {
-      if (result.imported) imported++;
-      if (result.skipped) {
         skipped++;
-        if (result.error) errors.push(result.error);
+        errors.push(`Row ${rowNo}: ${error.message}`);
+      } else {
+        imported++;
       }
-    });
+    } catch (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   console.log('[NormalLoans] Completed:', imported, 'imported,', skipped, 'skipped');
@@ -604,6 +541,8 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
   let skipped = 0;
   const errors: string[] = [];
 
+  console.log('[Lands] Total rows to process:', rows.length);
+
   // Fetch loan product ID for Land Loan
   const { data: landProduct } = await supabase
     .from("loan_products")
@@ -612,67 +551,43 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
     .single();
   
   const landProductId = landProduct?.id;
+  if (!landProductId) {
+    return { imported: 0, skipped: rows.length, errors: ["Land Loan product not found in database"] };
+  }
 
-  // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
-  console.log('[Lands] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
-  
-  // Create alternative formats for lookup (with/without P prefix)
-  const alternativeIds = staffIds.map(id => {
-    if (id.startsWith('P')) return id.substring(1);
-    if (/^\d+$/.test(id)) return 'P' + id;
-    return id;
-  });
-  
-  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
-  
-  const { data: employees } = await supabase
-    .from("employees")
-    .select("id, employee_no")
-    .in("employee_no", allLookupIds);
-  
-  console.log('[Lands] Found employees:', employees?.length || 0);
-  
-  // Create map with both original and alternative formats
-  const employeeMap = new Map();
-  (employees || []).forEach((emp: any) => {
-    employeeMap.set(emp.employee_no, emp.id);
-    // Also map alternative formats
-    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
-    employeeMap.set(altId, emp.id);
-  });
+  // Simplified: process one by one for better error handling
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNo = i + 2;
 
-  // Process in batches
-  const batchSize = 50;
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    const batchPromises = batch.map(async (row, batchIndex) => {
-      const rowNo = i + batchIndex + 2;
-
+    try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
-      const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
-      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
-      const reference = row["reference"] || row["Reference"];
       const item = row["item"] || row["Item"];
 
       if (!staffId || !Number.isFinite(balance)) {
-        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+        skipped++;
+        errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
+        continue;
       }
 
-      const employeeId = employeeMap.get(staffId);
-      if (!employeeId) {
-        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
-      }
+      // Try both formats for staff ID lookup
+      const { data: employee } = await supabase
+        .from("employees")
+        .select("id")
+        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .single();
 
-      if (!landProductId) {
-        return { skipped: true, error: `Row ${rowNo}: Land Loan product not found in database.` };
+      if (!employee) {
+        skipped++;
+        errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
+        continue;
       }
 
       const { error } = await supabase.from("loans").upsert(
         {
           loan_ref: `LAND-${staffId}-${Date.now()}-${rowNo}`,
-          employee_id: employeeId,
+          employee_id: employee.id,
           loan_product_id: landProductId,
           amount_requested: balance,
           amount_approved: balance,
@@ -687,19 +602,15 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
       );
 
       if (error) {
-        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
-      }
-      return { imported: true };
-    });
-
-    const results = await Promise.all(batchPromises);
-    results.forEach(result => {
-      if (result.imported) imported++;
-      if (result.skipped) {
         skipped++;
-        if (result.error) errors.push(result.error);
+        errors.push(`Row ${rowNo}: ${error.message}`);
+      } else {
+        imported++;
       }
-    });
+    } catch (error) {
+      skipped++;
+      errors.push(`Row ${rowNo}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   console.log('[Lands] Completed:', imported, 'imported,', skipped, 'skipped');
