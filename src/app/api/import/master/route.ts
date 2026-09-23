@@ -258,7 +258,6 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
           account_number: staffSavingAccountNumber || `SAV-${staffId}`,
           balance: balance,
           type: "savings",
-          facility_account: facilityAccountNumber || null,
           reference: reference || "Savings",
         },
         { onConflict: "account_number" }
@@ -350,7 +349,6 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
           account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
           balance: balance,
           type: "quick_cash",
-          facility_account: facilityAccountNumber || null,
           reference: reference || "Quick-Cash",
         },
         { onConflict: "account_number" }
@@ -384,6 +382,15 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
   let imported = 0;
   let skipped = 0;
   const errors: string[] = [];
+
+  // Fetch loan product ID for Hire Purchase
+  const { data: hpProduct } = await supabase
+    .from("loan_products")
+    .select("id")
+    .eq("name", "Hire Purchase")
+    .single();
+  
+  const hpProductId = hpProduct?.id;
 
   // Fetch all employees at once for better performance
   const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
@@ -437,11 +444,15 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
         return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
       }
 
+      if (!hpProductId) {
+        return { skipped: true, error: `Row ${rowNo}: Hire Purchase loan product not found in database.` };
+      }
+
       const { error } = await supabase.from("loans").upsert(
         {
           loan_ref: `HP-${staffId}-${Date.now()}-${rowNo}`,
           employee_id: employeeId,
-          loan_product_id: 1,
+          loan_product_id: hpProductId,
           amount_requested: balance,
           amount_approved: balance,
           outstanding_balance: balance,
@@ -482,6 +493,15 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
   let imported = 0;
   let skipped = 0;
   const errors: string[] = [];
+
+  // Fetch loan product ID for Normal Loan
+  const { data: nlProduct } = await supabase
+    .from("loan_products")
+    .select("id")
+    .eq("name", "Normal Loan")
+    .single();
+  
+  const nlProductId = nlProduct?.id;
 
   // Fetch all employees at once for better performance
   const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
@@ -534,11 +554,15 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
         return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
       }
 
+      if (!nlProductId) {
+        return { skipped: true, error: `Row ${rowNo}: Normal Loan product not found in database.` };
+      }
+
       const { error } = await supabase.from("loans").upsert(
         {
           loan_ref: `NL-${staffId}-${Date.now()}-${rowNo}`,
           employee_id: employeeId,
-          loan_product_id: 2,
+          loan_product_id: nlProductId,
           amount_requested: balance,
           amount_approved: balance,
           outstanding_balance: balance,
@@ -579,6 +603,15 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
   let imported = 0;
   let skipped = 0;
   const errors: string[] = [];
+
+  // Fetch loan product ID for Land Loan
+  const { data: landProduct } = await supabase
+    .from("loan_products")
+    .select("id")
+    .eq("name", "Land Loan")
+    .single();
+  
+  const landProductId = landProduct?.id;
 
   // Fetch all employees at once for better performance
   const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
@@ -632,11 +665,15 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
         return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
       }
 
+      if (!landProductId) {
+        return { skipped: true, error: `Row ${rowNo}: Land Loan product not found in database.` };
+      }
+
       const { error } = await supabase.from("loans").upsert(
         {
           loan_ref: `LAND-${staffId}-${Date.now()}-${rowNo}`,
           employee_id: employeeId,
-          loan_product_id: 3,
+          loan_product_id: landProductId,
           amount_requested: balance,
           amount_approved: balance,
           outstanding_balance: balance,
@@ -735,6 +772,7 @@ function normalizeDepartment(input: string): string {
   const raw = input.trim().toLowerCase().replace(/[&\/_-]/g, " ");
   const validDepartments = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit", "retail", "marketing", "supply chain", "wholesale"];
   
+  // Direct match first
   if (validDepartments.includes(raw)) return raw;
   
   const aliases: Record<string, string[]> = {
@@ -756,5 +794,7 @@ function normalizeDepartment(input: string): string {
     if (departmentAliases.includes(raw)) return department;
   }
 
+  // Default to operations for unknown departments
+  console.log(`[Department] Unknown department "${input}" defaulting to operations`);
   return "operations";
 }
