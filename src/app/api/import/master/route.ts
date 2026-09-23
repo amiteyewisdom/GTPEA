@@ -189,6 +189,9 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
   }
 
   console.log('[Employees] Completed:', imported, 'imported,', skipped, 'skipped');
+  if (errors.length > 0) {
+    console.log('[Employees] Sample errors:', errors.slice(0, 5));
+  }
   return { imported, skipped, errors };
 }
 
@@ -278,6 +281,10 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
     });
   }
 
+  console.log('[Savings] Completed:', imported, 'imported,', skipped, 'skipped');
+  if (errors.length > 0) {
+    console.log('[Savings] Sample errors:', errors.slice(0, 5));
+  }
   return { imported, skipped, errors };
 }
 
@@ -367,6 +374,10 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
     });
   }
 
+  console.log('[QuickCash] Completed:', imported, 'imported,', skipped, 'skipped');
+  if (errors.length > 0) {
+    console.log('[QuickCash] Sample errors:', errors.slice(0, 5));
+  }
   return { imported, skipped, errors };
 }
 
@@ -462,6 +473,10 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
     });
   }
 
+  console.log('[HirePurchase] Completed:', imported, 'imported,', skipped, 'skipped');
+  if (errors.length > 0) {
+    console.log('[HirePurchase] Sample errors:', errors.slice(0, 5));
+  }
   return { imported, skipped, errors };
 }
 
@@ -556,6 +571,10 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
     });
   }
 
+  console.log('[NormalLoans] Completed:', imported, 'imported,', skipped, 'skipped');
+  if (errors.length > 0) {
+    console.log('[NormalLoans] Sample errors:', errors.slice(0, 5));
+  }
   return { imported, skipped, errors };
 }
 
@@ -651,6 +670,10 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
     });
   }
 
+  console.log('[Lands] Completed:', imported, 'imported,', skipped, 'skipped');
+  if (errors.length > 0) {
+    console.log('[Lands] Sample errors:', errors.slice(0, 5));
+  }
   return { imported, skipped, errors };
 }
 
