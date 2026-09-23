@@ -202,13 +202,30 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
   const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
   console.log('[Savings] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
   
+  // Create alternative formats for lookup (with/without P prefix)
+  const alternativeIds = staffIds.map(id => {
+    if (id.startsWith('P')) return id.substring(1);
+    if (/^\d+$/.test(id)) return 'P' + id;
+    return id;
+  });
+  
+  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
-    .in("employee_no", staffIds);
+    .in("employee_no", allLookupIds);
   
   console.log('[Savings] Found employees:', employees?.length || 0);
-  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
+  
+  // Create map with both original and alternative formats
+  const employeeMap = new Map();
+  (employees || []).forEach((emp: any) => {
+    employeeMap.set(emp.employee_no, emp.id);
+    // Also map alternative formats
+    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
+    employeeMap.set(altId, emp.id);
+  });
 
   // Process in batches
   const batchSize = 50;
@@ -274,13 +291,30 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
   const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
   console.log('[QuickCash] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
   
+  // Create alternative formats for lookup (with/without P prefix)
+  const alternativeIds = staffIds.map(id => {
+    if (id.startsWith('P')) return id.substring(1);
+    if (/^\d+$/.test(id)) return 'P' + id;
+    return id;
+  });
+  
+  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
-    .in("employee_no", staffIds);
+    .in("employee_no", allLookupIds);
   
   console.log('[QuickCash] Found employees:', employees?.length || 0);
-  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
+  
+  // Create map with both original and alternative formats
+  const employeeMap = new Map();
+  (employees || []).forEach((emp: any) => {
+    employeeMap.set(emp.employee_no, emp.id);
+    // Also map alternative formats
+    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
+    employeeMap.set(altId, emp.id);
+  });
 
   // Process in batches
   const batchSize = 50;
@@ -346,13 +380,30 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
   const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
   console.log('[HirePurchase] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
   
+  // Create alternative formats for lookup (with/without P prefix)
+  const alternativeIds = staffIds.map(id => {
+    if (id.startsWith('P')) return id.substring(1);
+    if (/^\d+$/.test(id)) return 'P' + id;
+    return id;
+  });
+  
+  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
-    .in("employee_no", staffIds);
+    .in("employee_no", allLookupIds);
   
   console.log('[HirePurchase] Found employees:', employees?.length || 0);
-  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
+  
+  // Create map with both original and alternative formats
+  const employeeMap = new Map();
+  (employees || []).forEach((emp: any) => {
+    employeeMap.set(emp.employee_no, emp.id);
+    // Also map alternative formats
+    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
+    employeeMap.set(altId, emp.id);
+  });
 
   // Process in batches
   const batchSize = 50;
@@ -424,13 +475,30 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
   const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
   console.log('[NormalLoans] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
   
+  // Create alternative formats for lookup (with/without P prefix)
+  const alternativeIds = staffIds.map(id => {
+    if (id.startsWith('P')) return id.substring(1);
+    if (/^\d+$/.test(id)) return 'P' + id;
+    return id;
+  });
+  
+  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
-    .in("employee_no", staffIds);
+    .in("employee_no", allLookupIds);
   
   console.log('[NormalLoans] Found employees:', employees?.length || 0);
-  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
+  
+  // Create map with both original and alternative formats
+  const employeeMap = new Map();
+  (employees || []).forEach((emp: any) => {
+    employeeMap.set(emp.employee_no, emp.id);
+    // Also map alternative formats
+    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
+    employeeMap.set(altId, emp.id);
+  });
 
   // Process in batches
   const batchSize = 50;
@@ -501,13 +569,30 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
   const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
   console.log('[Lands] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
   
+  // Create alternative formats for lookup (with/without P prefix)
+  const alternativeIds = staffIds.map(id => {
+    if (id.startsWith('P')) return id.substring(1);
+    if (/^\d+$/.test(id)) return 'P' + id;
+    return id;
+  });
+  
+  const allLookupIds = [...new Set([...staffIds, ...alternativeIds])];
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
-    .in("employee_no", staffIds);
+    .in("employee_no", allLookupIds);
   
   console.log('[Lands] Found employees:', employees?.length || 0);
-  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
+  
+  // Create map with both original and alternative formats
+  const employeeMap = new Map();
+  (employees || []).forEach((emp: any) => {
+    employeeMap.set(emp.employee_no, emp.id);
+    // Also map alternative formats
+    const altId = emp.employee_no.startsWith('P') ? emp.employee_no.substring(1) : 'P' + emp.employee_no;
+    employeeMap.set(altId, emp.id);
+  });
 
   // Process in batches
   const batchSize = 50;
