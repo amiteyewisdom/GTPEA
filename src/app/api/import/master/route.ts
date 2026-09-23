@@ -99,7 +99,7 @@ export async function POST(request: Request) {
     const totalSkipped = Object.values(results).reduce((sum, r) => sum + r.skipped, 0);
     const allErrors = Object.values(results).flatMap(r => r.errors);
 
-    await logImportRun(adminSupabase, user.id, 'master_excel_upload', file.name, {
+    await logImportRun(adminSupabase, user.id, 'master_excel_upload' as any, file.name, {
       imported: totalImported,
       skipped: totalSkipped,
       errors: allErrors

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import GlassCard from "@/components/ui/GlassCard";
-import { AlertCircle, CheckCircle, Upload, FileSpreadsheet, Spinner } from "lucide-react";
+import { AlertCircle, CheckCircle, Upload, FileSpreadsheet, Loader2 } from "lucide-react";
 
 type MasterUploadResult = {
   employees: { imported: number; skipped: number; errors: string[] };
@@ -21,6 +21,7 @@ type MasterUploadResponse = {
     totalSkipped: number;
     totalErrors: number;
   };
+  error?: string;
 };
 
 export default function MasterUploadPanel({ onComplete }: { onComplete?: () => void }) {
@@ -132,7 +133,7 @@ export default function MasterUploadPanel({ onComplete }: { onComplete?: () => v
         >
           {uploading ? (
             <>
-              <Spinner className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               {uploadProgress || "Importing..."}
             </>
           ) : (

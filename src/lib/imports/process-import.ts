@@ -1,7 +1,7 @@
 import { parseCsv } from "@/lib/csv";
 import type { AppSupabase } from "@/lib/supabase/types";
 
-export type ImportType = "employees" | "savings" | "loans" | "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands";
+export type ImportType = "employees" | "savings" | "loans" | "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands" | "master_excel_upload";
 
 const VALID_DEPARTMENTS = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit", "retail", "marketing", "supply chain", "wholesale"] as const;
 
@@ -809,7 +809,7 @@ async function importGTPEALands(
 }
 
 export function getImportTemplate(type: ImportType): string {
-  const templates = {
+  const templates: Record<string, string[][]> = {
     employees: [
       ["Employee No", "First Name", "Last Name", "Email", "Department", "Position", "Join Date", "Salary", "Phone"],
       ["EMP-001", "John", "Smith", "john.smith@example.com", "operations", "Analyst", "2024-01-15", "5000", "0240000000"],
@@ -846,7 +846,11 @@ export function getImportTemplate(type: ImportType): string {
       ["StaffID", "FullName", "SavingsAccountNumber", "FacilityAccountNumber", "Balance", "Reference", "Item"],
       ["P0770", "Sarah Yaa Agyeiwaa Abodi-Klenn", "62141001P0770", "62141001", "31642.96", "Lands", "Kopodor Land"],
     ],
+    "master_excel_upload": [
+      ["Note", "Use the GTPEA Final Template New.xlsx file for master upload"],
+      ["This", "contains all sheets: EmployeeRecordNew, SavingsNew, QuickCashNew, HP New, Normal Loans New, Lands New"],
+    ],
   };
 
-  return templates[type].map((row) => row.join(",")).join("\n");
+  return templates[type].map((row: string[]) => row.join(",")).join("\n");
 }
