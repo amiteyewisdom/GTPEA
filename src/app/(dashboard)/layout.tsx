@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import EnterpriseLayout from "@/components/layout/EnterpriseLayout";
 import { UserRole } from "@/lib/role-menus";
 
-const APPROVER_ROLES = ["union_rep", "fund_manager", "chairperson", "administrator"];
+const APPROVER_ROLES = ["union_rep", "fund_manager", "chairperson"];
 
 const STAGE_FOR_ROLE: Record<string, number> = {
   fund_manager: 1,
