@@ -260,7 +260,6 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
           type: "savings",
           facility_account: facilityAccountNumber || null,
           reference: reference || "Savings",
-          created_by: userId,
         },
         { onConflict: "account_number" }
       );
@@ -353,7 +352,6 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
           type: "quick_cash",
           facility_account: facilityAccountNumber || null,
           reference: reference || "Quick-Cash",
-          created_by: userId,
         },
         { onConflict: "account_number" }
       );
@@ -452,7 +450,6 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
           monthly_repayment: balance / 12,
           purpose: itemDescription || "Hire Purchase",
           status: "active",
-          created_by: userId,
         },
         { onConflict: "loan_ref" }
       );
@@ -550,7 +547,6 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
           monthly_repayment: balance / 12,
           purpose: "Normal Loan",
           status: "active",
-          created_by: userId,
         },
         { onConflict: "loan_ref" }
       );
@@ -649,7 +645,6 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
           monthly_repayment: balance / 24,
           purpose: item || "Land Purchase",
           status: "active",
-          created_by: userId,
         },
         { onConflict: "loan_ref" }
       );
@@ -748,7 +743,7 @@ function normalizeDepartment(input: string): string {
     operations: ["operations", "ops", "operational", "procurement", "warehouse", "logistics", "admin", "administration", "support", "general services", "gs"],
     hr: ["hr", "human resources", "human resource", "personnel"],
     it: ["it", "information technology", "information tech", "tech", "technology", "engineering"],
-    sales: ["sales", "marketing", "business development", "biz dev"],
+    sales: ["sales", "business development", "biz dev"],
     legal: ["legal", "compliance"],
     audit: ["audit", "internal audit"],
     retail: ["retail", "retail sales"],
