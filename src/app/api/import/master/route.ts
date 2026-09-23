@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Process sheets in order
+    // Process sheets in order with batch processing to avoid timeout
     const results = {
       employees: { imported: 0, skipped: 0, errors: [] as string[] },
       savings: { imported: 0, skipped: 0, errors: [] as string[] },
@@ -115,8 +115,10 @@ export async function POST(request: Request) {
       }
     });
   } catch (error) {
+    console.error('[Master Import Error]', error);
+    const errorMessage = error instanceof Error ? error.message : "Import failed.";
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Import failed." },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -129,50 +131,59 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
   let skipped = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowNo = i + 2;
+  // Process in batches to improve performance
+  const batchSize = 50;
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (row, batchIndex) => {
+      const rowNo = i + batchIndex + 2;
 
-    const staffId = row["staffid"] || row["StaffID"];
-    const fullName = row["fullname"] || row["FullName"];
-    const department = normalizeDepartment(row["department"] || row["Department"] || "operations");
-    const staffAccountNumber = row["staffaccountnumber"] || row["StaffAccountNumber"];
-    const phoneNumber = row["phonenumber"] || row["PhoneNumber"];
+      const staffId = row["staffid"] || row["StaffID"];
+      const fullName = row["fullname"] || row["FullName"];
+      const department = normalizeDepartment(row["department"] || row["Department"] || "operations");
+      const staffAccountNumber = row["staffaccountnumber"] || row["StaffAccountNumber"];
+      const phoneNumber = row["phonenumber"] || row["PhoneNumber"];
 
-    if (!staffId || !fullName) {
-      skipped++;
-      errors.push(`Row ${rowNo}: missing StaffID or FullName.`);
-      continue;
-    }
+      if (!staffId || !fullName) {
+        return { skipped: true, error: `Row ${rowNo}: missing StaffID or FullName.` };
+      }
 
-    const nameParts = fullName.trim().split(/\s+/);
-    const firstName = nameParts[0] || "";
-    const lastName = nameParts.slice(1).join(" ") || "-";
+      const nameParts = fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "-";
 
-    const { error } = await supabase.from("employees").upsert(
-      {
-        employee_no: staffId,
-        first_name: firstName,
-        last_name: lastName,
-        email: `${staffId.toLowerCase()}@staff.gtpea.local`,
-        phone: phoneNumber || null,
-        department,
-        position: "Staff",
-        bank_account_no: staffAccountNumber || null,
-        date_joined: new Date().toISOString().slice(0, 10),
-        salary: 0,
-        status: "active",
-        created_by: userId,
-      },
-      { onConflict: "employee_no" }
-    );
+      const { error } = await supabase.from("employees").upsert(
+        {
+          employee_no: staffId,
+          first_name: firstName,
+          last_name: lastName,
+          email: `${staffId.toLowerCase()}@staff.gtpea.local`,
+          phone: phoneNumber || null,
+          department,
+          position: "Staff",
+          bank_account_no: staffAccountNumber || null,
+          date_joined: new Date().toISOString().slice(0, 10),
+          salary: 0,
+          status: "active",
+          created_by: userId,
+        },
+        { onConflict: "employee_no" }
+      );
 
-    if (error) {
-      skipped++;
-      errors.push(`Row ${rowNo}: ${error.message}`);
-    } else {
-      imported++;
-    }
+      if (error) {
+        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
+      }
+      return { imported: true };
+    });
+
+    const results = await Promise.all(batchPromises);
+    results.forEach(result => {
+      if (result.imported) imported++;
+      if (result.skipped) {
+        skipped++;
+        if (result.error) errors.push(result.error);
+      }
+    });
   }
 
   return { imported, skipped, errors };
@@ -184,53 +195,64 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
   let skipped = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowNo = i + 2;
+  // Fetch all employees at once for better performance
+  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const { data: employees } = await supabase
+    .from("employees")
+    .select("id, employee_no")
+    .in("employee_no", staffIds);
+  
+  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
-    const staffId = row["staffid"] || row["StaffID"];
-    const staffSavingAccountNumber = row["staffsavingaccountnumber"] || row["StaffSavingAccountNumber"];
-    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
-    const reference = row["reference"] || row["Reference"];
+  // Process in batches
+  const batchSize = 50;
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (row, batchIndex) => {
+      const rowNo = i + batchIndex + 2;
 
-    if (!staffId || !Number.isFinite(balance)) {
-      skipped++;
-      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
-      continue;
-    }
+      const staffId = row["staffid"] || row["StaffID"];
+      const staffSavingAccountNumber = row["staffsavingaccountnumber"] || row["StaffSavingAccountNumber"];
+      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const reference = row["reference"] || row["Reference"];
 
-    const { data: employee } = await supabase
-      .from("employees")
-      .select("id")
-      .eq("employee_no", staffId)
-      .single();
+      if (!staffId || !Number.isFinite(balance)) {
+        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+      }
 
-    if (!employee) {
-      skipped++;
-      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
-      continue;
-    }
+      const employeeId = employeeMap.get(staffId);
+      if (!employeeId) {
+        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
+      }
 
-    const { error } = await supabase.from("savings").upsert(
-      {
-        employee_id: employee.id,
-        account_number: staffSavingAccountNumber || `SAV-${staffId}`,
-        balance: balance,
-        type: "savings",
-        facility_account: facilityAccountNumber || null,
-        reference: reference || "Savings",
-        created_by: userId,
-      },
-      { onConflict: "account_number" }
-    );
+      const { error } = await supabase.from("savings").upsert(
+        {
+          employee_id: employeeId,
+          account_number: staffSavingAccountNumber || `SAV-${staffId}`,
+          balance: balance,
+          type: "savings",
+          facility_account: facilityAccountNumber || null,
+          reference: reference || "Savings",
+          created_by: userId,
+        },
+        { onConflict: "account_number" }
+      );
 
-    if (error) {
-      skipped++;
-      errors.push(`Row ${rowNo}: ${error.message}`);
-    } else {
-      imported++;
-    }
+      if (error) {
+        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
+      }
+      return { imported: true };
+    });
+
+    const results = await Promise.all(batchPromises);
+    results.forEach(result => {
+      if (result.imported) imported++;
+      if (result.skipped) {
+        skipped++;
+        if (result.error) errors.push(result.error);
+      }
+    });
   }
 
   return { imported, skipped, errors };
@@ -242,53 +264,64 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
   let skipped = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowNo = i + 2;
+  // Fetch all employees at once for better performance
+  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const { data: employees } = await supabase
+    .from("employees")
+    .select("id, employee_no")
+    .in("employee_no", staffIds);
+  
+  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
-    const staffId = row["staffid"] || row["StaffID"];
-    const staffQuickCashAccountNumber = row["staffquickcashaccountnumber"] || row["StaffQuickCashAccountNumber"];
-    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
-    const reference = row["reference"] || row["Reference"];
+  // Process in batches
+  const batchSize = 50;
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (row, batchIndex) => {
+      const rowNo = i + batchIndex + 2;
 
-    if (!staffId || !Number.isFinite(balance)) {
-      skipped++;
-      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
-      continue;
-    }
+      const staffId = row["staffid"] || row["StaffID"];
+      const staffQuickCashAccountNumber = row["staffquickcashaccountnumber"] || row["StaffQuickCashAccountNumber"];
+      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const reference = row["reference"] || row["Reference"];
 
-    const { data: employee } = await supabase
-      .from("employees")
-      .select("id")
-      .eq("employee_no", staffId)
-      .single();
+      if (!staffId || !Number.isFinite(balance)) {
+        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+      }
 
-    if (!employee) {
-      skipped++;
-      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
-      continue;
-    }
+      const employeeId = employeeMap.get(staffId);
+      if (!employeeId) {
+        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
+      }
 
-    const { error } = await supabase.from("savings").upsert(
-      {
-        employee_id: employee.id,
-        account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
-        balance: balance,
-        type: "quick_cash",
-        facility_account: facilityAccountNumber || null,
-        reference: reference || "Quick-Cash",
-        created_by: userId,
-      },
-      { onConflict: "account_number" }
-    );
+      const { error } = await supabase.from("savings").upsert(
+        {
+          employee_id: employeeId,
+          account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
+          balance: balance,
+          type: "quick_cash",
+          facility_account: facilityAccountNumber || null,
+          reference: reference || "Quick-Cash",
+          created_by: userId,
+        },
+        { onConflict: "account_number" }
+      );
 
-    if (error) {
-      skipped++;
-      errors.push(`Row ${rowNo}: ${error.message}`);
-    } else {
-      imported++;
-    }
+      if (error) {
+        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
+      }
+      return { imported: true };
+    });
+
+    const results = await Promise.all(batchPromises);
+    results.forEach(result => {
+      if (result.imported) imported++;
+      if (result.skipped) {
+        skipped++;
+        if (result.error) errors.push(result.error);
+      }
+    });
   }
 
   return { imported, skipped, errors };
@@ -300,59 +333,70 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
   let skipped = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowNo = i + 2;
+  // Fetch all employees at once for better performance
+  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const { data: employees } = await supabase
+    .from("employees")
+    .select("id, employee_no")
+    .in("employee_no", staffIds);
+  
+  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
-    const staffId = row["staffid"] || row["StaffID"];
-    const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
-    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
-    const reference = row["reference"] || row["Reference"];
-    const itemDescription = row["item description"] || row["Item Description"];
+  // Process in batches
+  const batchSize = 50;
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (row, batchIndex) => {
+      const rowNo = i + batchIndex + 2;
 
-    if (!staffId || !Number.isFinite(balance)) {
-      skipped++;
-      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
-      continue;
-    }
+      const staffId = row["staffid"] || row["StaffID"];
+      const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
+      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const reference = row["reference"] || row["Reference"];
+      const itemDescription = row["item description"] || row["Item Description"];
 
-    const { data: employee } = await supabase
-      .from("employees")
-      .select("id")
-      .eq("employee_no", staffId)
-      .single();
+      if (!staffId || !Number.isFinite(balance)) {
+        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+      }
 
-    if (!employee) {
-      skipped++;
-      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
-      continue;
-    }
+      const employeeId = employeeMap.get(staffId);
+      if (!employeeId) {
+        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
+      }
 
-    const { error } = await supabase.from("loans").upsert(
-      {
-        loan_ref: `HP-${staffId}-${Date.now()}`,
-        employee_id: employee.id,
-        loan_product_id: 1,
-        amount_requested: balance,
-        amount_approved: balance,
-        outstanding_balance: balance,
-        interest_rate: 0.02,
-        term_months: 12,
-        monthly_repayment: balance / 12,
-        purpose: itemDescription || "Hire Purchase",
-        status: "active",
-        created_by: userId,
-      },
-      { onConflict: "loan_ref" }
-    );
+      const { error } = await supabase.from("loans").upsert(
+        {
+          loan_ref: `HP-${staffId}-${Date.now()}-${rowNo}`,
+          employee_id: employeeId,
+          loan_product_id: 1,
+          amount_requested: balance,
+          amount_approved: balance,
+          outstanding_balance: balance,
+          interest_rate: 0.02,
+          term_months: 12,
+          monthly_repayment: balance / 12,
+          purpose: itemDescription || "Hire Purchase",
+          status: "active",
+          created_by: userId,
+        },
+        { onConflict: "loan_ref" }
+      );
 
-    if (error) {
-      skipped++;
-      errors.push(`Row ${rowNo}: ${error.message}`);
-    } else {
-      imported++;
-    }
+      if (error) {
+        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
+      }
+      return { imported: true };
+    });
+
+    const results = await Promise.all(batchPromises);
+    results.forEach(result => {
+      if (result.imported) imported++;
+      if (result.skipped) {
+        skipped++;
+        if (result.error) errors.push(result.error);
+      }
+    });
   }
 
   return { imported, skipped, errors };
@@ -364,58 +408,69 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
   let skipped = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowNo = i + 2;
+  // Fetch all employees at once for better performance
+  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const { data: employees } = await supabase
+    .from("employees")
+    .select("id, employee_no")
+    .in("employee_no", staffIds);
+  
+  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
-    const staffId = row["staffid"] || row["StaffID"];
-    const nlAccountNumber = row["nlaccountnumber"] || row["NLAccountNumber"];
-    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
-    const reference = row["reference"] || row["Reference"];
+  // Process in batches
+  const batchSize = 50;
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (row, batchIndex) => {
+      const rowNo = i + batchIndex + 2;
 
-    if (!staffId || !Number.isFinite(balance)) {
-      skipped++;
-      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
-      continue;
-    }
+      const staffId = row["staffid"] || row["StaffID"];
+      const nlAccountNumber = row["nlaccountnumber"] || row["NLAccountNumber"];
+      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const reference = row["reference"] || row["Reference"];
 
-    const { data: employee } = await supabase
-      .from("employees")
-      .select("id")
-      .eq("employee_no", staffId)
-      .single();
+      if (!staffId || !Number.isFinite(balance)) {
+        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+      }
 
-    if (!employee) {
-      skipped++;
-      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
-      continue;
-    }
+      const employeeId = employeeMap.get(staffId);
+      if (!employeeId) {
+        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
+      }
 
-    const { error } = await supabase.from("loans").upsert(
-      {
-        loan_ref: `NL-${staffId}-${Date.now()}`,
-        employee_id: employee.id,
-        loan_product_id: 2,
-        amount_requested: balance,
-        amount_approved: balance,
-        outstanding_balance: balance,
-        interest_rate: 0.02,
-        term_months: 12,
-        monthly_repayment: balance / 12,
-        purpose: "Normal Loan",
-        status: "active",
-        created_by: userId,
-      },
-      { onConflict: "loan_ref" }
-    );
+      const { error } = await supabase.from("loans").upsert(
+        {
+          loan_ref: `NL-${staffId}-${Date.now()}-${rowNo}`,
+          employee_id: employeeId,
+          loan_product_id: 2,
+          amount_requested: balance,
+          amount_approved: balance,
+          outstanding_balance: balance,
+          interest_rate: 0.02,
+          term_months: 12,
+          monthly_repayment: balance / 12,
+          purpose: "Normal Loan",
+          status: "active",
+          created_by: userId,
+        },
+        { onConflict: "loan_ref" }
+      );
 
-    if (error) {
-      skipped++;
-      errors.push(`Row ${rowNo}: ${error.message}`);
-    } else {
-      imported++;
-    }
+      if (error) {
+        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
+      }
+      return { imported: true };
+    });
+
+    const results = await Promise.all(batchPromises);
+    results.forEach(result => {
+      if (result.imported) imported++;
+      if (result.skipped) {
+        skipped++;
+        if (result.error) errors.push(result.error);
+      }
+    });
   }
 
   return { imported, skipped, errors };
@@ -427,59 +482,70 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
   let skipped = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowNo = i + 2;
+  // Fetch all employees at once for better performance
+  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const { data: employees } = await supabase
+    .from("employees")
+    .select("id, employee_no")
+    .in("employee_no", staffIds);
+  
+  const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
-    const staffId = row["staffid"] || row["StaffID"];
-    const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
-    const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
-    const reference = row["reference"] || row["Reference"];
-    const item = row["item"] || row["Item"];
+  // Process in batches
+  const batchSize = 50;
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (row, batchIndex) => {
+      const rowNo = i + batchIndex + 2;
 
-    if (!staffId || !Number.isFinite(balance)) {
-      skipped++;
-      errors.push(`Row ${rowNo}: missing StaffID or invalid Balance.`);
-      continue;
-    }
+      const staffId = row["staffid"] || row["StaffID"];
+      const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
+      const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
+      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const reference = row["reference"] || row["Reference"];
+      const item = row["item"] || row["Item"];
 
-    const { data: employee } = await supabase
-      .from("employees")
-      .select("id")
-      .eq("employee_no", staffId)
-      .single();
+      if (!staffId || !Number.isFinite(balance)) {
+        return { skipped: true, error: `Row ${rowNo}: missing StaffID or invalid Balance.` };
+      }
 
-    if (!employee) {
-      skipped++;
-      errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
-      continue;
-    }
+      const employeeId = employeeMap.get(staffId);
+      if (!employeeId) {
+        return { skipped: true, error: `Row ${rowNo}: employee ${staffId} was not found.` };
+      }
 
-    const { error } = await supabase.from("loans").upsert(
-      {
-        loan_ref: `LAND-${staffId}-${Date.now()}`,
-        employee_id: employee.id,
-        loan_product_id: 3,
-        amount_requested: balance,
-        amount_approved: balance,
-        outstanding_balance: balance,
-        interest_rate: 0.02,
-        term_months: 24,
-        monthly_repayment: balance / 24,
-        purpose: item || "Land Purchase",
-        status: "active",
-        created_by: userId,
-      },
-      { onConflict: "loan_ref" }
-    );
+      const { error } = await supabase.from("loans").upsert(
+        {
+          loan_ref: `LAND-${staffId}-${Date.now()}-${rowNo}`,
+          employee_id: employeeId,
+          loan_product_id: 3,
+          amount_requested: balance,
+          amount_approved: balance,
+          outstanding_balance: balance,
+          interest_rate: 0.02,
+          term_months: 24,
+          monthly_repayment: balance / 24,
+          purpose: item || "Land Purchase",
+          status: "active",
+          created_by: userId,
+        },
+        { onConflict: "loan_ref" }
+      );
 
-    if (error) {
-      skipped++;
-      errors.push(`Row ${rowNo}: ${error.message}`);
-    } else {
-      imported++;
-    }
+      if (error) {
+        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
+      }
+      return { imported: true };
+    });
+
+    const results = await Promise.all(batchPromises);
+    results.forEach(result => {
+      if (result.imported) imported++;
+      if (result.skipped) {
+        skipped++;
+        if (result.error) errors.push(result.error);
+      }
+    });
   }
 
   return { imported, skipped, errors };

@@ -6,7 +6,7 @@ import GlassCard from "@/components/ui/GlassCard";
 import DataImportPanel from "@/components/data/DataImportPanel";
 import { PayrollMasterFilePanel } from "@/components/payroll/PayrollMasterFilePanel";
 import MasterUploadPanel from "@/components/data/MasterUploadPanel";
-import { AlertCircle, CheckCircle, FileText } from "lucide-react";
+import { AlertCircle, CheckCircle, FileText, Trash2 } from "lucide-react";
 import type { ImportHistoryItem } from "@/lib/imports/log-import";
 
 type DataImportsClientProps = {
@@ -15,6 +15,7 @@ type DataImportsClientProps = {
 
 export default function DataImportsClient({ initialHistory }: DataImportsClientProps) {
   const [history, setHistory] = useState(initialHistory);
+  const [clearing, setClearing] = useState(false);
   const router = useRouter();
 
   const refreshHistory = useCallback(async () => {
@@ -23,6 +24,32 @@ export default function DataImportsClient({ initialHistory }: DataImportsClientP
     const data = await response.json();
     setHistory(data.history ?? []);
     router.refresh();
+  }, [router]);
+
+  const clearHistory = useCallback(async () => {
+    if (!confirm("Are you sure you want to clear all import history? This action cannot be undone.")) {
+      return;
+    }
+
+    setClearing(true);
+    try {
+      const response = await fetch("/api/import/history", {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to clear history");
+      }
+
+      setHistory([]);
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to clear history:", error);
+      alert(error instanceof Error ? error.message : "Failed to clear history");
+    } finally {
+      setClearing(false);
+    }
   }, [router]);
 
   useEffect(() => {
@@ -109,7 +136,19 @@ export default function DataImportsClient({ initialHistory }: DataImportsClientP
         </div>
 
         <GlassCard className="p-6">
-          <h3 className="mb-4 text-xl font-semibold text-brand-text">Import History</h3>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xl font-semibold text-brand-text">Import History</h3>
+            {history.length > 0 && (
+              <button
+                onClick={clearHistory}
+                disabled={clearing}
+                className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                {clearing ? "Clearing..." : "Clear History"}
+              </button>
+            )}
+          </div>
           <div className="space-y-3">
             {history.length === 0 ? (
               <div className="flex items-center gap-3 rounded-lg bg-brand-card-bg p-3">
