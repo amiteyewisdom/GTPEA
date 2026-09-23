@@ -210,7 +210,12 @@ export default function MasterUploadPanel({ onComplete }: { onComplete?: () => v
                   <button
                     onClick={() => {
                       const allErrors = Object.values(result.results).flatMap(r => r.errors);
-                      alert(`Errors:\n${allErrors.join('\n')}`);
+                      // Show first 50 errors to avoid overwhelming the user
+                      const errorsToShow = allErrors.slice(0, 50);
+                      const errorMessage = errorsToShow.length < allErrors.length 
+                        ? `First 50 errors:\n${errorsToShow.join('\n')}\n\n... and ${allErrors.length - 50} more errors`
+                        : `Errors:\n${errorsToShow.join('\n')}`;
+                      alert(errorMessage);
                     }}
                     className="text-sm text-brand-accent hover:underline"
                   >

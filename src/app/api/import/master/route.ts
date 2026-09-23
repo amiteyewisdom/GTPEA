@@ -131,6 +131,8 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
   let skipped = 0;
   const errors: string[] = [];
 
+  console.log('[Employees] Processing', rows.length, 'rows');
+
   // Process in batches to improve performance
   const batchSize = 50;
   for (let i = 0; i < rows.length; i += batchSize) {
@@ -138,7 +140,7 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
     const batchPromises = batch.map(async (row, batchIndex) => {
       const rowNo = i + batchIndex + 2;
 
-      const staffId = row["staffid"] || row["StaffID"];
+      const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const fullName = row["fullname"] || row["FullName"];
       const department = normalizeDepartment(row["department"] || row["Department"] || "operations");
       const staffAccountNumber = row["staffaccountnumber"] || row["StaffAccountNumber"];
@@ -186,6 +188,7 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
     });
   }
 
+  console.log('[Employees] Completed:', imported, 'imported,', skipped, 'skipped');
   return { imported, skipped, errors };
 }
 
@@ -196,12 +199,15 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
   const errors: string[] = [];
 
   // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
+  console.log('[Savings] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
     .in("employee_no", staffIds);
   
+  console.log('[Savings] Found employees:', employees?.length || 0);
   const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
   // Process in batches
@@ -211,7 +217,7 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
     const batchPromises = batch.map(async (row, batchIndex) => {
       const rowNo = i + batchIndex + 2;
 
-      const staffId = row["staffid"] || row["StaffID"];
+      const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const staffSavingAccountNumber = row["staffsavingaccountnumber"] || row["StaffSavingAccountNumber"];
       const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
@@ -265,12 +271,15 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
   const errors: string[] = [];
 
   // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
+  console.log('[QuickCash] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
     .in("employee_no", staffIds);
   
+  console.log('[QuickCash] Found employees:', employees?.length || 0);
   const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
   // Process in batches
@@ -280,7 +289,7 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
     const batchPromises = batch.map(async (row, batchIndex) => {
       const rowNo = i + batchIndex + 2;
 
-      const staffId = row["staffid"] || row["StaffID"];
+      const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const staffQuickCashAccountNumber = row["staffquickcashaccountnumber"] || row["StaffQuickCashAccountNumber"];
       const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
@@ -334,12 +343,15 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
   const errors: string[] = [];
 
   // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
+  console.log('[HirePurchase] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
     .in("employee_no", staffIds);
   
+  console.log('[HirePurchase] Found employees:', employees?.length || 0);
   const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
   // Process in batches
@@ -349,7 +361,7 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
     const batchPromises = batch.map(async (row, batchIndex) => {
       const rowNo = i + batchIndex + 2;
 
-      const staffId = row["staffid"] || row["StaffID"];
+      const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
       const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
@@ -409,12 +421,15 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
   const errors: string[] = [];
 
   // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
+  console.log('[NormalLoans] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
     .in("employee_no", staffIds);
   
+  console.log('[NormalLoans] Found employees:', employees?.length || 0);
   const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
   // Process in batches
@@ -424,7 +439,7 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
     const batchPromises = batch.map(async (row, batchIndex) => {
       const rowNo = i + batchIndex + 2;
 
-      const staffId = row["staffid"] || row["StaffID"];
+      const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const nlAccountNumber = row["nlaccountnumber"] || row["NLAccountNumber"];
       const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
@@ -483,12 +498,15 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
   const errors: string[] = [];
 
   // Fetch all employees at once for better performance
-  const staffIds = rows.map(row => row["staffid"] || row["StaffID"]).filter(Boolean);
+  const staffIds = rows.map(row => (row["staffid"] || row["StaffID"])?.trim()).filter(Boolean);
+  console.log('[Lands] Staff IDs from sheet:', staffIds.slice(0, 10), '...');
+  
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no")
     .in("employee_no", staffIds);
   
+  console.log('[Lands] Found employees:', employees?.length || 0);
   const employeeMap = new Map((employees || []).map((emp: any) => [emp.employee_no, emp.id]));
 
   // Process in batches
@@ -498,7 +516,7 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
     const batchPromises = batch.map(async (row, batchIndex) => {
       const rowNo = i + batchIndex + 2;
 
-      const staffId = row["staffid"] || row["StaffID"];
+      const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
       const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
       const balance = parseFloat(row["balance"] || row["Balance"] || "0");
