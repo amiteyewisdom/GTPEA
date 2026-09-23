@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import GlassCard from "@/components/ui/GlassCard";
 import DataImportPanel from "@/components/data/DataImportPanel";
 import { PayrollMasterFilePanel } from "@/components/payroll/PayrollMasterFilePanel";
+import MasterUploadPanel from "@/components/data/MasterUploadPanel";
 import { AlertCircle, CheckCircle, FileText } from "lucide-react";
 import type { ImportHistoryItem } from "@/lib/imports/log-import";
 
@@ -38,6 +39,8 @@ export default function DataImportsClient({ initialHistory }: DataImportsClientP
           Upload employee, savings, loan records, and payroll reports containing savings or loan recovery rows.
         </p>
       </div>
+
+      <MasterUploadPanel onComplete={refreshHistory} />
 
       <PayrollMasterFilePanel onComplete={refreshHistory} />
 

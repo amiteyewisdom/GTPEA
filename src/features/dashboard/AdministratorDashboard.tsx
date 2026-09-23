@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 import DataImportPanel from '@/components/data/DataImportPanel';
+import MasterUploadPanel from '@/components/data/MasterUploadPanel';
 import { useDownload } from '@/hooks/use-download';
 import {
   Users,
@@ -20,6 +21,17 @@ import {
 export default function AdministratorDashboard({ stats: initialStats }: { stats: DashboardStats }) {
   const [stats, setStats] = useState(initialStats);
   const [activeTab, setActiveTab] = useState<'overview' | 'imports' | 'exports'>('overview');
+
+  const refreshStats = useCallback(() => {
+    fetch('/api/dashboard/stats')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (data) {
+          setStats(data as DashboardStats);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +116,12 @@ export default function AdministratorDashboard({ stats: initialStats }: { stats:
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <QuickActionCard
+              title="Master Upload"
+              description="Upload complete GTPEA Excel template"
+              icon={Upload}
+              onClick={() => setActiveTab('imports')}
+            />
+            <QuickActionCard
               title="Import Employees"
               description="Upload employee data from Excel"
               icon={Upload}
@@ -112,12 +130,6 @@ export default function AdministratorDashboard({ stats: initialStats }: { stats:
             <QuickActionCard
               title="Import Savings"
               description="Bulk upload savings records"
-              icon={Upload}
-              onClick={() => setActiveTab('imports')}
-            />
-            <QuickActionCard
-              title="Import Loans"
-              description="Bulk upload loan applications"
               icon={Upload}
               onClick={() => setActiveTab('imports')}
             />
@@ -151,20 +163,66 @@ export default function AdministratorDashboard({ stats: initialStats }: { stats:
 
       {activeTab === 'imports' && (
         <div className="space-y-6">
+          <MasterUploadPanel onComplete={refreshStats} />
           <DataImportPanel
             type="employees"
             title="Import Employees"
             description="Add or update staff records from a CSV file."
+            onComplete={refreshStats}
           />
           <DataImportPanel
             type="savings"
             title="Import Savings"
             description="Upload monthly savings contributions."
+            onComplete={refreshStats}
           />
           <DataImportPanel
             type="loans"
             title="Import Loans"
             description="Upload loan applications and balances."
+            onComplete={refreshStats}
+          />
+          
+          <div className="pt-4 border-t border-brand-card-border">
+            <h3 className="mb-4 text-lg font-semibold text-brand-text">GTPEA Data Import</h3>
+            <p className="mb-4 text-sm text-brand-text-secondary">Import data from GTPEA Excel template</p>
+          </div>
+          
+          <DataImportPanel
+            type="gtpea-employees"
+            title="Import GTPEA Employees"
+            description="Import employee records from GTPEA template (EmployeeRecordNew sheet)."
+            onComplete={refreshStats}
+          />
+          <DataImportPanel
+            type="gtpea-savings"
+            title="Import GTPEA Savings"
+            description="Import savings from GTPEA template (SavingsNew sheet)."
+            onComplete={refreshStats}
+          />
+          <DataImportPanel
+            type="gtpea-quick-cash"
+            title="Import GTPEA Quick Cash"
+            description="Import quick cash accounts from GTPEA template (QuickCashNew sheet)."
+            onComplete={refreshStats}
+          />
+          <DataImportPanel
+            type="gtpea-hire-purchase"
+            title="Import GTPEA Hire Purchase"
+            description="Import hire purchase loans from GTPEA template (HP New sheet)."
+            onComplete={refreshStats}
+          />
+          <DataImportPanel
+            type="gtpea-normal-loans"
+            title="Import GTPEA Normal Loans"
+            description="Import normal loans from GTPEA template (Normal Loans New sheet)."
+            onComplete={refreshStats}
+          />
+          <DataImportPanel
+            type="gtpea-lands"
+            title="Import GTPEA Lands"
+            description="Import land purchase loans from GTPEA template (Lands New sheet)."
+            onComplete={refreshStats}
           />
         </div>
       )}
