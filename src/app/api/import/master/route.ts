@@ -67,10 +67,6 @@ export async function POST(request: Request) {
     const employeeResult = await processGTPEAEmployees(adminSupabase, employeeCsv, user.id);
     results.employees = employeeResult;
     console.log('[MASTER ROUTE] === EMPLOYEE PROCESSING COMPLETED ===');
-    console.log('[MASTER ROUTE] Skipping other sheets for now - focusing on employee import only');
-
-    // TEMPORARILY DISABLED: Process other sheets to focus on employee import
-    /*
     console.log('[MASTER ROUTE] About to start Savings processing at:', new Date().toISOString());
 
     // 2. Process Savings
@@ -162,7 +158,6 @@ export async function POST(request: Request) {
       console.error('[Master] Lands processing error:', error);
       results.lands = { imported: 0, skipped: 0, errors: [`Lands processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
     }
-    */
 
     // Log the import
     const totalImported = Object.values(results).reduce((sum, r) => sum + r.imported, 0);
