@@ -193,6 +193,15 @@ export async function POST(request: Request) {
     }
 
     // Use the auth data from either the initial login or the retry after account creation
+    const finalAuthData = authData;
+
+    if (!finalAuthData?.user) {
+      console.error('[/api/auth/login] No auth data available');
+      return NextResponse.json(
+        { error: "Authentication failed. Please try again." },
+        { status: 500 }
+      );
+    }
 
     // Check if first login - user needs to change password
     if (isFirstLogin) {
@@ -222,7 +231,7 @@ export async function POST(request: Request) {
       const { error: otpError } = await admin
         .from("otp_codes")
         .upsert({
-          user_id: finalAuthData.user.id,
+          user_id: finalAuthData?.user?.id || '',
           phone_number: formatPhoneNumber(phoneNumber),
           code: otp,
           expires_at: expiresAt.toISOString(),
