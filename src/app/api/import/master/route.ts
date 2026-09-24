@@ -280,8 +280,8 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
           // Don't skip employee record if auth creation fails
         }
 
-        if (error) {
-          return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
+        if (employeeError) {
+          return { skipped: true, error: `Row ${rowNo}: ${employeeError.message}` };
         }
         return { imported: true };
       });
