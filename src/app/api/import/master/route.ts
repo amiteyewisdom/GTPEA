@@ -294,17 +294,23 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
       }
 
       // Try both formats for staff ID lookup
+      const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+      console.log(`[Savings] Looking up employee ${staffId} (alt: ${altId})`);
+      
       const { data: employee } = await supabase
         .from("employees")
         .select("id")
-        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .or(`employee_no.eq.${staffId},employee_no.eq.${altId}`)
         .single();
 
       if (!employee) {
+        console.log(`[Savings] Employee ${staffId} not found (tried: ${staffId}, ${altId})`);
         skipped++;
         errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
         continue;
       }
+      
+      console.log(`[Savings] Found employee ${staffId}`);
 
       const { error } = await supabase.from("savings").upsert(
         {
@@ -312,7 +318,7 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
           account_number: staffSavingAccountNumber || `SAV-${staffId}`,
           balance: balance,
           type: "savings",
-          reference: reference || "Savings",
+          notes: reference || "Savings",
         },
         { onConflict: "account_number" }
       );
@@ -380,7 +386,7 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
           account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
           balance: balance,
           type: "quick_cash",
-          reference: reference || "Quick-Cash",
+          notes: reference || "Quick-Cash",
         },
         { onConflict: "account_number" }
       );
