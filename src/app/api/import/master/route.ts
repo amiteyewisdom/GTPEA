@@ -67,11 +67,16 @@ export async function POST(request: Request) {
     // 2. Process Savings
     try {
       const savingsSheet = workbook.Sheets['SavingsNew'];
-      const savingsCsv = XLSX.utils.sheet_to_csv(savingsSheet);
-      console.log('[Master] Starting Savings processing...');
-      const savingsResult = await processGTPEASavings(adminSupabase, savingsCsv, user.id);
-      results.savings = savingsResult;
-      console.log('[Master] Savings completed:', savingsResult);
+      if (!savingsSheet) {
+        console.error('[Master] SavingsNew sheet not found');
+        results.savings = { imported: 0, skipped: 0, errors: ['SavingsNew sheet not found in Excel file'] };
+      } else {
+        const savingsCsv = XLSX.utils.sheet_to_csv(savingsSheet);
+        console.log('[Master] Starting Savings processing...');
+        const savingsResult = await processGTPEASavings(adminSupabase, savingsCsv, user.id);
+        results.savings = savingsResult;
+        console.log('[Master] Savings completed:', savingsResult);
+      }
     } catch (error) {
       console.error('[Master] Savings processing error:', error);
       results.savings = { imported: 0, skipped: 0, errors: [`Savings processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
@@ -80,11 +85,16 @@ export async function POST(request: Request) {
     // 3. Process Quick Cash
     try {
       const quickCashSheet = workbook.Sheets['QuickCashNew'];
-      const quickCashCsv = XLSX.utils.sheet_to_csv(quickCashSheet);
-      console.log('[Master] Starting Quick Cash processing...');
-      const quickCashResult = await processGTPEAQuickCash(adminSupabase, quickCashCsv, user.id);
-      results.quickCash = quickCashResult;
-      console.log('[Master] Quick Cash completed:', quickCashResult);
+      if (!quickCashSheet) {
+        console.error('[Master] QuickCashNew sheet not found');
+        results.quickCash = { imported: 0, skipped: 0, errors: ['QuickCashNew sheet not found in Excel file'] };
+      } else {
+        const quickCashCsv = XLSX.utils.sheet_to_csv(quickCashSheet);
+        console.log('[Master] Starting Quick Cash processing...');
+        const quickCashResult = await processGTPEAQuickCash(adminSupabase, quickCashCsv, user.id);
+        results.quickCash = quickCashResult;
+        console.log('[Master] Quick Cash completed:', quickCashResult);
+      }
     } catch (error) {
       console.error('[Master] Quick Cash processing error:', error);
       results.quickCash = { imported: 0, skipped: 0, errors: [`Quick Cash processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
@@ -93,11 +103,16 @@ export async function POST(request: Request) {
     // 4. Process Hire Purchase
     try {
       const hpSheet = workbook.Sheets['HP New'];
-      const hpCsv = XLSX.utils.sheet_to_csv(hpSheet);
-      console.log('[Master] Starting Hire Purchase processing...');
-      const hpResult = await processGTPEAHirePurchase(adminSupabase, hpCsv, user.id);
-      results.hirePurchase = hpResult;
-      console.log('[Master] Hire Purchase completed:', hpResult);
+      if (!hpSheet) {
+        console.error('[Master] HP New sheet not found');
+        results.hirePurchase = { imported: 0, skipped: 0, errors: ['HP New sheet not found in Excel file'] };
+      } else {
+        const hpCsv = XLSX.utils.sheet_to_csv(hpSheet);
+        console.log('[Master] Starting Hire Purchase processing...');
+        const hpResult = await processGTPEAHirePurchase(adminSupabase, hpCsv, user.id);
+        results.hirePurchase = hpResult;
+        console.log('[Master] Hire Purchase completed:', hpResult);
+      }
     } catch (error) {
       console.error('[Master] Hire Purchase processing error:', error);
       results.hirePurchase = { imported: 0, skipped: 0, errors: [`Hire Purchase processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
@@ -106,11 +121,16 @@ export async function POST(request: Request) {
     // 5. Process Normal Loans
     try {
       const normalLoansSheet = workbook.Sheets['Normal Loans New'];
-      const normalLoansCsv = XLSX.utils.sheet_to_csv(normalLoansSheet);
-      console.log('[Master] Starting Normal Loans processing...');
-      const normalLoansResult = await processGTPEANormalLoans(adminSupabase, normalLoansCsv, user.id);
-      results.normalLoans = normalLoansResult;
-      console.log('[Master] Normal Loans completed:', normalLoansResult);
+      if (!normalLoansSheet) {
+        console.error('[Master] Normal Loans New sheet not found');
+        results.normalLoans = { imported: 0, skipped: 0, errors: ['Normal Loans New sheet not found in Excel file'] };
+      } else {
+        const normalLoansCsv = XLSX.utils.sheet_to_csv(normalLoansSheet);
+        console.log('[Master] Starting Normal Loans processing...');
+        const normalLoansResult = await processGTPEANormalLoans(adminSupabase, normalLoansCsv, user.id);
+        results.normalLoans = normalLoansResult;
+        console.log('[Master] Normal Loans completed:', normalLoansResult);
+      }
     } catch (error) {
       console.error('[Master] Normal Loans processing error:', error);
       results.normalLoans = { imported: 0, skipped: 0, errors: [`Normal Loans processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
@@ -119,11 +139,16 @@ export async function POST(request: Request) {
     // 6. Process Lands
     try {
       const landsSheet = workbook.Sheets['Lands New'];
-      const landsCsv = XLSX.utils.sheet_to_csv(landsSheet);
-      console.log('[Master] Starting Lands processing...');
-      const landsResult = await processGTPEALands(adminSupabase, landsCsv, user.id);
-      results.lands = landsResult;
-      console.log('[Master] Lands completed:', landsResult);
+      if (!landsSheet) {
+        console.error('[Master] Lands New sheet not found');
+        results.lands = { imported: 0, skipped: 0, errors: ['Lands New sheet not found in Excel file'] };
+      } else {
+        const landsCsv = XLSX.utils.sheet_to_csv(landsSheet);
+        console.log('[Master] Starting Lands processing...');
+        const landsResult = await processGTPEALands(adminSupabase, landsCsv, user.id);
+        results.lands = landsResult;
+        console.log('[Master] Lands completed:', landsResult);
+      }
     } catch (error) {
       console.error('[Master] Lands processing error:', error);
       results.lands = { imported: 0, skipped: 0, errors: [`Lands processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
