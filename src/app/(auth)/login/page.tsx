@@ -498,7 +498,7 @@ export default function LoginPage() {
               Default password: <span style={{ fontWeight: "600", color: isDesktop ? "#C9A44C" : "#FFFFFF" }}>Gtpea@2026</span>
             </p>
             <p style={{ fontSize: "11px", color: isDesktop ? "rgba(255, 255, 255, 0.75)" : "rgba(255, 255, 255, 0.85)", margin: "4px 0 0 0" }}>
-              You'll be prompted to change your password and set up phone verification after login.
+              You will be prompted to change your password and set up phone verification after login.
             </p>
           </div>
 
