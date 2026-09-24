@@ -212,7 +212,7 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
 
         const staffId = (row["staffid"] || row["StaffID"])?.trim();
         const fullName = row["fullname"] || row["FullName"];
-        const department = normalizeDepartment(row["department"] || row["Department"] || "operations");
+        const department = row["department"] || row["Department"] || "operations";
         const staffAccountNumber = row["staffaccountnumber"] || row["StaffAccountNumber"];
         const phoneNumber = row["phonenumber"] || row["PhoneNumber"];
 
