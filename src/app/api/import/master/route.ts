@@ -275,6 +275,13 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
   const errors: string[] = [];
 
   console.log('[Savings] Total rows to process:', rows.length);
+  
+  // Debug: Show sample employee numbers from database
+  const { data: sampleEmployees } = await supabase
+    .from("employees")
+    .select("employee_no")
+    .limit(5);
+  console.log('[Savings] Sample employee_no from DB:', sampleEmployees?.map((e: any) => e.employee_no));
 
   // Simplified: process one by one for better error handling
   for (let i = 0; i < rows.length; i++) {
@@ -317,7 +324,7 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
           employee_id: employee.id,
           account_number: staffSavingAccountNumber || `SAV-${staffId}`,
           balance: balance,
-          type: "savings",
+          type: "regular", // Use valid enum value instead of 'savings'
           notes: reference || "Savings",
         },
         { onConflict: "account_number" }
@@ -385,7 +392,7 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
           employee_id: employee.id,
           account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
           balance: balance,
-          type: "quick_cash",
+          type: "special", // Use valid enum value instead of 'quick_cash'
           notes: reference || "Quick-Cash",
         },
         { onConflict: "account_number" }
