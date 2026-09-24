@@ -159,6 +159,7 @@ export async function POST(request: Request) {
       console.error('[Master] Lands processing error:', error);
       results.lands = { imported: 0, skipped: 0, errors: [`Lands processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
     }
+    */
 
     // Log the import
     const totalImported = Object.values(results).reduce((sum, r) => sum + r.imported, 0);
