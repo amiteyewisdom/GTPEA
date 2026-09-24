@@ -199,65 +199,72 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
   console.log('[Employees] Processing', rows.length, 'rows');
   console.log('[Employees] Function started at:', new Date().toISOString());
 
-  // Process in batches to improve performance
-  const batchSize = 50;
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    const batchPromises = batch.map(async (row, batchIndex) => {
-      const rowNo = i + batchIndex + 2;
+  try {
+    // Process in batches to improve performance
+    const batchSize = 50;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      console.log(`[Employees] Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(rows.length/batchSize)}`);
+      const batch = rows.slice(i, i + batchSize);
+      const batchPromises = batch.map(async (row, batchIndex) => {
+        const rowNo = i + batchIndex + 2;
 
-      const staffId = (row["staffid"] || row["StaffID"])?.trim();
-      const fullName = row["fullname"] || row["FullName"];
-      const department = normalizeDepartment(row["department"] || row["Department"] || "operations");
-      const staffAccountNumber = row["staffaccountnumber"] || row["StaffAccountNumber"];
-      const phoneNumber = row["phonenumber"] || row["PhoneNumber"];
+        const staffId = (row["staffid"] || row["StaffID"])?.trim();
+        const fullName = row["fullname"] || row["FullName"];
+        const department = normalizeDepartment(row["department"] || row["Department"] || "operations");
+        const staffAccountNumber = row["staffaccountnumber"] || row["StaffAccountNumber"];
+        const phoneNumber = row["phonenumber"] || row["PhoneNumber"];
 
-      if (!staffId || !fullName) {
-        return { skipped: true, error: `Row ${rowNo}: missing StaffID or FullName.` };
-      }
+        if (!staffId || !fullName) {
+          return { skipped: true, error: `Row ${rowNo}: missing StaffID or FullName.` };
+        }
 
-      const nameParts = fullName.trim().split(/\s+/);
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || "-";
+        const nameParts = fullName.trim().split(/\s+/);
+        const firstName = nameParts[0] || "";
+        const lastName = nameParts.slice(1).join(" ") || "-";
 
-      const { error } = await supabase.from("employees").upsert(
-        {
-          employee_no: staffId,
-          first_name: firstName,
-          last_name: lastName,
-          email: `${staffId.toLowerCase()}@staff.gtpea.local`,
-          phone: phoneNumber || null,
-          department,
-          position: "Staff",
-          bank_account_no: staffAccountNumber || null,
-          date_joined: new Date().toISOString().slice(0, 10),
-          salary: 0,
-          status: "active",
-          created_by: userId,
-        },
-        { onConflict: "employee_no" }
-      );
+        const { error } = await supabase.from("employees").upsert(
+          {
+            employee_no: staffId,
+            first_name: firstName,
+            last_name: lastName,
+            email: `${staffId.toLowerCase()}@staff.gtpea.local`,
+            phone: phoneNumber || null,
+            department,
+            position: "Staff",
+            bank_account_no: staffAccountNumber || null,
+            date_joined: new Date().toISOString().slice(0, 10),
+            salary: 0,
+            status: "active",
+            created_by: userId,
+          },
+          { onConflict: "employee_no" }
+        );
 
-      if (error) {
-        return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
-      }
-      return { imported: true };
-    });
+        if (error) {
+          return { skipped: true, error: `Row ${rowNo}: ${error.message}` };
+        }
+        return { imported: true };
+      });
 
-    const results = await Promise.all(batchPromises);
-    results.forEach(result => {
-      if (result.imported) imported++;
-      if (result.skipped) {
-        skipped++;
-        if (result.error) errors.push(result.error);
-      }
-    });
+      const results = await Promise.all(batchPromises);
+      results.forEach(result => {
+        if (result.imported) imported++;
+        if (result.skipped) {
+          skipped++;
+          if (result.error) errors.push(result.error);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('[Employees] Processing error:', error);
+    errors.push(`Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
   console.log('[Employees] Completed:', imported, 'imported,', skipped, 'skipped');
   if (errors.length > 0) {
     console.log('[Employees] Sample errors:', errors.slice(0, 5));
   }
+  console.log('[Employees] Process finished, returning result at:', new Date().toISOString());
   return { imported, skipped, errors };
 }
 
