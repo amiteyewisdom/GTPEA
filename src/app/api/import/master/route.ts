@@ -226,14 +226,18 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
         const nameParts = fullName.trim().split(/\s+/);
         const firstName = nameParts[0] || "";
         const lastName = nameParts.slice(1).join(" ") || "-";
+        
+        // Universal default password for all employees
+        const defaultPassword = "Gtpea@2026";
 
-        const { error } = await supabase.from("employees").upsert(
+        // Create or update employee record
+        const { error: employeeError } = await supabase.from("employees").upsert(
           {
             employee_no: staffId,
             first_name: firstName,
             last_name: lastName,
             email: `${staffId.toLowerCase()}@staff.gtpea.local`,
-            phone: phoneNumber || null,
+            phone_number: phoneNumber || null,
             department,
             position: "Staff",
             bank_account_no: staffAccountNumber || null,
@@ -241,9 +245,40 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
             salary: 0,
             status: "active",
             created_by: userId,
+            password_changed_at: null, // Force password change on first login
           },
           { onConflict: "employee_no" }
         );
+
+        if (employeeError) {
+          return { skipped: true, error: `Row ${rowNo}: Employee record error: ${employeeError.message}` };
+        }
+
+        // Create Supabase auth account using staff ID as email identifier
+        try {
+          const { error: authError } = await supabase.auth.admin.createUser({
+            email: `${staffId.toLowerCase()}@staff.gtpea.local`,
+            password: defaultPassword,
+            email_confirm: true,
+            user_metadata: {
+              staff_id: staffId,
+              full_name: fullName,
+              phone_number: phoneNumber,
+              employee_no: staffId,
+              login_identifier: staffId // Staff ID is their login identifier
+            }
+          });
+
+          if (authError) {
+            // User might already exist, log but don't fail
+            console.log(`[Employees] Auth account for ${staffId}: ${authError.message}`);
+          } else {
+            console.log(`[Employees] Created auth account for staff ID: ${staffId} (default password: Gtpea@2026)`);
+          }
+        } catch (authError) {
+          console.log(`[Employees] Auth account creation error for ${staffId}:`, authError);
+          // Don't skip employee record if auth creation fails
+        }
 
         if (error) {
           return { skipped: true, error: `Row ${rowNo}: ${error.message}` };

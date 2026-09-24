@@ -485,6 +485,24 @@ export default function LoginPage() {
           </div>
 
           <div style={{
+            marginTop: isDesktop ? "16px" : "12px",
+            padding: isDesktop ? "12px" : "10px",
+            backgroundColor: isDesktop ? "rgba(201, 164, 76, 0.15)" : "rgba(201, 164, 76, 0.2)",
+            borderRadius: "8px",
+            border: isDesktop ? "1px solid rgba(201, 164, 76, 0.3)" : "1px solid rgba(201, 164, 76, 0.4)",
+          }}>
+            <p style={{ fontSize: "13px", fontWeight: "600", color: isDesktop ? "#C9A44C" : "#FFFFFF", margin: "0 0 4px 0", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)" }}>
+              First-time login?
+            </p>
+            <p style={{ fontSize: "12px", color: isDesktop ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.95)", margin: 0, lineHeight: "1.4" }}>
+              Default password: <span style={{ fontWeight: "600", color: isDesktop ? "#C9A44C" : "#FFFFFF" }}>Gtpea@2026</span>
+            </p>
+            <p style={{ fontSize: "11px", color: isDesktop ? "rgba(255, 255, 255, 0.75)" : "rgba(255, 255, 255, 0.85)", margin: "4px 0 0 0" }}>
+              You'll be prompted to change your password and set up phone verification after login.
+            </p>
+          </div>
+
+          <div style={{
             marginTop: isDesktop ? "20px" : "16px",
             paddingTop: isDesktop ? "16px" : "12px",
             textAlign: "center",

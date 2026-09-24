@@ -56,3 +56,12 @@ EXCEPTION
         -- If the migration already ran, do nothing
         NULL;
 END $$;
+
+-- Add password_changed_at column to employees table for first-time login detection
+DO $$
+BEGIN
+    ALTER TABLE employees ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ;
+EXCEPTION
+    WHEN duplicate_column THEN
+        NULL;
+END $$;
