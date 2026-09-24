@@ -192,9 +192,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Use the auth data from either the initial login or the retry after account creation
-    const finalAuthData = authData;
-
     if (!finalAuthData?.user) {
       console.error('[/api/auth/login] No auth data available');
       return NextResponse.json(
