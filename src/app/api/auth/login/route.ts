@@ -123,6 +123,8 @@ export async function POST(request: Request) {
       password,
     });
 
+    let finalAuthData = authData; // Default to initial auth data
+
     // If auth user doesn't exist, create it with default password
     if (signInError && signInError.message.includes("Invalid login credentials")) {
       console.log('[/api/auth/login] Auth user not found, creating account with default password');
@@ -164,6 +166,9 @@ export async function POST(request: Request) {
           );
         }
 
+        // Use the auth data from the retry
+        finalAuthData = retryAuthData;
+
         // Force first login for newly created accounts
         return NextResponse.json({
           success: true,
@@ -188,7 +193,6 @@ export async function POST(request: Request) {
     }
 
     // Use the auth data from either the initial login or the retry after account creation
-    const finalAuthData = retryAuthData || authData;
 
     // Check if first login - user needs to change password
     if (isFirstLogin) {
