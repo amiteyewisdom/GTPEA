@@ -221,9 +221,6 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
         const nameParts = fullName.trim().split(/\s+/);
         const firstName = nameParts[0] || "";
         const lastName = nameParts.slice(1).join(" ") || "-";
-        
-        // Universal default password for all employees
-        const defaultPassword = "Gtpea@2026";
 
         // Create or update employee record
         const { error: employeeError } = await supabase.from("employees").upsert(
@@ -249,31 +246,8 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
           return { skipped: true, error: `Row ${rowNo}: Employee record error: ${employeeError.message}` };
         }
 
-        // Create Supabase auth account using staff ID as email identifier
-        try {
-          const { error: authError } = await supabase.auth.admin.createUser({
-            email: `${staffId.toLowerCase()}@staff.gtpea.local`,
-            password: defaultPassword,
-            email_confirm: true,
-            user_metadata: {
-              staff_id: staffId,
-              full_name: fullName,
-              phone_number: phoneNumber,
-              employee_no: staffId,
-              login_identifier: staffId // Staff ID is their login identifier
-            }
-          });
-
-          if (authError) {
-            // User might already exist, log but don't fail
-            console.log(`[Employees] Auth account for ${staffId}: ${authError.message}`);
-          } else {
-            console.log(`[Employees] Created auth account for staff ID: ${staffId} (default password: Gtpea@2026)`);
-          }
-        } catch (authError) {
-          console.log(`[Employees] Auth account creation error for ${staffId}:`, authError);
-          // Don't skip employee record if auth creation fails
-        }
+        // Auth account creation removed to avoid timeout - employees will be created on first login
+        // The login flow handles creating auth accounts automatically
 
         if (employeeError) {
           return { skipped: true, error: `Row ${rowNo}: ${employeeError.message}` };

@@ -117,11 +117,67 @@ export async function POST(request: Request) {
 
     console.log('[/api/auth/login] Attempting auth with email:', authEmail);
 
-    // Sign in with email (Supabase auth uses email)
+    // Try to sign in first
     const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
       email: authEmail,
       password,
     });
+
+    // If auth user doesn't exist, create it with default password
+    if (signInError && signInError.message.includes("Invalid login credentials")) {
+      console.log('[/api/auth/login] Auth user not found, creating account with default password');
+      
+      try {
+        const { data: newAuthData, error: createError } = await admin.auth.admin.createUser({
+          email: authEmail,
+          password: "Gtpea@2026", // Universal default password
+          email_confirm: true,
+          user_metadata: {
+            staff_id: loginId,
+            employee_no: loginId,
+            full_name: `${employee.first_name} ${employee.last_name}`,
+            phone_number: phoneNumber
+          }
+        });
+
+        if (createError) {
+          console.log('[/api/auth/login] Failed to create auth account:', createError.message);
+          return NextResponse.json(
+            { error: "Failed to create account. Please contact administrator." },
+            { status: 500 }
+          );
+        }
+
+        console.log('[/api/auth/login] Created auth account, attempting login again');
+        
+        // Try login again with the newly created account
+        const { data: retryAuthData, error: retryError } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password,
+        });
+
+        if (retryError) {
+          console.log('[/api/auth/login] Retry login failed:', retryError.message);
+          return NextResponse.json(
+            { error: "Account created but login failed. Please try again." },
+            { status: 401 }
+          );
+        }
+
+        // Force first login for newly created accounts
+        return NextResponse.json({
+          success: true,
+          isFirstLogin: true,
+          message: "Account created. Please change your password.",
+        });
+      } catch (createError) {
+        console.error('[/api/auth/login] Account creation error:', createError);
+        return NextResponse.json(
+          { error: "Failed to create account. Please contact administrator." },
+          { status: 500 }
+        );
+      }
+    }
 
     if (signInError) {
       console.log('[/api/auth/login] Auth failed:', signInError.message);
@@ -130,6 +186,9 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
+    // Use the auth data from either the initial login or the retry after account creation
+    const finalAuthData = retryAuthData || authData;
 
     // Check if first login - user needs to change password
     if (isFirstLogin) {
@@ -159,7 +218,7 @@ export async function POST(request: Request) {
       const { error: otpError } = await admin
         .from("otp_codes")
         .upsert({
-          user_id: authData.user.id,
+          user_id: finalAuthData.user.id,
           phone_number: formatPhoneNumber(phoneNumber),
           code: otp,
           expires_at: expiresAt.toISOString(),
