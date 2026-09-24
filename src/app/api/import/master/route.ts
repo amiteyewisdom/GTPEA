@@ -41,6 +41,8 @@ export async function POST(request: Request) {
     
     // Check if expected sheets exist
     const missingSheets = expectedSheets.filter(sheet => !workbook.SheetNames.includes(sheet));
+    console.log('[Master] Sheets found:', workbook.SheetNames);
+    console.log('[Master] Missing sheets:', missingSheets);
     if (missingSheets.length > 0) {
       return NextResponse.json({ 
         error: `Missing required sheets: ${missingSheets.join(', ')}`,
@@ -59,10 +61,13 @@ export async function POST(request: Request) {
     };
 
     // 1. Process Employees (must be first)
+    console.log('[MASTER ROUTE] === STARTING EMPLOYEE PROCESSING ===');
     const employeeSheet = workbook.Sheets['EmployeeRecordNew'];
     const employeeCsv = XLSX.utils.sheet_to_csv(employeeSheet);
     const employeeResult = await processGTPEAEmployees(adminSupabase, employeeCsv, user.id);
     results.employees = employeeResult;
+    console.log('[MASTER ROUTE] === EMPLOYEE PROCESSING COMPLETED ===');
+    console.log('[MASTER ROUTE] About to start Savings processing at:', new Date().toISOString());
 
     // 2. Process Savings
     try {
@@ -192,6 +197,7 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
   const errors: string[] = [];
 
   console.log('[Employees] Processing', rows.length, 'rows');
+  console.log('[Employees] Function started at:', new Date().toISOString());
 
   // Process in batches to improve performance
   const batchSize = 50;
