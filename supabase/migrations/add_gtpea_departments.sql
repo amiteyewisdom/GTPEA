@@ -6,13 +6,14 @@ DO $$
 BEGIN
     -- Create new enum with all existing values plus new ones (both lowercase and capitalized versions)
     CREATE TYPE department_new AS ENUM (
-        'management', 'finance', 'operations', 'hr', 'it', 'sales', 'legal', 'audit',
+        'management', 'Management', 'finance', 'Finance', 'operations', 'hr', 'it', 'sales', 'legal', 'audit',
         'retail', 'Retail', 'marketing', 'Marketing', 'supply chain', 'Supply Chain', 
         'wholesale', 'Wholesale', 'plant 1', 'Plant 1', 'plant 2', 'Plant 2',
         'planning & org.', 'Planning & Org.', 'colour kitchen', 'Colour Kitchen', 
         'innov. & engraving', 'Innov. & Engraving', 'hseq', 'HSEQ',
         'continuous improvement', 'Continuous Improvement', 'energy', 'Energy', 
-        'production', 'Production', 'it/technical', 'IT/Technical', 'it/bac', 'IT/BAC'
+        'production', 'Production', 'it/technical', 'IT/Technical', 'it/bac', 'IT/BAC',
+        'engineering', 'Engineering', 'human resource', 'Human Resource'
     );
     
     -- Convert existing data to new type
@@ -40,6 +41,9 @@ BEGIN
     UPDATE employees SET department = 'Production' WHERE department = 'production';
     UPDATE employees SET department = 'IT/Technical' WHERE department = 'it/technical';
     UPDATE employees SET department = 'IT/BAC' WHERE department = 'it/bac';
+    UPDATE employees SET department = 'Engineering' WHERE department = 'engineering';
+    UPDATE employees SET department = 'Human Resource' WHERE department = 'human resource';
+    UPDATE employees SET department = 'Finance' WHERE department = 'finance';
     
 EXCEPTION
     WHEN duplicate_object THEN
