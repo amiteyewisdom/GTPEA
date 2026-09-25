@@ -159,6 +159,7 @@ export async function POST(request: Request) {
       console.error('[Master] Lands processing error:', error);
       results.lands = { imported: 0, skipped: 0, errors: [`Lands processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
     }
+    */
 
     // Log the import
     const totalImported = Object.values(results).reduce((sum, r) => sum + r.imported, 0);
@@ -735,35 +736,4 @@ function parseCsvLine(line: string): string[] {
 
 function normalizeHeader(header: string): string {
   return header.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function normalizeDepartment(input: string): string {
-  const raw = input.trim().toLowerCase().replace(/[&\/_-]/g, " ");
-  const validDepartments = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit", "retail", "marketing", "supply chain", "wholesale"];
-  
-  // Direct match first
-  if (validDepartments.includes(raw)) return raw;
-  
-  const aliases: Record<string, string[]> = {
-    management: ["management", "mgt", "mgr", "managerial"],
-    finance: ["finance", "fin", "account", "accounts", "accounting", "bac"],
-    operations: ["operations", "ops", "operational", "procurement", "warehouse", "logistics", "admin", "administration", "support", "general services", "gs"],
-    hr: ["hr", "human resources", "human resource", "personnel"],
-    it: ["it", "information technology", "information tech", "tech", "technology", "engineering"],
-    sales: ["sales", "business development", "biz dev"],
-    legal: ["legal", "compliance"],
-    audit: ["audit", "internal audit"],
-    retail: ["retail", "retail sales"],
-    marketing: ["marketing", "market", "promotions"],
-    "supply chain": ["supply chain", "supply", "logistics", "procurement"],
-    wholesale: ["wholesale", "wholesale sales"],
-  };
-
-  for (const [department, departmentAliases] of Object.entries(aliases)) {
-    if (departmentAliases.includes(raw)) return department;
-  }
-
-  // Default to operations for unknown departments
-  console.log(`[Department] Unknown department "${input}" defaulting to operations`);
-  return "operations";
 }
