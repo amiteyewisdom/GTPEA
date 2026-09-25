@@ -106,6 +106,7 @@ export async function POST(request: Request) {
     }
 
     // 4. Process Hire Purchase
+    /*
     try {
       const hpSheet = workbook.Sheets['HP New'];
       if (!hpSheet) {
