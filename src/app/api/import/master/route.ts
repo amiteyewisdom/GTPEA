@@ -88,6 +88,7 @@ export async function POST(request: Request) {
     }
 
     // 3. Process Quick Cash
+    /*
     try {
       const quickCashSheet = workbook.Sheets['QuickCashNew'];
       if (!quickCashSheet) {
@@ -309,18 +310,15 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
         continue;
       }
 
-      // Try both formats for staff ID lookup
-      const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
-      console.log(`[Savings] Looking up employee ${staffId} (alt: ${altId})`);
-      
+      // Try to find employee by exact staff ID first
       const { data: employee } = await supabase
         .from("employees")
         .select("id")
-        .or(`employee_no.eq.${staffId},employee_no.eq.${altId}`)
+        .eq("employee_no", staffId)
         .single();
 
       if (!employee) {
-        console.log(`[Savings] Employee ${staffId} not found (tried: ${staffId}, ${altId})`);
+        console.log(`[Savings] Employee ${staffId} not found`);
         skipped++;
         errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
         continue;
