@@ -124,6 +124,7 @@ export async function POST(request: Request) {
     }
 
     // 5. Process Normal Loans
+    /*
     try {
       const normalLoansSheet = workbook.Sheets['Normal Loans New'];
       if (!normalLoansSheet) {
@@ -140,9 +141,9 @@ export async function POST(request: Request) {
       console.error('[Master] Normal Loans processing error:', error);
       results.normalLoans = { imported: 0, skipped: 0, errors: [`Normal Loans processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
     }
+    */
 
     // 6. Process Lands
-    /*
     try {
       const landsSheet = workbook.Sheets['Lands New'];
       if (!landsSheet) {
@@ -159,7 +160,6 @@ export async function POST(request: Request) {
       console.error('[Master] Lands processing error:', error);
       results.lands = { imported: 0, skipped: 0, errors: [`Lands processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
     }
-    */
 
     // Log the import
     const totalImported = Object.values(results).reduce((sum, r) => sum + r.imported, 0);
