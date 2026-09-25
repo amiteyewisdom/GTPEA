@@ -88,6 +88,9 @@ END $$;
 -- This is needed because the Excel file uses 'active', 'pending', etc.
 DO $$
 BEGIN
+    -- Remove default value temporarily
+    ALTER TABLE loans ALTER COLUMN status DROP DEFAULT;
+    
     -- Create new enum with all existing values plus new ones
     CREATE TYPE loan_status_new AS ENUM (
         'pending', 'approved', 'rejected', 'paid', 'defaulted', 'active', 'completed'
@@ -101,6 +104,9 @@ BEGIN
     
     -- Rename new type to original name
     ALTER TYPE loan_status_new RENAME TO loan_status;
+    
+    -- Set default value back
+    ALTER TABLE loans ALTER COLUMN status SET DEFAULT 'pending';
     
 EXCEPTION
     WHEN duplicate_object THEN
