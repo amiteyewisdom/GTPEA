@@ -65,6 +65,47 @@ export async function POST(request: Request) {
       );
     }
 
+    // Ensure user has a profile record (for employees)
+    const { data: existingProfile } = await admin
+      .from("profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (!existingProfile) {
+      // Check if this is an employee by phone number
+      const { data: employee } = await admin
+        .from("employees")
+        .select("id, full_name, department")
+        .eq("phone_number", otpData.phone_number)
+        .single();
+
+      if (employee) {
+        // Create profile for employee with employee_id link
+        await admin
+          .from("profiles")
+          .insert({
+            user_id: userId,
+            employee_id: employee.id,
+            full_name: employee.full_name,
+            role: "employee",
+            phone: otpData.phone_number,
+            avatar_url: null,
+          });
+      } else {
+        // Create default profile for non-employee
+        await admin
+          .from("profiles")
+          .insert({
+            user_id: userId,
+            full_name: "User",
+            role: "employee",
+            phone: otpData.phone_number,
+            avatar_url: null,
+          });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "OTP verified successfully",
