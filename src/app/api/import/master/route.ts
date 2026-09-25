@@ -124,6 +124,7 @@ export async function POST(request: Request) {
     }
 
     // 5. Process Normal Loans
+    /*
     try {
       const normalLoansSheet = workbook.Sheets['Normal Loans New'];
       if (!normalLoansSheet) {
