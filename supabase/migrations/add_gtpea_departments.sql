@@ -84,6 +84,30 @@ EXCEPTION
         NULL;
 END $$;
 
+-- Add GTPEA-specific loan statuses to the loan_status enum
+-- This is needed because the Excel file uses 'active', 'pending', etc.
+DO $$
+BEGIN
+    -- Create new enum with all existing values plus new ones
+    CREATE TYPE loan_status_new AS ENUM (
+        'pending', 'approved', 'rejected', 'paid', 'defaulted', 'active', 'completed'
+    );
+    
+    -- Convert existing data to new type
+    ALTER TABLE loans ALTER COLUMN status TYPE loan_status_new USING status::text::loan_status_new;
+    
+    -- Drop old type
+    DROP TYPE loan_status;
+    
+    -- Rename new type to original name
+    ALTER TYPE loan_status_new RENAME TO loan_status;
+    
+EXCEPTION
+    WHEN duplicate_object THEN
+        -- If the migration already ran, do nothing
+        NULL;
+END $$;
+
 -- Add password_changed_at column to employees table for first-time login detection
 DO $$
 BEGIN
