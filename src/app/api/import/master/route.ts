@@ -516,8 +516,6 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
   let skipped = 0;
   const errors: string[] = [];
 
-  console.log('[NormalLoans] Total rows to process:', rows.length);
-
   // Fetch loan product ID for Normal Loan
   const { data: nlProduct } = await supabase
     .from("loan_products")
@@ -530,7 +528,7 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
     return { imported: 0, skipped: rows.length, errors: ["Normal Loan product not found in database"] };
   }
 
-  // Simplified: process one by one for better error handling
+  // Process one by one with simplified lookup
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowNo = i + 2;
@@ -545,11 +543,11 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
         continue;
       }
 
-      // Try both formats for staff ID lookup
+      // Simple staff ID lookup (exact match)
       const { data: employee } = await supabase
         .from("employees")
         .select("id")
-        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .eq("employee_no", staffId)
         .single();
 
       if (!employee) {
@@ -587,10 +585,6 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
     }
   }
 
-  console.log('[NormalLoans] Completed:', imported, 'imported,', skipped, 'skipped');
-  if (errors.length > 0) {
-    console.log('[NormalLoans] Sample errors:', errors.slice(0, 5));
-  }
   return { imported, skipped, errors };
 }
 
