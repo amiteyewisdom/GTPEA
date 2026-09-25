@@ -1,15 +1,18 @@
 -- Add GTPEA-specific departments to the department enum
--- This is needed because the Excel file contains departments like 'retail', 'marketing', etc.
+-- This is needed because the Excel file contains departments like 'Retail', 'Marketing', etc.
 
 -- PostgreSQL doesn't support ALTER TYPE to add values directly, so we need to recreate the type
 DO $$
 BEGIN
-    -- Create new enum with all existing values plus new ones
+    -- Create new enum with all existing values plus new ones (both lowercase and capitalized versions)
     CREATE TYPE department_new AS ENUM (
         'management', 'finance', 'operations', 'hr', 'it', 'sales', 'legal', 'audit',
-        'retail', 'marketing', 'supply chain', 'wholesale', 'plant 1', 'plant 2',
-        'planning & org.', 'colour kitchen', 'innov. & engraving', 'hseq',
-        'continuous improvement', 'energy', 'production', 'it/technical', 'it/bac'
+        'retail', 'Retail', 'marketing', 'Marketing', 'supply chain', 'Supply Chain', 
+        'wholesale', 'Wholesale', 'plant 1', 'Plant 1', 'plant 2', 'Plant 2',
+        'planning & org.', 'Planning & Org.', 'colour kitchen', 'Colour Kitchen', 
+        'innov. & engraving', 'Innov. & Engraving', 'hseq', 'HSEQ',
+        'continuous improvement', 'Continuous Improvement', 'energy', 'Energy', 
+        'production', 'Production', 'it/technical', 'IT/Technical', 'it/bac', 'IT/BAC'
     );
     
     -- Convert existing data to new type
@@ -20,6 +23,23 @@ BEGIN
     
     -- Rename new type to original name
     ALTER TYPE department_new RENAME TO department;
+    
+    -- Now convert all lowercase values to proper case
+    UPDATE employees SET department = 'Retail' WHERE department = 'retail';
+    UPDATE employees SET department = 'Marketing' WHERE department = 'marketing';
+    UPDATE employees SET department = 'Supply Chain' WHERE department = 'supply chain';
+    UPDATE employees SET department = 'Wholesale' WHERE department = 'wholesale';
+    UPDATE employees SET department = 'Plant 1' WHERE department = 'plant 1';
+    UPDATE employees SET department = 'Plant 2' WHERE department = 'plant 2';
+    UPDATE employees SET department = 'Planning & Org.' WHERE department = 'planning & org.';
+    UPDATE employees SET department = 'Colour Kitchen' WHERE department = 'colour kitchen';
+    UPDATE employees SET department = 'Innov. & Engraving' WHERE department = 'innov. & engraving';
+    UPDATE employees SET department = 'HSEQ' WHERE department = 'hseq';
+    UPDATE employees SET department = 'Continuous Improvement' WHERE department = 'continuous improvement';
+    UPDATE employees SET department = 'Energy' WHERE department = 'energy';
+    UPDATE employees SET department = 'Production' WHERE department = 'production';
+    UPDATE employees SET department = 'IT/Technical' WHERE department = 'it/technical';
+    UPDATE employees SET department = 'IT/BAC' WHERE department = 'it/bac';
     
 EXCEPTION
     WHEN duplicate_object THEN
