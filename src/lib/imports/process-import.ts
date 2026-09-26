@@ -1,7 +1,7 @@
 import { parseCsv } from "@/lib/csv";
 import type { AppSupabase } from "@/lib/supabase/types";
 
-export type ImportType = "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands" | "master_excel_upload" | string;
+export type ImportType = "employees" | "savings" | "loans" | "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands" | "master_excel_upload";
 
 const VALID_DEPARTMENTS = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit", "retail", "marketing", "supply chain", "wholesale"] as const;
 
@@ -143,6 +143,30 @@ export async function processImport(
     default:
       return { imported: 0, skipped: 0, errors: ["Unknown import type."] };
   }
+}
+
+// Legacy import functions (not used in GTPEA data imports UI)
+async function importEmployees(
+  supabase: AppSupabase,
+  rows: Record<string, string>[],
+  userId: string
+): Promise<ImportResult> {
+  return { imported: 0, skipped: rows.length, errors: ["This import type is not supported. Please use GTPEA-specific imports."] };
+}
+
+async function importSavings(
+  supabase: AppSupabase,
+  rows: Record<string, string>[],
+  userId: string
+): Promise<ImportResult> {
+  return { imported: 0, skipped: rows.length, errors: ["This import type is not supported. Please use GTPEA-specific imports."] };
+}
+
+async function importLoans(
+  supabase: AppSupabase,
+  rows: Record<string, string>[]
+): Promise<ImportResult> {
+  return { imported: 0, skipped: rows.length, errors: ["This import type is not supported. Please use GTPEA-specific imports."] };
 }
 
 // GTPEA-specific import functions
