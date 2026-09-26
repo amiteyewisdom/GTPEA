@@ -507,11 +507,23 @@ async function importGTPEASavings(
       continue;
     }
 
-    const { data: employee } = await supabase
+    // Try to find employee by exact staff ID first
+    let { data: employee } = await supabase
       .from("employees")
       .select("id")
       .eq("employee_no", staffId)
       .single();
+
+    // If not found, try with/without "P" prefix
+    if (!employee) {
+      const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+      const { data: altEmployee } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("employee_no", altId)
+        .single();
+      employee = altEmployee;
+    }
 
     if (!employee) {
       skipped++;
@@ -524,7 +536,7 @@ async function importGTPEASavings(
         employee_id: employee.id,
         account_number: staffSavingAccountNumber || `SAV-${staffId}`,
         balance: balance,
-        type: "savings",
+        type: "regular",
         facility_account: facilityAccountNumber || null,
         reference: reference || "Savings",
         created_by: userId,
@@ -569,11 +581,23 @@ async function importGTPEAQuickCash(
       continue;
     }
 
-    const { data: employee } = await supabase
+    // Try to find employee by exact staff ID first
+    let { data: employee } = await supabase
       .from("employees")
       .select("id")
       .eq("employee_no", staffId)
       .single();
+
+    // If not found, try with/without "P" prefix
+    if (!employee) {
+      const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+      const { data: altEmployee } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("employee_no", altId)
+        .single();
+      employee = altEmployee;
+    }
 
     if (!employee) {
       skipped++;
@@ -586,7 +610,7 @@ async function importGTPEAQuickCash(
         employee_id: employee.id,
         account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
         balance: balance,
-        type: "quick_cash",
+        type: "special",
         facility_account: facilityAccountNumber || null,
         reference: reference || "Quick-Cash",
         created_by: userId,
@@ -614,6 +638,18 @@ async function importGTPEAHirePurchase(
   let skipped = 0;
   const errors: string[] = [];
 
+  // Fetch loan product ID for Hire Purchase
+  const { data: hpProduct } = await supabase
+    .from("loan_products")
+    .select("id")
+    .eq("name", "Hire Purchase")
+    .single();
+  
+  const hpProductId = hpProduct?.id;
+  if (!hpProductId) {
+    return { imported: 0, skipped: rows.length, errors: ["Hire Purchase loan product not found in database"] };
+  }
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowNo = i + 2;
@@ -632,11 +668,23 @@ async function importGTPEAHirePurchase(
       continue;
     }
 
-    const { data: employee } = await supabase
+    // Try to find employee by exact staff ID first
+    let { data: employee } = await supabase
       .from("employees")
       .select("id")
       .eq("employee_no", staffId)
       .single();
+
+    // If not found, try with/without "P" prefix
+    if (!employee) {
+      const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+      const { data: altEmployee } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("employee_no", altId)
+        .single();
+      employee = altEmployee;
+    }
 
     if (!employee) {
       skipped++;
@@ -648,7 +696,7 @@ async function importGTPEAHirePurchase(
       {
         loan_ref: `HP-${staffId}-${Date.now()}`,
         employee_id: employee.id,
-        loan_product_id: 1, // Assuming HP product ID
+        loan_product_id: hpProductId,
         amount_requested: balance,
         amount_approved: balance,
         outstanding_balance: balance,
@@ -682,6 +730,18 @@ async function importGTPEANormalLoans(
   let skipped = 0;
   const errors: string[] = [];
 
+  // Fetch loan product ID for Normal Loan
+  const { data: nlProduct } = await supabase
+    .from("loan_products")
+    .select("id")
+    .eq("name", "Normal Loan")
+    .single();
+  
+  const nlProductId = nlProduct?.id;
+  if (!nlProductId) {
+    return { imported: 0, skipped: rows.length, errors: ["Normal Loan product not found in database"] };
+  }
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowNo = i + 2;
@@ -699,11 +759,23 @@ async function importGTPEANormalLoans(
       continue;
     }
 
-    const { data: employee } = await supabase
+    // Try to find employee by exact staff ID first
+    let { data: employee } = await supabase
       .from("employees")
       .select("id")
       .eq("employee_no", staffId)
       .single();
+
+    // If not found, try with/without "P" prefix
+    if (!employee) {
+      const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+      const { data: altEmployee } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("employee_no", altId)
+        .single();
+      employee = altEmployee;
+    }
 
     if (!employee) {
       skipped++;
@@ -715,7 +787,7 @@ async function importGTPEANormalLoans(
       {
         loan_ref: `NL-${staffId}-${Date.now()}`,
         employee_id: employee.id,
-        loan_product_id: 2, // Assuming Normal Loan product ID
+        loan_product_id: nlProductId,
         amount_requested: balance,
         amount_approved: balance,
         outstanding_balance: balance,
@@ -749,6 +821,18 @@ async function importGTPEALands(
   let skipped = 0;
   const errors: string[] = [];
 
+  // Fetch loan product ID for Land Loan
+  const { data: landProduct } = await supabase
+    .from("loan_products")
+    .select("id")
+    .eq("name", "Land Loan")
+    .single();
+  
+  const landProductId = landProduct?.id;
+  if (!landProductId) {
+    return { imported: 0, skipped: rows.length, errors: ["Land Loan product not found in database"] };
+  }
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowNo = i + 2;
@@ -767,11 +851,23 @@ async function importGTPEALands(
       continue;
     }
 
-    const { data: employee } = await supabase
+    // Try to find employee by exact staff ID first
+    let { data: employee } = await supabase
       .from("employees")
       .select("id")
       .eq("employee_no", staffId)
       .single();
+
+    // If not found, try with/without "P" prefix
+    if (!employee) {
+      const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+      const { data: altEmployee } = await supabase
+        .from("employees")
+        .select("id")
+        .eq("employee_no", altId)
+        .single();
+      employee = altEmployee;
+    }
 
     if (!employee) {
       skipped++;
@@ -783,7 +879,7 @@ async function importGTPEALands(
       {
         loan_ref: `LAND-${staffId}-${Date.now()}`,
         employee_id: employee.id,
-        loan_product_id: 3, // Assuming Land product ID
+        loan_product_id: landProductId,
         amount_requested: balance,
         amount_approved: balance,
         outstanding_balance: balance,
