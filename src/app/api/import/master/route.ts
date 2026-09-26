@@ -144,6 +144,7 @@ export async function POST(request: Request) {
     */
 
     // 6. Process Lands
+    /*
     try {
       const landsSheet = workbook.Sheets['Lands New'];
       if (!landsSheet) {
@@ -160,6 +161,7 @@ export async function POST(request: Request) {
       console.error('[Master] Lands processing error:', error);
       results.lands = { imported: 0, skipped: 0, errors: [`Lands processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
     }
+    */
 
     // Log the import
     const totalImported = Object.values(results).reduce((sum, r) => sum + r.imported, 0);
@@ -520,10 +522,6 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
     }
   }
 
-  console.log('[HirePurchase] Completed:', imported, 'imported,', skipped, 'skipped');
-  if (errors.length > 0) {
-    console.log('[HirePurchase] Sample errors:', errors.slice(0, 5));
-  }
   return { imported, skipped, errors };
 }
 
