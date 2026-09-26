@@ -285,15 +285,6 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
   let skipped = 0;
   const errors: string[] = [];
 
-  console.log('[Savings] Total rows to process:', rows.length);
-  
-  // Debug: Show sample employee numbers from database
-  const { data: sampleEmployees } = await supabase
-    .from("employees")
-    .select("employee_no")
-    .limit(5);
-  console.log('[Savings] Sample employee_no from DB:', sampleEmployees?.map((e: any) => e.employee_no));
-
   // Simplified: process one by one for better error handling
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -312,20 +303,28 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
       }
 
       // Try to find employee by exact staff ID first
-      const { data: employee } = await supabase
+      let { data: employee } = await supabase
         .from("employees")
         .select("id")
         .eq("employee_no", staffId)
         .single();
 
+      // If not found, try with/without "P" prefix
       if (!employee) {
-        console.log(`[Savings] Employee ${staffId} not found`);
+        const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+        const { data: altEmployee } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("employee_no", altId)
+          .single();
+        employee = altEmployee;
+      }
+
+      if (!employee) {
         skipped++;
         errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
         continue;
       }
-      
-      console.log(`[Savings] Found employee ${staffId}`);
 
       const { error } = await supabase.from("savings").upsert(
         {
@@ -350,10 +349,6 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
     }
   }
 
-  console.log('[Savings] Completed:', imported, 'imported,', skipped, 'skipped');
-  if (errors.length > 0) {
-    console.log('[Savings] Sample errors:', errors.slice(0, 5));
-  }
   return { imported, skipped, errors };
 }
 
@@ -382,12 +377,23 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
         continue;
       }
 
-      // Try both formats for staff ID lookup
-      const { data: employee } = await supabase
+      // Try to find employee by exact staff ID first
+      let { data: employee } = await supabase
         .from("employees")
         .select("id")
-        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .eq("employee_no", staffId)
         .single();
+
+      // If not found, try with/without "P" prefix
+      if (!employee) {
+        const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+        const { data: altEmployee } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("employee_no", altId)
+          .single();
+        employee = altEmployee;
+      }
 
       if (!employee) {
         skipped++;
@@ -461,12 +467,23 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
         continue;
       }
 
-      // Try both formats for staff ID lookup
-      const { data: employee } = await supabase
+      // Try to find employee by exact staff ID first
+      let { data: employee } = await supabase
         .from("employees")
         .select("id")
-        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .eq("employee_no", staffId)
         .single();
+
+      // If not found, try with/without "P" prefix
+      if (!employee) {
+        const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+        const { data: altEmployee } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("employee_no", altId)
+          .single();
+        employee = altEmployee;
+      }
 
       if (!employee) {
         skipped++;
@@ -543,12 +560,23 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
         continue;
       }
 
-      // Simple staff ID lookup (exact match)
-      const { data: employee } = await supabase
+      // Try to find employee by exact staff ID first
+      let { data: employee } = await supabase
         .from("employees")
         .select("id")
         .eq("employee_no", staffId)
         .single();
+
+      // If not found, try with/without "P" prefix
+      if (!employee) {
+        const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+        const { data: altEmployee } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("employee_no", altId)
+          .single();
+        employee = altEmployee;
+      }
 
       if (!employee) {
         skipped++;
@@ -624,12 +652,23 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
         continue;
       }
 
-      // Try both formats for staff ID lookup
-      const { data: employee } = await supabase
+      // Try to find employee by exact staff ID first
+      let { data: employee } = await supabase
         .from("employees")
         .select("id")
-        .or(`employee_no.eq.${staffId},employee_no.eq.${staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId}`)
+        .eq("employee_no", staffId)
         .single();
+
+      // If not found, try with/without "P" prefix
+      if (!employee) {
+        const altId = staffId.startsWith('P') ? staffId.substring(1) : 'P' + staffId;
+        const { data: altEmployee } = await supabase
+          .from("employees")
+          .select("id")
+          .eq("employee_no", altId)
+          .single();
+        employee = altEmployee;
+      }
 
       if (!employee) {
         skipped++;

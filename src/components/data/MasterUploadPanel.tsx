@@ -32,6 +32,7 @@ export default function MasterUploadPanel({ onComplete }: { onComplete?: () => v
   const [dragging, setDragging] = useState(false);
   const [result, setResult] = useState<MasterUploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   function pickFile(nextFile: File | null) {
     setFile(nextFile);
@@ -208,21 +209,57 @@ export default function MasterUploadPanel({ onComplete }: { onComplete?: () => v
               {result.summary.totalErrors > 0 && (
                 <div className="mt-3">
                   <button
-                    onClick={() => {
-                      const allErrors = Object.values(result.results).flatMap(r => r.errors);
-                      // Show first 50 errors to avoid overwhelming the user
-                      const errorsToShow = allErrors.slice(0, 50);
-                      const errorMessage = errorsToShow.length < allErrors.length 
-                        ? `First 50 errors:\n${errorsToShow.join('\n')}\n\n... and ${allErrors.length - 50} more errors`
-                        : `Errors:\n${errorsToShow.join('\n')}`;
-                      alert(errorMessage);
-                    }}
+                    onClick={() => setShowErrors(true)}
                     className="text-sm text-brand-accent hover:underline"
                   >
                     View {result.summary.totalErrors} error{result.summary.totalErrors > 1 ? 's' : ''}
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showErrors && result && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-brand-text">
+                Import Errors ({result.summary.totalErrors})
+              </h3>
+              <button
+                onClick={() => setShowErrors(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <textarea
+              readOnly
+              className="w-full h-64 p-3 text-sm font-mono border border-gray-300 rounded bg-gray-50"
+              value={Object.values(result.results)
+                .flatMap(r => r.errors)
+                .slice(0, 50)
+                .join('\n')}
+            />
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={() => {
+                  const allErrors = Object.values(result.results).flatMap(r => r.errors);
+                  navigator.clipboard.writeText(allErrors.join('\n'));
+                  alert('Errors copied to clipboard!');
+                }}
+                className="flex-1 rounded-lg bg-brand-accent px-4 py-2 font-medium text-brand-primary transition-all hover:bg-brand-accent/80"
+              >
+                Copy All Errors
+              </button>
+              <button
+                onClick={() => setShowErrors(false)}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 transition-all hover:bg-gray-50"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
