@@ -5,7 +5,7 @@ import { processImport, type ImportType } from "@/lib/imports/process-import";
 import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from 'xlsx';
 
-const IMPORT_TYPES = ["employees", "savings", "loans", "gtpea-employees", "gtpea-savings", "gtpea-quick-cash", "gtpea-hire-purchase", "gtpea-normal-loans", "gtpea-lands", "master_excel_upload"] as const;
+const IMPORT_TYPES = ["gtpea-employees", "gtpea-savings", "gtpea-quick-cash", "gtpea-hire-purchase", "gtpea-normal-loans", "gtpea-lands", "master_excel_upload"] as const;
 
 export async function POST(request: Request) {
   const { user, role } = await getStaffUser();
