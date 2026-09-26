@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassCard from "@/components/ui/GlassCard";
 import DataImportPanel from "@/components/data/DataImportPanel";
-import { PayrollMasterFilePanel } from "@/components/payroll/PayrollMasterFilePanel";
 import MasterUploadPanel from "@/components/data/MasterUploadPanel";
 import { AlertCircle, CheckCircle, FileText, Trash2 } from "lucide-react";
 import type { ImportHistoryItem } from "@/lib/imports/log-import";
@@ -114,36 +113,35 @@ export default function DataImportsClient({ initialHistory }: DataImportsClientP
       </div>
 
       <GlassCard className="p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-brand-text">Import History</h3>
-            {history.length > 0 && (
-              <button
-                onClick={clearHistory}
-                disabled={clearing}
-                className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Trash2 className="h-4 w-4" />
-                {clearing ? "Clearing..." : "Clear History"}
-              </button>
-            )}
-          </div>
-          <div className="space-y-3">
-            {history.length === 0 ? (
-              <div className="flex items-center gap-3 rounded-lg bg-brand-card-bg p-3">
-                <CheckCircle className="h-5 w-5 text-brand-text-secondary" />
-                <div>
-                  <p className="text-sm font-medium text-brand-text">No imports yet</p>
-                  <p className="text-xs text-brand-text-secondary">Your recent uploads will show here.</p>
-                </div>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-brand-text">Import History</h3>
+          {history.length > 0 && (
+            <button
+              onClick={clearHistory}
+              disabled={clearing}
+              className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {clearing ? "Clearing..." : "Clear History"}
+            </button>
+          )}
+        </div>
+        <div className="space-y-3">
+          {history.length === 0 ? (
+            <div className="flex items-center gap-3 rounded-lg bg-brand-card-bg p-3">
+              <CheckCircle className="h-5 w-5 text-brand-text-secondary" />
+              <div>
+                <p className="text-sm font-medium text-brand-text">No imports yet</p>
+                <p className="text-xs text-brand-text-secondary">Your recent uploads will show here.</p>
               </div>
-            ) : (
-              history.map((item) => (
-                <HistoryRow key={item.id} item={item} />
-              ))
-            )}
-          </div>
-        </GlassCard>
-      </div>
+            </div>
+          ) : (
+            history.map((item) => (
+              <HistoryRow key={item.id} item={item} />
+            ))
+          )}
+        </div>
+      </GlassCard>
 
       <GlassCard className="p-6">
         <h3 className="mb-4 text-xl font-semibold text-brand-text">Import Guidelines</h3>
