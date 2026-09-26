@@ -58,6 +58,19 @@ export default async function DashboardLayout({
     const profile = profileRes.data as Profile | null;
     const role = profile?.role ?? "employee";
 
+    // For employees, get their name from employees table if profile doesn't have it
+    let userName = profile?.full_name ?? user.email ?? "User";
+    if (role === "employee" && (!profile?.full_name || profile?.full_name === "User")) {
+      const { data: employee } = await supabase
+        .from("employees")
+        .select("full_name")
+        .eq("phone_number", profile?.phone)
+        .maybeSingle();
+      if (employee?.full_name) {
+        userName = employee.full_name;
+      }
+    }
+
     const pendingCount = await fetchPendingCount(supabase, role);
 
     return (
