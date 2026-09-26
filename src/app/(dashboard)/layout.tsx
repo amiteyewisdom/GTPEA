@@ -61,8 +61,8 @@ export default async function DashboardLayout({
     // For employees, get their name from employees table if profile doesn't have it
     let userName = profile?.full_name ?? user.email ?? "User";
     if (role === "employee" && (!profile?.full_name || profile?.full_name === "User") && profile?.phone) {
-      const { data: employee } = await supabase
-        .from("employees")
+      const { data: employee } = await (supabase
+        .from("employees") as any)
         .select("full_name")
         .eq("phone_number", profile.phone)
         .maybeSingle();
