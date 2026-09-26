@@ -1,7 +1,7 @@
 import { parseCsv } from "@/lib/csv";
 import type { AppSupabase } from "@/lib/supabase/types";
 
-export type ImportType = "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands" | "master_excel_upload";
+export type ImportType = "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands" | "master_excel_upload" | string;
 
 const VALID_DEPARTMENTS = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit", "retail", "marketing", "supply chain", "wholesale"] as const;
 
