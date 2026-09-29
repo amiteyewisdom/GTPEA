@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck, LogIn } from "lucide-react";
+import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck, LogIn, Shield } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useDownload } from "@/hooks/use-download";
 import { useRouter } from "next/navigation";
 import type { Employee } from "@/types/database";
+import { RoleAssignmentModal } from "./RoleAssignmentModal";
 
 interface EmployeesClientProps {
   employees: Employee[];
@@ -26,6 +27,8 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const [suspendLoading, setSuspendLoading] = useState(false);
   const [impersonateLoading, setImpersonateLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [selectedEmployeeForRole, setSelectedEmployeeForRole] = useState<Employee | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -219,6 +222,15 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
             <Download className="w-4 h-4" />
             {exporting ? "Exporting..." : "Export"}
           </button>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setShowRoleModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 border border-brand-accent text-brand-accent rounded-lg hover:bg-brand-accent/10 transition-all"
+            >
+              <Shield className="w-4 h-4" />
+              Assign Board Role
+            </button>
+          )}
           <button
             onClick={() => setShowForm(!showForm)}
             className="flex items-center gap-2 px-4 py-2.5 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all"
@@ -483,14 +495,27 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                           {openMenuId === emp.id && (
                             <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-brand-card-border rounded-lg shadow-lg z-20 overflow-hidden">
                               {isSuperAdmin && (
-                                <button
-                                  onClick={() => { handleImpersonate(emp); setOpenMenuId(null); }}
-                                  disabled={impersonateLoading}
-                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-accent hover:bg-brand-accent/10 transition-colors border-b border-brand-card-border"
-                                >
-                                  <LogIn className="w-4 h-4" />
-                                  {impersonateLoading ? "Switching..." : "Impersonate"}
-                                </button>
+                                <>
+                                  <button
+                                    onClick={() => { 
+                                      setSelectedEmployeeForRole(emp);
+                                      setShowRoleModal(true);
+                                      setOpenMenuId(null);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-accent hover:bg-brand-accent/10 transition-colors border-b border-brand-card-border"
+                                  >
+                                    <Shield className="w-4 h-4" />
+                                    Assign Board Role
+                                  </button>
+                                  <button
+                                    onClick={() => { handleImpersonate(emp); setOpenMenuId(null); }}
+                                    disabled={impersonateLoading}
+                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-accent hover:bg-brand-accent/10 transition-colors border-b border-brand-card-border"
+                                  >
+                                    <LogIn className="w-4 h-4" />
+                                    {impersonateLoading ? "Switching..." : "Impersonate"}
+                                  </button>
+                                </>
                               )}
                               {emp.status !== "suspended" ? (
                                 <button
@@ -571,6 +596,21 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Role Assignment Modal */}
+      {showRoleModal && selectedEmployeeForRole && (
+        <RoleAssignmentModal
+          onClose={() => {
+            setShowRoleModal(false);
+            setSelectedEmployeeForRole(null);
+          }}
+          targetEmployee={{
+            id: selectedEmployeeForRole.id,
+            name: `${selectedEmployeeForRole.first_name} ${selectedEmployeeForRole.last_name}`,
+            employee_no: selectedEmployeeForRole.employee_no,
+          }}
+        />
       )}
     </div>
   );
