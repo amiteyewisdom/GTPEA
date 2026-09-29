@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     // First get profiles with board roles
     const { data: profiles, error: profilesError } = await admin
       .from("profiles")
-      .select("user_id, role, email")
+      .select("user_id, role")
       .in("role", boardRoles);
 
     if (profilesError) {
@@ -53,8 +53,32 @@ export async function GET(request: Request) {
       });
     }
 
+    // Get auth users to get their emails
+    const userIds = profiles.map((p: any) => p.user_id);
+    const authUsersMap = new Map<string, string>();
+    let page = 1;
+    const maxPages = 10;
+    
+    while (page <= maxPages) {
+      const { data: authUsers } = await admin.auth.admin.listUsers({
+        page: page,
+        perPage: 100,
+      });
+      
+      authUsers.users.forEach((u: any) => {
+        if (userIds.includes(u.id)) {
+          authUsersMap.set(u.id, u.email);
+        }
+      });
+      
+      if (authUsers.users.length < 100) {
+        break;
+      }
+      page++;
+    }
+
     // Get employee details by matching email
-    const emails = profiles.map((p: any) => p.email);
+    const emails = Array.from(authUsersMap.values());
     const { data: employees, error: employeesError } = await admin
       .from("employees")
       .select("id, first_name, last_name, email, employee_no, department, position")
@@ -70,12 +94,13 @@ export async function GET(request: Request) {
 
     // Merge data by email
     const members = (employees || []).map((emp: any) => {
-      const profile = profiles.find((p: any) => p.email === emp.email);
+      // Find the profile by matching the auth user email to employee email
+      const profile = profiles.find((p: any) => authUsersMap.get(p.user_id) === emp.email);
       return {
         ...emp,
         role: profile?.role || null,
       };
-    }).sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
+    }).filter((m: any) => m.role !== null).sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
 
     return NextResponse.json({
       success: true,
