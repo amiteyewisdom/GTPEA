@@ -681,8 +681,8 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   if (!employeeUuid) {
     const byUser = await supabase.from("employees").select("id, first_name, last_name").eq("user_id", userId).maybeSingle();
     employeeUuid = (byUser.data as any)?.id ?? null;
-    if (byUser.data) {
-      profile.full_name = `${byUser.data.first_name} ${byUser.data.last_name}`;
+    if (byUser.data && (byUser.data as any).first_name) {
+      profile.full_name = `${(byUser.data as any).first_name} ${(byUser.data as any).last_name}`;
     }
   }
 
