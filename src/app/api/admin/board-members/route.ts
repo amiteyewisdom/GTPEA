@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     }
 
     // Get employee details for each profile
-    const userIds = profiles.map(p => p.user_id);
+    const userIds = profiles.map((p: any) => p.user_id);
     const { data: employees, error: employeesError } = await admin
       .from("employees")
       .select("id, first_name, last_name, email, employee_no, department, position")
@@ -69,13 +69,13 @@ export async function GET(request: Request) {
     }
 
     // Merge data
-    const members = (employees || []).map(emp => {
-      const profile = profiles.find(p => p.user_id === emp.id);
+    const members = (employees || []).map((emp: any) => {
+      const profile = profiles.find((p: any) => p.user_id === emp.id);
       return {
         ...emp,
         role: profile?.role || 'employee',
       };
-    }).sort((a, b) => a.first_name.localeCompare(b.first_name));
+    }).sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
 
     return NextResponse.json({
       success: true,
