@@ -32,32 +32,10 @@ export async function GET(request: Request) {
     // Fetch employees with board roles
     const boardRoles = ["chairperson", "administrator", "fund_manager", "union_rep"];
     
-    // Get all employees and their profiles
-    const { data: employees, error: employeesError } = await admin
-      .from("employees")
-      .select("id, first_name, last_name, email, employee_no, department, position");
-
-    if (employeesError) {
-      console.error("[/api/admin/board-members] Employees error:", employeesError);
-      return NextResponse.json(
-        { error: "Failed to fetch board members." },
-        { status: 500 }
-      );
-    }
-
-    if (!employees || employees.length === 0) {
-      return NextResponse.json({
-        success: true,
-        members: [],
-      });
-    }
-
-    // Get profiles for all employees
-    const employeeIds = employees.map((e: any) => e.id);
+    // First get profiles with board roles
     const { data: profiles, error: profilesError } = await admin
       .from("profiles")
-      .select("user_id, role")
-      .in("user_id", employeeIds)
+      .select("user_id, role, email")
       .in("role", boardRoles);
 
     if (profilesError) {
@@ -68,17 +46,36 @@ export async function GET(request: Request) {
       );
     }
 
-    // Merge data - only include employees with board roles
-    const members = (employees || [])
-      .map((emp: any) => {
-        const profile = profiles?.find((p: any) => p.user_id === emp.id);
-        return {
-          ...emp,
-          role: profile?.role || null,
-        };
-      })
-      .filter((emp: any) => emp.role && boardRoles.includes(emp.role))
-      .sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
+    if (!profiles || profiles.length === 0) {
+      return NextResponse.json({
+        success: true,
+        members: [],
+      });
+    }
+
+    // Get employee details by matching email
+    const emails = profiles.map((p: any) => p.email);
+    const { data: employees, error: employeesError } = await admin
+      .from("employees")
+      .select("id, first_name, last_name, email, employee_no, department, position")
+      .in("email", emails);
+
+    if (employeesError) {
+      console.error("[/api/admin/board-members] Employees error:", employeesError);
+      return NextResponse.json(
+        { error: "Failed to fetch board members." },
+        { status: 500 }
+      );
+    }
+
+    // Merge data by email
+    const members = (employees || []).map((emp: any) => {
+      const profile = profiles.find((p: any) => p.email === emp.email);
+      return {
+        ...emp,
+        role: profile?.role || null,
+      };
+    }).sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
 
     return NextResponse.json({
       success: true,
