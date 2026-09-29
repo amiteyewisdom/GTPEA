@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const { data: authUser } = await admin.auth.admin.listUsers();
     let targetUser = authUser.users.find((u: any) => u.email === employee.email);
 
-    // If user doesn't exist, create them automatically
+    // If user doesn't exist, try to create them automatically
     if (!targetUser) {
       try {
         const { data: newUser, error: createError } = await admin.auth.admin.createUser({
@@ -80,14 +80,28 @@ export async function POST(request: Request) {
         });
 
         if (createError) {
-          console.error("[/api/admin/assign-role] Create user error:", createError);
-          return NextResponse.json(
-            { error: "Failed to create user account." },
-            { status: 500 }
-          );
+          // If user already exists, try to find them again
+          if (createError.message?.includes("email_exists") || createError.code === "email_exists") {
+            const { data: retryAuthUser } = await admin.auth.admin.listUsers();
+            targetUser = retryAuthUser.users.find((u: any) => u.email === employee.email);
+            
+            if (!targetUser) {
+              console.error("[/api/admin/assign-role] User exists but not found after retry");
+              return NextResponse.json(
+                { error: "User account exists but could not be found. Please contact support." },
+                { status: 500 }
+              );
+            }
+          } else {
+            console.error("[/api/admin/assign-role] Create user error:", createError);
+            return NextResponse.json(
+              { error: "Failed to create user account." },
+              { status: 500 }
+            );
+          }
+        } else {
+          targetUser = newUser.user;
         }
-
-        targetUser = newUser.user;
       } catch (createErr: any) {
         console.error("[/api/admin/assign-role] Create user exception:", createErr);
         return NextResponse.json(
