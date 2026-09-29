@@ -634,7 +634,7 @@ function BoardMembersTable() {
   React.useEffect(() => {
     console.log('[BoardMembersTable] Fetching board members...');
     fetchBoardMembers();
-  }, [fetchBoardMembers]);
+  }, []); // Empty dependency array to run once on mount
 
   React.useEffect(() => {
     console.log('[BoardMembersTable] Board members state updated:', boardMembers);
