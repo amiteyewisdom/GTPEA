@@ -82,6 +82,7 @@ export async function POST(request: Request) {
 
     // Update employee record with phone number and mark first login as complete
     const updateData = { 
+      phone: phoneNumber,
       phone_number: phoneNumber,
       is_first_login: false,
       password_changed_at: new Date().toISOString()

@@ -207,6 +207,7 @@ async function importGTPEAEmployees(
         last_name: lastName,
         email: `${staffId.toLowerCase()}@staff.gtpea.local`, // Internal email for Supabase auth
         phone: phoneNumber || null,
+        phone_number: phoneNumber || null,
         department,
         position: "Staff",
         bank_account_no: staffAccountNumber || null,

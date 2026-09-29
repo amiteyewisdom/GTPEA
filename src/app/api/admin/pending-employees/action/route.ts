@@ -130,6 +130,7 @@ export async function POST(request: Request) {
         .insert({
           employee_no: pendingEmployee.employee_no,
           email: pendingEmployee.email,
+          phone: pendingEmployee.phone_number,
           phone_number: pendingEmployee.phone_number,
           first_name: pendingEmployee.first_name,
           last_name: pendingEmployee.last_name,

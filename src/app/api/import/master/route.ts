@@ -233,6 +233,7 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
             first_name: firstName,
             last_name: lastName,
             email: `${staffId.toLowerCase()}@staff.gtpea.local`,
+            phone: phoneNumber || null,
             phone_number: phoneNumber || null,
             department,
             position: "Staff",

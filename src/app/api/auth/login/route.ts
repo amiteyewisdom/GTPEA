@@ -81,6 +81,7 @@ export async function POST(request: Request) {
             last_name: profile.full_name?.split(' ').slice(1).join(' ') || 'User',
             email: `${loginId.toLowerCase()}@staff.gtpea.local`,
             phone: profile.phone || null,
+            phone_number: profile.phone || null,
             department: 'management',
             position: profile.role === 'super_admin' ? 'Super Administrator' : 'Administrator',
             bank_account_no: null,

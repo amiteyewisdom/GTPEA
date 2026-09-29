@@ -74,12 +74,22 @@ export async function POST(request: Request) {
 
     if (!existingProfile) {
       console.log('[/api/otp/verify] No existing profile found, checking employee by phone:', otpData.phone_number);
-      // Check if this is an employee by phone number
-      const { data: employee } = await admin
-        .from("employees")
-        .select("id, full_name, first_name, last_name, department")
-        .eq("phone_number", otpData.phone_number)
-        .single();
+      // Check if this is an employee by phone number - try both phone_number and phone fields
+      let employee = null;
+      const phoneFields = ['phone_number', 'phone'];
+      
+      for (const phoneField of phoneFields) {
+        const result = await admin
+          .from("employees")
+          .select("id, full_name, first_name, last_name, department")
+          .eq(phoneField, otpData.phone_number)
+          .maybeSingle();
+        if (result.data) {
+          console.log('[/api/otp/verify] Employee found with field:', phoneField);
+          employee = result.data;
+          break;
+        }
+      }
 
       if (employee) {
         console.log('[/api/otp/verify] Employee found:', employee);
@@ -117,11 +127,21 @@ export async function POST(request: Request) {
     } else if (existingProfile.full_name === "User" || !existingProfile.employee_id) {
       console.log('[/api/otp/verify] Existing profile has default name or missing employee_id, updating');
       // Update existing profile if it has default name or missing employee_id
-      const { data: employee } = await admin
-        .from("employees")
-        .select("id, full_name, first_name, last_name, department")
-        .eq("phone_number", otpData.phone_number)
-        .single();
+      let employee = null;
+      const phoneFields = ['phone_number', 'phone'];
+      
+      for (const phoneField of phoneFields) {
+        const result = await admin
+          .from("employees")
+          .select("id, full_name, first_name, last_name, department")
+          .eq(phoneField, otpData.phone_number)
+          .maybeSingle();
+        if (result.data) {
+          console.log('[/api/otp/verify] Employee found for update with field:', phoneField);
+          employee = result.data;
+          break;
+        }
+      }
 
       if (employee) {
         console.log('[/api/otp/verify] Employee found for update:', employee);

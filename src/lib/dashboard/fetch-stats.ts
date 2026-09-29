@@ -704,12 +704,18 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     console.log('[fetchEmployeeDashboardData] Phone variants to try:', phoneVariants);
     
     let byPhone: any = null;
-    for (const phoneVariant of phoneVariants) {
-      byPhone = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("phone_number", phoneVariant).maybeSingle();
-      if (byPhone.data) {
-        console.log('[fetchEmployeeDashboardData] Found employee with phone variant:', phoneVariant);
-        break;
+    // Try both phone_number and phone fields
+    const phoneFields = ['phone_number', 'phone'];
+    
+    for (const phoneField of phoneFields) {
+      for (const phoneVariant of phoneVariants) {
+        byPhone = await supabase.from("employees").select("id, first_name, last_name, full_name").eq(phoneField, phoneVariant).maybeSingle();
+        if (byPhone.data) {
+          console.log('[fetchEmployeeDashboardData] Found employee with field:', phoneField, 'and variant:', phoneVariant);
+          break;
+        }
       }
+      if (byPhone.data) break;
     }
     
     employeeUuid = byPhone?.data?.id ?? null;
@@ -729,7 +735,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
         full_name: employeeName 
       }).eq("user_id", userId);
     } else {
-      console.log('[fetchEmployeeDashboardData] No employee found with any phone variant');
+      console.log('[fetchEmployeeDashboardData] No employee found with any phone variant or field');
     }
   }
 
