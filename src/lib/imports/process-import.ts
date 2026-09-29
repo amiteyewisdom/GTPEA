@@ -213,7 +213,6 @@ async function importGTPEAEmployees(
         date_joined: new Date().toISOString().slice(0, 10),
         salary: 0,
         status: "active",
-        created_by: userId,
       },
       { onConflict: "employee_no" }
     );
@@ -288,7 +287,6 @@ async function importGTPEASavings(
         type: "regular",
         facility_account: facilityAccountNumber || null,
         reference: reference || "Savings",
-        created_by: userId,
       },
       { onConflict: "account_number" }
     );
@@ -363,7 +361,6 @@ async function importGTPEAQuickCash(
         type: "special",
         facility_account: facilityAccountNumber || null,
         reference: reference || "Quick-Cash",
-        created_by: userId,
       },
       { onConflict: "account_number" }
     );
@@ -456,7 +453,6 @@ async function importGTPEAHirePurchase(
         monthly_repayment: balance / 12,
         purpose: itemDescription || "Hire Purchase",
         status: "active",
-        created_by: userId,
       },
       { onConflict: "loan_ref" }
     );
@@ -548,7 +544,6 @@ async function importGTPEANormalLoans(
         monthly_repayment: balance / 12,
         purpose: "Normal Loan",
         status: "active",
-        created_by: userId,
       },
       { onConflict: "loan_ref" }
     );
@@ -641,7 +636,6 @@ async function importGTPEALands(
         monthly_repayment: balance / 24,
         purpose: item || "Land Purchase",
         status: "active",
-        created_by: userId,
       },
       { onConflict: "loan_ref" }
     );
