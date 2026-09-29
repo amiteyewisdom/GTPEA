@@ -692,21 +692,44 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
 
   // Additional fallback: look up employee by phone number from profile
   if (!employeeUuid && profile.phone) {
-    const byPhone = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("phone_number", profile.phone).maybeSingle();
-    employeeUuid = (byPhone.data as any)?.id ?? null;
-    if (byPhone.data) {
+    console.log('[fetchEmployeeDashboardData] Attempting phone lookup with phone:', profile.phone);
+    // Try multiple phone number formats to handle different storage formats
+    const phoneVariants = [
+      profile.phone, // as-is
+      profile.phone.replace(/^\+/, ''), // remove + if present
+      profile.phone.startsWith('233') ? '0' + profile.phone.substring(3) : profile.phone, // 233 -> 0
+      profile.phone.startsWith('0') ? '233' + profile.phone.substring(1) : profile.phone, // 0 -> 233
+    ];
+    
+    console.log('[fetchEmployeeDashboardData] Phone variants to try:', phoneVariants);
+    
+    let byPhone: any = null;
+    for (const phoneVariant of phoneVariants) {
+      byPhone = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("phone_number", phoneVariant).maybeSingle();
+      if (byPhone.data) {
+        console.log('[fetchEmployeeDashboardData] Found employee with phone variant:', phoneVariant);
+        break;
+      }
+    }
+    
+    employeeUuid = byPhone?.data?.id ?? null;
+    if (byPhone?.data) {
       // Update profile full_name with employee name
-      const employeeName = (byPhone.data as any).full_name || 
-                          ((byPhone.data as any).first_name && (byPhone.data as any).last_name ? 
-                           `${(byPhone.data as any).first_name} ${(byPhone.data as any).last_name}` : 
+      const employeeName = byPhone.data.full_name || 
+                          (byPhone.data.first_name && byPhone.data.last_name ? 
+                           `${byPhone.data.first_name} ${byPhone.data.last_name}` : 
                            profile.full_name);
       profile.full_name = employeeName;
+      
+      console.log('[fetchEmployeeDashboardData] Updating profile with employee_id:', employeeUuid, 'and name:', employeeName);
       
       // Update the profile in database to store employee_id for future lookups
       await (supabase.from("profiles") as any).update({ 
         employee_id: employeeUuid,
         full_name: employeeName 
       }).eq("user_id", userId);
+    } else {
+      console.log('[fetchEmployeeDashboardData] No employee found with any phone variant');
     }
   }
 

@@ -73,6 +73,7 @@ export async function POST(request: Request) {
       .single();
 
     if (!existingProfile) {
+      console.log('[/api/otp/verify] No existing profile found, checking employee by phone:', otpData.phone_number);
       // Check if this is an employee by phone number
       const { data: employee } = await admin
         .from("employees")
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
         .single();
 
       if (employee) {
+        console.log('[/api/otp/verify] Employee found:', employee);
         // Use full_name if available, otherwise construct from first_name and last_name
         const fullName = employee.full_name || 
                          (employee.first_name && employee.last_name ? 
@@ -98,7 +100,9 @@ export async function POST(request: Request) {
             phone: otpData.phone_number,
             avatar_url: null,
           });
+        console.log('[/api/otp/verify] Created profile for employee with name:', fullName);
       } else {
+        console.log('[/api/otp/verify] No employee found, creating default profile');
         // Create default profile for non-employee
         await admin
           .from("profiles")
@@ -111,6 +115,7 @@ export async function POST(request: Request) {
           });
       }
     } else if (existingProfile.full_name === "User" || !existingProfile.employee_id) {
+      console.log('[/api/otp/verify] Existing profile has default name or missing employee_id, updating');
       // Update existing profile if it has default name or missing employee_id
       const { data: employee } = await admin
         .from("employees")
@@ -119,6 +124,7 @@ export async function POST(request: Request) {
         .single();
 
       if (employee) {
+        console.log('[/api/otp/verify] Employee found for update:', employee);
         // Use full_name if available, otherwise construct from first_name and last_name
         const fullName = employee.full_name || 
                          (employee.first_name && employee.last_name ? 
@@ -132,6 +138,9 @@ export async function POST(request: Request) {
             full_name: fullName,
           })
           .eq("user_id", userId);
+        console.log('[/api/otp/verify] Updated profile with employee_id:', employee.id, 'and name:', fullName);
+      } else {
+        console.log('[/api/otp/verify] No employee found for profile update');
       }
     }
 
