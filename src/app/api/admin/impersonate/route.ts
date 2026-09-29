@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { canImpersonate, getStaffUser } from "@/lib/api/staff-auth";
-import { createAdminClient } from "@/lib/supupabase/admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { randomBytes } from "crypto";
 
 export async function POST(request: Request) {
