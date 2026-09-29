@@ -611,10 +611,12 @@ function BoardMembersTable() {
   const [loading, setLoading] = React.useState(false);
 
   const fetchData = async () => {
+    console.log('[BoardMembersTable] fetchData called');
     setLoading(true);
     try {
       const response = await fetch('/api/admin/board-members');
       const data = await response.json();
+      console.log('[BoardMembersTable] Data received:', data);
       if (response.ok) {
         setBoardMembers(data.members || []);
       }
@@ -626,6 +628,7 @@ function BoardMembersTable() {
   };
 
   React.useEffect(() => {
+    console.log('[BoardMembersTable] useEffect running');
     fetchData();
   }, []);
 
@@ -645,6 +648,8 @@ function BoardMembersTable() {
       alert('Failed to remove role');
     }
   };
+
+  console.log('[BoardMembersTable] Render - members:', boardMembers.length, 'loading:', loading);
 
   const roleLabels: Record<string, string> = {
     'chairperson': 'Chairperson',
