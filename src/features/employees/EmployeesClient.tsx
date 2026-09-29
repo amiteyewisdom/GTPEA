@@ -98,13 +98,16 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || "Impersonation failed.");
       
-      // Open the magic link in a new window
-      if (payload.magicLink) {
-        window.open(payload.magicLink, '_blank');
-        setMessage({ type: "success", text: `Impersonation link opened for ${employee.first_name} ${employee.last_name}. They will be logged in automatically.` });
-      } else {
-        throw new Error("No impersonation link generated");
-      }
+      // Store the new session tokens
+      sessionStorage.setItem("access_token", payload.access_token);
+      sessionStorage.setItem("refresh_token", payload.refresh_token);
+      sessionStorage.setItem("impersonating", "true");
+      
+      setMessage({ type: "success", text: `Impersonating ${employee.first_name} ${employee.last_name}. Redirecting...` });
+      
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1000);
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Impersonation failed." });
     } finally {

@@ -52,11 +52,13 @@ export async function POST(request: Request) {
       page++;
     }
 
-    // If auth user doesn't exist, create them
+    // If auth user doesn't exist, create them with a default password
     if (!authUser) {
       try {
+        const defaultPassword = "Gtpea@2026"; // Same as initial password
         const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
           email: employee.email,
+          password: defaultPassword,
           email_confirm: true,
           user_metadata: {
             full_name: `${employee.first_name} ${employee.last_name}`,
@@ -107,23 +109,21 @@ export async function POST(request: Request) {
       metadata: { impersonated_email: employee.email },
     });
 
-    // Generate a magic link for the target user
-    const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
-      type: "magiclink",
+    // Sign in as the target user using service role
+    const { data: signInData, error: signInError } = await adminSupabase.auth.signInWithPassword({
       email: employee.email,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.gtpea.com'}/dashboard`,
-      },
+      password: "Gtpea@2026",
     });
 
-    if (linkError) {
-      console.error("[/api/admin/impersonate] Generate link error:", linkError);
-      return NextResponse.json({ error: "Failed to generate impersonation link." }, { status: 500 });
+    if (signInError) {
+      console.error("[/api/admin/impersonate] Sign in error:", signInError);
+      return NextResponse.json({ error: "Failed to sign in as user." }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      magicLink: linkData.properties?.action_link,
+      access_token: signInData.session.access_token,
+      refresh_token: signInData.session.refresh_token,
       employee_email: employee.email,
     });
   } catch (error) {

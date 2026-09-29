@@ -85,8 +85,10 @@ export async function POST(request: Request) {
     // If user doesn't exist, try to create them automatically
     if (!targetUser) {
       try {
+        const defaultPassword = "Gtpea@2026"; // Same as initial password
         const { data: newUser, error: createError } = await admin.auth.admin.createUser({
           email: employee.email,
+          password: defaultPassword,
           email_confirm: true,
           user_metadata: {
             full_name: `${employee.first_name} ${employee.last_name}`,
