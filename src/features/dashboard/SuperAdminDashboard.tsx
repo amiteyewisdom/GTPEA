@@ -610,7 +610,7 @@ function BoardMembersTable() {
   const [boardMembers, setBoardMembers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
 
-  const fetchBoardMembers = React.useCallback(async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/admin/board-members');
@@ -623,11 +623,11 @@ function BoardMembersTable() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   React.useEffect(() => {
-    fetchBoardMembers();
-  }, [fetchBoardMembers]);
+    fetchData();
+  }, []);
 
   const handleRemoveRole = async (employeeNo: string) => {
     try {
@@ -637,7 +637,7 @@ function BoardMembersTable() {
         body: JSON.stringify({ employeeId: employeeNo, role: 'employee' }),
       });
       if (response.ok) {
-        fetchBoardMembers();
+        fetchData();
       } else {
         alert('Failed to remove role');
       }
