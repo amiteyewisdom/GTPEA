@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
     // Get the auth user by email
     const { data: authUsers } = await adminSupabase.auth.admin.listUsers();
-    const authUser = authUsers.users.find(u => u.email === employee.email);
+    const authUser = authUsers.users.find((u: any) => u.email === employee.email);
 
     if (!authUser) {
       return NextResponse.json({ error: "Auth user not found for this employee." }, { status: 404 });
