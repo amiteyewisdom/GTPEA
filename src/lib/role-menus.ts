@@ -64,6 +64,13 @@ export const menuItems: MenuItem[] = [
     roles: ['super_admin'],
   },
   {
+    id: 'employees-sa',
+    label: 'Employees',
+    icon: Users,
+    path: '/employees',
+    roles: ['super_admin'],
+  },
+  {
     id: 'roles',
     label: 'Roles & Permissions',
     icon: Shield,
