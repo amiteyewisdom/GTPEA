@@ -703,9 +703,9 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
 
   const [savingsRes, loansRes, approvalsRes, transactionsRes, allLoansRes, contributionsRes, repaymentsRes] =
     await Promise.all([
-      supabase.from("savings").select("balance, account_number, type").eq("employee_id", employeeUuid),
+      supabase.from("savings").select("balance, account_number, type, status").eq("employee_id", employeeUuid),
       // Include 'approved' so loans awaiting disbursement still show as active
-      supabase.from("loans").select("*").eq("employee_id", employeeUuid).in("status", ["approved", "disbursed", "repaying"]),
+      supabase.from("loans").select("*, loan_products(name)").eq("employee_id", employeeUuid).in("status", ["approved", "disbursed", "repaying"]),
       // Match approvals by loans belonging to this employee (not just submitted_by)
       supabase.from("approvals").select("*").eq("status", "pending"),
       supabase
@@ -714,7 +714,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
         .eq("employee_id", employeeUuid)
         .order("created_at", { ascending: false })
         .limit(10),
-      supabase.from("loans").select("id, status, outstanding_balance, amount_approved, amount_requested, purpose").eq("employee_id", employeeUuid),
+      supabase.from("loans").select("id, status, outstanding_balance, amount_approved, amount_requested, purpose, loan_products(name)").eq("employee_id", employeeUuid),
       supabase
         .from("savings_contributions")
         .select("amount, period_year, period_month, created_at")
@@ -807,6 +807,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
       .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
     return {
       ...loan,
+      loan_product_name: loan.loan_products?.name || loan.purpose || 'Loan',
       monthly_payment: loan.monthly_repayment || loan.monthly_payment || 0,
       outstanding_balance: loan.outstanding_balance || loan.amount_approved || loan.amount_requested || 0,
       next_payment_date: nextPending?.due_date ?? loan.disbursement_date,
@@ -815,6 +816,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
 
   return {
     fullName: profile.full_name,
+    firstName: profile.full_name?.split(' ')[0] || profile.full_name || 'User',
     totalSavings,
     totalLoanBalance,
     pendingRequests: approvalsData.length,
@@ -834,11 +836,14 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
         created_at: loan?.created_at ?? approval.submitted_at,
       };
     }),
-    savingsAccounts: savingsData.map((s: any) => ({
-      accountNumber: s.account_number,
-      balance: s.balance,
-      type: s.type,
-    })),
+    savingsAccounts: savingsData
+      .filter((s: any) => s.status === 'active')
+      .map((s: any) => ({
+        accountNumber: s.account_number,
+        balance: s.balance,
+        type: s.type,
+        status: s.status,
+      })),
     savingsChange:
       currentMonthTotal > 0 || lastMonthTotal > 0
         ? `${currentMonthTotal >= lastMonthTotal ? "+" : ""}${formatCurrency(currentMonthTotal - lastMonthTotal)}`

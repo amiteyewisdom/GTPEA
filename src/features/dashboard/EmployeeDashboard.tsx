@@ -19,6 +19,7 @@ import { APPROVAL_STAGES, employeeStageLabel } from '@/lib/loans/workflow';
 
 interface DashboardData {
   fullName: string;
+  firstName: string;
   totalSavings: number;
   totalLoanBalance: number;
   pendingRequests: number;
@@ -29,6 +30,7 @@ interface DashboardData {
     accountNumber: string;
     balance: number;
     type: string;
+    status: string;
   }>;
   savingsChange?: string;
   loanChange?: string;
@@ -42,7 +44,7 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
       <div className="relative overflow-hidden rounded-brand-lg bg-gradient-to-r from-brand-sidebar to-brand-primary border border-brand-card-border p-6 lg:p-12">
         <div className="relative z-10">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-brand-text mb-3">
-            Welcome Back, {data.fullName || 'User'}
+            Welcome Back, {data.firstName || 'User'}
           </h1>
           <p className="text-sm md:text-base lg:text-lg text-brand-text-secondary mb-6">
             Manage your savings, loans, and financial goals
@@ -165,7 +167,7 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
             <LoanCard
               key={loan.id}
               loanId={loan.loan_ref || 'N/A'}
-              loanType={loan.purpose || 'Loan'}
+              loanType={loan.loan_product_name || loan.purpose || 'Loan'}
               amount={formatCurrency(loan.amount_approved || loan.amount_requested || 0)}
               remainingBalance={formatCurrency(loan.outstanding_balance || 0)}
               monthlyPayment={formatCurrency(loan.monthly_payment || 0)}
