@@ -32,10 +32,32 @@ export async function GET(request: Request) {
     // Fetch employees with board roles
     const boardRoles = ["chairperson", "administrator", "fund_manager", "union_rep"];
     
-    // First get profiles with board roles
+    // Get all employees and their profiles
+    const { data: employees, error: employeesError } = await admin
+      .from("employees")
+      .select("id, first_name, last_name, email, employee_no, department, position");
+
+    if (employeesError) {
+      console.error("[/api/admin/board-members] Employees error:", employeesError);
+      return NextResponse.json(
+        { error: "Failed to fetch board members." },
+        { status: 500 }
+      );
+    }
+
+    if (!employees || employees.length === 0) {
+      return NextResponse.json({
+        success: true,
+        members: [],
+      });
+    }
+
+    // Get profiles for all employees
+    const employeeIds = employees.map((e: any) => e.id);
     const { data: profiles, error: profilesError } = await admin
       .from("profiles")
       .select("user_id, role")
+      .in("user_id", employeeIds)
       .in("role", boardRoles);
 
     if (profilesError) {
@@ -46,36 +68,17 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!profiles || profiles.length === 0) {
-      return NextResponse.json({
-        success: true,
-        members: [],
-      });
-    }
-
-    // Get employee details for each profile
-    const userIds = profiles.map((p: any) => p.user_id);
-    const { data: employees, error: employeesError } = await admin
-      .from("employees")
-      .select("id, first_name, last_name, email, employee_no, department, position")
-      .in("id", userIds);
-
-    if (employeesError) {
-      console.error("[/api/admin/board-members] Employees error:", employeesError);
-      return NextResponse.json(
-        { error: "Failed to fetch board members." },
-        { status: 500 }
-      );
-    }
-
-    // Merge data
-    const members = (employees || []).map((emp: any) => {
-      const profile = profiles.find((p: any) => p.user_id === emp.id);
-      return {
-        ...emp,
-        role: profile?.role || 'employee',
-      };
-    }).sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
+    // Merge data - only include employees with board roles
+    const members = (employees || [])
+      .map((emp: any) => {
+        const profile = profiles?.find((p: any) => p.user_id === emp.id);
+        return {
+          ...emp,
+          role: profile?.role || null,
+        };
+      })
+      .filter((emp: any) => emp.role && boardRoles.includes(emp.role))
+      .sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
 
     return NextResponse.json({
       success: true,
