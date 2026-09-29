@@ -610,6 +610,8 @@ function BoardMembersTable() {
   const [boardMembers, setBoardMembers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
 
+  console.log('[BoardMembersTable] Component rendered, boardMembers:', boardMembers.length, 'loading:', loading);
+
   const fetchBoardMembers = React.useCallback(async () => {
     setLoading(true);
     try {
@@ -617,6 +619,7 @@ function BoardMembersTable() {
       const data = await response.json();
       console.log('[BoardMembersTable] Response:', data);
       if (response.ok) {
+        console.log('[BoardMembersTable] Setting board members:', data.members);
         setBoardMembers(data.members || []);
       } else {
         console.error('[BoardMembersTable] Error:', data.error);
@@ -629,8 +632,13 @@ function BoardMembersTable() {
   }, []);
 
   React.useEffect(() => {
+    console.log('[BoardMembersTable] Fetching board members...');
     fetchBoardMembers();
   }, [fetchBoardMembers]);
+
+  React.useEffect(() => {
+    console.log('[BoardMembersTable] Board members state updated:', boardMembers);
+  }, [boardMembers]);
 
   const handleRemoveRole = async (employeeNo: string) => {
     try {
