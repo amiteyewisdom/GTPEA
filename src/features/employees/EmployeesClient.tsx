@@ -98,12 +98,12 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || "Impersonation failed.");
       
-      // Store the new session tokens
-      sessionStorage.setItem("access_token", payload.access_token);
-      sessionStorage.setItem("refresh_token", payload.refresh_token);
+      // Store the impersonation token
+      sessionStorage.setItem("impersonationToken", payload.impersonationToken);
       sessionStorage.setItem("impersonating", "true");
+      sessionStorage.setItem("impersonatedName", payload.employee_name);
       
-      setMessage({ type: "success", text: `Impersonating ${employee.first_name} ${employee.last_name}. Redirecting...` });
+      setMessage({ type: "success", text: `Impersonating ${payload.employee_name}. Redirecting...` });
       
       setTimeout(() => {
         window.location.href = "/dashboard";
