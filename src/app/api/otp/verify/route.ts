@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     if (!existingProfile) {
       console.log('[/api/otp/verify] No existing profile found, checking employee by phone:', otpData.phone_number);
       // Check if this is an employee by phone number - try both phone_number and phone fields
-      let employee = null;
+      let employee: any = null;
       const phoneFields = ['phone_number', 'phone'];
       
       for (const phoneField of phoneFields) {
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
     } else if (existingProfile.full_name === "User" || !existingProfile.employee_id) {
       console.log('[/api/otp/verify] Existing profile has default name or missing employee_id, updating');
       // Update existing profile if it has default name or missing employee_id
-      let employee = null;
+      let employee: any = null;
       const phoneFields = ['phone_number', 'phone'];
       
       for (const phoneField of phoneFields) {
@@ -140,6 +140,20 @@ export async function POST(request: Request) {
           console.log('[/api/otp/verify] Employee found for update with field:', phoneField);
           employee = result.data;
           break;
+        }
+      }
+
+      // Fallback: try to find employee by user_id
+      if (!employee) {
+        console.log('[/api/otp/verify] Trying to find employee by user_id:', userId);
+        const byUserId = await admin
+          .from("employees")
+          .select("id, full_name, first_name, last_name, department")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (byUserId.data) {
+          console.log('[/api/otp/verify] Employee found by user_id');
+          employee = byUserId.data as any;
         }
       }
 

@@ -682,10 +682,24 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   if (!employeeUuid) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user?.email) {
-      const byEmail = await supabase.from("employees").select("id, first_name, last_name").eq("email", user.email).maybeSingle();
+      console.log('[fetchEmployeeDashboardData] Attempting email lookup with email:', user.email);
+      const byEmail = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("email", user.email).maybeSingle();
       employeeUuid = (byEmail.data as any)?.id ?? null;
-      if (byEmail.data && (byEmail.data as any).first_name) {
-        profile.full_name = `${(byEmail.data as any).first_name} ${(byEmail.data as any).last_name}`;
+      if (byEmail.data) {
+        console.log('[fetchEmployeeDashboardData] Found employee by email');
+        const employeeName = (byEmail.data as any).full_name || 
+                            ((byEmail.data as any).first_name && (byEmail.data as any).last_name ? 
+                             `${(byEmail.data as any).first_name} ${(byEmail.data as any).last_name}` : 
+                             profile.full_name);
+        profile.full_name = employeeName;
+        
+        // Update the profile in database to store employee_id for future lookups
+        await (supabase.from("profiles") as any).update({ 
+          employee_id: employeeUuid,
+          full_name: employeeName 
+        }).eq("user_id", userId);
+      } else {
+        console.log('[fetchEmployeeDashboardData] No employee found by email');
       }
     }
   }
@@ -736,6 +750,29 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
       }).eq("user_id", userId);
     } else {
       console.log('[fetchEmployeeDashboardData] No employee found with any phone variant or field');
+    }
+  }
+
+  // Final fallback: try to find employee by user_id if it exists in employees table
+  if (!employeeUuid) {
+    console.log('[fetchEmployeeDashboardData] Attempting to find employee by user_id:', userId);
+    const byUserId = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("user_id", userId).maybeSingle();
+    if (byUserId.data) {
+      console.log('[fetchEmployeeDashboardData] Found employee by user_id');
+      employeeUuid = (byUserId.data as any).id;
+      const employeeName = (byUserId.data as any).full_name || 
+                          ((byUserId.data as any).first_name && (byUserId.data as any).last_name ? 
+                           `${(byUserId.data as any).first_name} ${(byUserId.data as any).last_name}` : 
+                           profile.full_name);
+      profile.full_name = employeeName;
+      
+      // Update the profile in database to store employee_id for future lookups
+      await (supabase.from("profiles") as any).update({ 
+        employee_id: employeeUuid,
+        full_name: employeeName 
+      }).eq("user_id", userId);
+    } else {
+      console.log('[fetchEmployeeDashboardData] No employee found by user_id');
     }
   }
 
