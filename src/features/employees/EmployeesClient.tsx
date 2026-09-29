@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck, LogIn, Shield } from "lucide-react";
+import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck, Shield } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useDownload } from "@/hooks/use-download";
@@ -25,7 +25,6 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const [suspendModal, setSuspendModal] = useState<{ employee: Employee; action: 'suspend' | 'unsuspend' } | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [suspendLoading, setSuspendLoading] = useState(false);
-  const [impersonateLoading, setImpersonateLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedEmployeeForRole, setSelectedEmployeeForRole] = useState<Employee | null>(null);
@@ -86,38 +85,6 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
     }
   };
 
-  const handleImpersonate = async (employee: Employee) => {
-    setImpersonateLoading(true);
-    setMessage(null);
-    try {
-      const response = await fetch("/api/admin/impersonate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId: employee.id }),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error || "Impersonation failed.");
-      
-      // Store the impersonation token
-      sessionStorage.setItem("impersonationToken", payload.impersonationToken);
-      sessionStorage.setItem("impersonating", "true");
-      sessionStorage.setItem("impersonatedName", payload.employee_name);
-      sessionStorage.setItem("impersonatedEmail", payload.employee_email);
-      
-      setMessage({ 
-        type: "success", 
-        text: `Impersonating ${payload.employee_name}. Redirecting...` 
-      });
-      
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
-    } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Impersonation failed." });
-    } finally {
-      setImpersonateLoading(false);
-    }
-  };
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -509,28 +476,18 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                               style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
                             >
                               {isSuperAdmin && (
-                                <>
-                                  <button
-                                    onClick={() => { 
-                                      setSelectedEmployeeForRole(emp);
-                                      setShowRoleModal(true);
-                                      setOpenMenuId(null);
-                                      setMenuPosition(null);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-accent hover:bg-brand-accent/10 transition-colors border-b border-brand-card-border"
-                                  >
-                                    <Shield className="w-4 h-4" />
-                                    Assign Board Role
-                                  </button>
-                                  <button
-                                    onClick={() => { handleImpersonate(emp); setOpenMenuId(null); setMenuPosition(null); }}
-                                    disabled={impersonateLoading}
-                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-accent hover:bg-brand-accent/10 transition-colors border-b border-brand-card-border"
-                                  >
-                                    <LogIn className="w-4 h-4" />
-                                    {impersonateLoading ? "Switching..." : "Impersonate"}
-                                  </button>
-                                </>
+                                <button
+                                  onClick={() => { 
+                                    setSelectedEmployeeForRole(emp);
+                                    setShowRoleModal(true);
+                                    setOpenMenuId(null);
+                                    setMenuPosition(null);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-accent hover:bg-brand-accent/10 transition-colors border-b border-brand-card-border"
+                                >
+                                  <Shield className="w-4 h-4" />
+                                  Assign Board Role
+                                </button>
                               )}
                               {emp.status !== "suspended" ? (
                                 <button

@@ -3,7 +3,6 @@ import type { Profile } from "@/types/database";
 import { redirect } from "next/navigation";
 import EnterpriseLayout from "@/components/layout/EnterpriseLayout";
 import { UserRole } from "@/lib/role-menus";
-import { ImpersonationProvider } from "@/components/auth/ImpersonationProvider";
 
 const APPROVER_ROLES = ["union_rep", "fund_manager", "chairperson"];
 
@@ -75,16 +74,14 @@ export default async function DashboardLayout({
     const pendingCount = await fetchPendingCount(supabase, role);
 
     return (
-      <ImpersonationProvider>
-        <EnterpriseLayout
-          currentRole={(role as UserRole) || "employee"}
-          userName={profile?.full_name ?? user.email ?? "User"}
-          avatarUrl={profile?.avatar_url}
-          pendingCount={pendingCount}
-        >
-          {children}
-        </EnterpriseLayout>
-      </ImpersonationProvider>
+      <EnterpriseLayout
+        currentRole={(role as UserRole) || "employee"}
+        userName={profile?.full_name ?? user.email ?? "User"}
+        avatarUrl={profile?.avatar_url}
+        pendingCount={pendingCount}
+      >
+        {children}
+      </EnterpriseLayout>
     );
   } catch (error: any) {
     // Don't log redirect errors - they're expected Next.js behavior
