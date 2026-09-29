@@ -610,21 +610,14 @@ function BoardMembersTable() {
   const [boardMembers, setBoardMembers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
 
-  console.log('[BoardMembersTable] Component rendered, boardMembers:', boardMembers.length, 'loading:', loading);
-
   React.useEffect(() => {
-    console.log('[BoardMembersTable] useEffect running...');
     const fetchData = async () => {
       setLoading(true);
       try {
         const response = await fetch('/api/admin/board-members');
         const data = await response.json();
-        console.log('[BoardMembersTable] Response:', data);
         if (response.ok) {
-          console.log('[BoardMembersTable] Setting board members:', data.members);
           setBoardMembers(data.members || []);
-        } else {
-          console.error('[BoardMembersTable] Error:', data.error);
         }
       } catch (error) {
         console.error('Failed to fetch board members:', error);

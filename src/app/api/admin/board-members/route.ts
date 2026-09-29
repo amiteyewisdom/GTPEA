@@ -47,14 +47,11 @@ export async function GET(request: Request) {
     }
 
     if (!profiles || profiles.length === 0) {
-      console.log("[/api/admin/board-members] No profiles found with board roles");
       return NextResponse.json({
         success: true,
         members: [],
       });
     }
-
-    console.log("[/api/admin/board-members] Found profiles:", profiles.length);
 
     // Get auth users to get their emails
     const userIds = profiles.map((p: any) => p.user_id);
@@ -103,13 +100,6 @@ export async function GET(request: Request) {
         ...emp,
         role: profile?.role || null,
       };
-    });
-
-    console.log("[/api/admin/board-members] Results:", { 
-      profilesCount: profiles.length, 
-      employeesCount: employees.length, 
-      membersCount: members.length,
-      sampleMember: members[0]
     });
 
     const filteredMembers = members
