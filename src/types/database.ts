@@ -55,6 +55,7 @@ export interface Database {
           last_name: string;
           email: string;
           phone: string | null;
+          phone_number: string | null;
           department: Department;
           position: string;
           status: EmployeeStatus;
@@ -74,6 +75,8 @@ export interface Database {
           next_of_kin_relationship: string | null;
           address: string | null;
           avatar_url: string | null;
+          is_first_login: boolean | null;
+          password_changed_at: string | null;
           created_by: string | null;
           created_at: string;
           updated_at: string;

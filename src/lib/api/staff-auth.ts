@@ -44,7 +44,7 @@ export function canManageLoanProducts(role: StaffRole | null) {
 }
 
 export function canManageUsers(role: StaffRole | null) {
-  return role === "super_admin";
+  return role === "super_admin" || role === "administrator";
 }
 
 export function canManagePayroll(role: StaffRole | null) {

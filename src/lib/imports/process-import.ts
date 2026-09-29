@@ -285,8 +285,11 @@ async function importGTPEASavings(
         account_number: staffSavingAccountNumber || `SAV-${staffId}`,
         balance: balance,
         type: "regular",
-        facility_account: facilityAccountNumber || null,
-        reference: reference || "Savings",
+        status: "active",
+        interest_rate: 0.05,
+        monthly_contribution: 0,
+        opened_at: new Date().toISOString(),
+        notes: reference || "Savings",
       },
       { onConflict: "account_number" }
     );
@@ -359,8 +362,11 @@ async function importGTPEAQuickCash(
         account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
         balance: balance,
         type: "special",
-        facility_account: facilityAccountNumber || null,
-        reference: reference || "Quick-Cash",
+        status: "active",
+        interest_rate: 0.05,
+        monthly_contribution: 0,
+        opened_at: new Date().toISOString(),
+        notes: reference || "Quick-Cash",
       },
       { onConflict: "account_number" }
     );

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   }
 
   if (!canManageUsers(role)) {
-    return NextResponse.json({ error: "Only Super Admins can reset passwords." }, { status: 403 });
+    return NextResponse.json({ error: "Only Admins can reset passwords." }, { status: 403 });
   }
 
   try {

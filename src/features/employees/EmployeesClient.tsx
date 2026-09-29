@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck, Shield } from "lucide-react";
+import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck, Shield, RotateCcw, Trash2 } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useDownload } from "@/hooks/use-download";
@@ -26,10 +26,15 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const [suspendReason, setSuspendReason] = useState("");
   const [suspendLoading, setSuspendLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedEmployeeForRole, setSelectedEmployeeForRole] = useState<Employee | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [resetAccountModal, setResetAccountModal] = useState<Employee | null>(null);
+  const [resetAccountLoading, setResetAccountLoading] = useState(false);
+  const [deleteEmployeeModal, setDeleteEmployeeModal] = useState<Employee | null>(null);
+  const [deleteEmployeeLoading, setDeleteEmployeeLoading] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -50,6 +55,7 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
         if (response.ok) {
           const data = await response.json();
           setIsSuperAdmin(data.role === "super_admin");
+          setIsAdmin(data.role === "super_admin" || data.role === "administrator");
         }
       } catch (error) {
         console.error("Failed to check user role:", error);
@@ -82,6 +88,54 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Action failed." });
     } finally {
       setSuspendLoading(false);
+    }
+  };
+
+  const handleResetAccount = async () => {
+    if (!resetAccountModal) return;
+    setResetAccountLoading(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/employees/reset-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employeeId: resetAccountModal.id,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Failed to reset account.");
+      setMessage({ type: "success", text: payload.message });
+      setResetAccountModal(null);
+      router.refresh();
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to reset account." });
+    } finally {
+      setResetAccountLoading(false);
+    }
+  };
+
+  const handleDeleteEmployee = async () => {
+    if (!deleteEmployeeModal) return;
+    setDeleteEmployeeLoading(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/employees/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employeeId: deleteEmployeeModal.id,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Failed to delete employee.");
+      setMessage({ type: "success", text: payload.message });
+      setDeleteEmployeeModal(null);
+      router.refresh();
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to delete employee." });
+    } finally {
+      setDeleteEmployeeLoading(false);
     }
   };
 
@@ -477,7 +531,7 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                             >
                               {isSuperAdmin && (
                                 <button
-                                  onClick={() => { 
+                                  onClick={() => {
                                     setSelectedEmployeeForRole(emp);
                                     setShowRoleModal(true);
                                     setOpenMenuId(null);
@@ -487,6 +541,32 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                                 >
                                   <Shield className="w-4 h-4" />
                                   Assign Board Role
+                                </button>
+                              )}
+                              {isAdmin && (
+                                <button
+                                  onClick={() => {
+                                    setResetAccountModal(emp);
+                                    setOpenMenuId(null);
+                                    setMenuPosition(null);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 transition-colors border-b border-brand-card-border"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                  Reset Account
+                                </button>
+                              )}
+                              {isAdmin && (
+                                <button
+                                  onClick={() => {
+                                    setDeleteEmployeeModal(emp);
+                                    setOpenMenuId(null);
+                                    setMenuPosition(null);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors border-b border-brand-card-border"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete Employee
                                 </button>
                               )}
                               {emp.status !== "suspended" ? (
@@ -564,6 +644,87 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                   : suspendModal.action === "suspend"
                   ? "Confirm Suspend"
                   : "Confirm Reactivate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Account confirmation modal */}
+      {resetAccountModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-brand-text mb-2">Reset Employee Account</h3>
+            <p className="text-sm text-brand-text-secondary mb-4">
+              Are you sure you want to reset <strong>{resetAccountModal.first_name} {resetAccountModal.last_name}</strong>&apos;s account?
+            </p>
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+              <p className="text-xs text-orange-800 font-semibold mb-1">This will:</p>
+              <ul className="text-xs text-orange-700 space-y-1 list-disc list-inside">
+                <li>Reset their password to the default</li>
+                <li>Clear their phone number</li>
+                <li>Require them to set up phone number again</li>
+                <li>Require them to change password on next login</li>
+              </ul>
+            </div>
+            <p className="text-xs text-brand-text-secondary mb-4">
+              The employee will need to go through the complete first-time login process again.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setResetAccountModal(null)}
+                className="px-4 py-2 border border-brand-card-border text-brand-text rounded-lg hover:bg-brand-hover text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetAccount}
+                disabled={resetAccountLoading}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-semibold disabled:opacity-50 transition-all"
+              >
+                {resetAccountLoading ? "Resetting…" : "Confirm Reset"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Employee confirmation modal */}
+      {deleteEmployeeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-brand-text mb-2">Delete Employee</h3>
+            <p className="text-sm text-brand-text-secondary mb-4">
+              Are you sure you want to delete <strong>{deleteEmployeeModal.first_name} {deleteEmployeeModal.last_name}</strong>?
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <p className="text-xs text-red-800 font-semibold mb-1">This will permanently delete:</p>
+              <ul className="text-xs text-red-700 space-y-1 list-disc list-inside">
+                <li>Employee profile and account</li>
+                <li>All savings accounts and contributions</li>
+                <li>All loan applications and repayments</li>
+                <li>All withdrawal requests</li>
+                <li>Bank account details</li>
+                <li>Beneficiaries</li>
+                <li>All transaction history</li>
+              </ul>
+            </div>
+            <p className="text-xs text-red-600 font-semibold mb-4">
+              This action cannot be undone!
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteEmployeeModal(null)}
+                className="px-4 py-2 border border-brand-card-border text-brand-text rounded-lg hover:bg-brand-hover text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteEmployee}
+                disabled={deleteEmployeeLoading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-semibold disabled:opacity-50 transition-all"
+              >
+                {deleteEmployeeLoading ? "Deleting…" : "Delete Employee"}
               </button>
             </div>
           </div>
