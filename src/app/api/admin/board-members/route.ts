@@ -102,6 +102,15 @@ export async function GET(request: Request) {
       };
     });
 
+    console.log("[/api/admin/board-members] Debug:", {
+      profilesCount: profiles.length,
+      employeesCount: employees.length,
+      membersCount: members.length,
+      authUsersMapKeys: Array.from(authUsersMap.keys()),
+      employeeEmails: employees.map((e: any) => e.email),
+      allMembers: members.map((m: any) => ({ email: m.email, role: m.role }))
+    });
+
     const filteredMembers = members
       .filter((m: any) => m.role !== null)
       .sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
