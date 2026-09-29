@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { canImpersonate, getStaffUser } from "@/lib/api/staff-auth";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/supupabase/admin";
 import { randomBytes } from "crypto";
 
 export async function POST(request: Request) {
@@ -109,24 +109,25 @@ export async function POST(request: Request) {
       metadata: { impersonated_email: employee.email },
     });
 
-    // Generate a secure impersonation token
-    const sessionToken = randomBytes(32).toString('hex');
+    // Generate an impersonation token (read-only mode)
+    const impersonationToken = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-
-    // Store the impersonation session
+    
     await adminSupabase.from("impersonation_sessions").insert({
       admin_user_id: user.id,
       target_user_id: authUser.id,
       target_employee_id: employeeId,
-      session_token: sessionToken,
+      session_token: impersonationToken,
       expires_at: expiresAt,
+      metadata: { mode: "read_only" },
     });
 
     return NextResponse.json({
       success: true,
-      impersonationToken: sessionToken,
+      impersonationToken,
       employee_email: employee.email,
       employee_name: `${employee.first_name} ${employee.last_name}`,
+      mode: "read_only",
     });
   } catch (error) {
     return NextResponse.json(

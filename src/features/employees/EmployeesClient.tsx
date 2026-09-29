@@ -102,8 +102,12 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       sessionStorage.setItem("impersonationToken", payload.impersonationToken);
       sessionStorage.setItem("impersonating", "true");
       sessionStorage.setItem("impersonatedName", payload.employee_name);
+      sessionStorage.setItem("impersonatedEmail", payload.employee_email);
       
-      setMessage({ type: "success", text: `Impersonating ${payload.employee_name}. Redirecting...` });
+      setMessage({ 
+        type: "success", 
+        text: `Impersonating ${payload.employee_name}. Redirecting...` 
+      });
       
       setTimeout(() => {
         window.location.href = "/dashboard";
