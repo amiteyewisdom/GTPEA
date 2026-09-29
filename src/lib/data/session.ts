@@ -12,7 +12,7 @@ export async function getSessionProfile() {
 
   const profileRes = await (supabase
     .from("profiles")
-    .select("id, full_name, role, employee_id, is_active")
+    .select("id, full_name, role, employee_id, phone, is_active")
     .eq("user_id", user.id)
     .single() as any);
 

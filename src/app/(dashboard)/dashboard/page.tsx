@@ -15,7 +15,7 @@ export default async function DashboardRouter() {
   try {
     const profileRes = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, full_name, role, employee_id, phone, is_active")
       .eq("user_id", user.id)
       .single();
     profile = profileRes.data;

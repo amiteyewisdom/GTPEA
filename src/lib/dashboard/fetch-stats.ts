@@ -671,6 +671,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 export async function fetchEmployeeDashboardData(userId: string, profile: {
   full_name: string;
   employee_id: string | null;
+  phone?: string | null;
 }) {
   const supabase = await createClient();
   let employeeUuid = profile.employee_id
@@ -686,6 +687,26 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
       if (byEmail.data && (byEmail.data as any).first_name) {
         profile.full_name = `${(byEmail.data as any).first_name} ${(byEmail.data as any).last_name}`;
       }
+    }
+  }
+
+  // Additional fallback: look up employee by phone number from profile
+  if (!employeeUuid && profile.phone) {
+    const byPhone = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("phone_number", profile.phone).maybeSingle();
+    employeeUuid = (byPhone.data as any)?.id ?? null;
+    if (byPhone.data) {
+      // Update profile full_name with employee name
+      const employeeName = (byPhone.data as any).full_name || 
+                          ((byPhone.data as any).first_name && (byPhone.data as any).last_name ? 
+                           `${(byPhone.data as any).first_name} ${(byPhone.data as any).last_name}` : 
+                           profile.full_name);
+      profile.full_name = employeeName;
+      
+      // Update the profile in database to store employee_id for future lookups
+      await (supabase.from("profiles") as any).update({ 
+        employee_id: employeeUuid,
+        full_name: employeeName 
+      }).eq("user_id", userId);
     }
   }
 

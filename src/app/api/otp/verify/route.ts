@@ -76,18 +76,24 @@ export async function POST(request: Request) {
       // Check if this is an employee by phone number
       const { data: employee } = await admin
         .from("employees")
-        .select("id, full_name, department")
+        .select("id, full_name, first_name, last_name, department")
         .eq("phone_number", otpData.phone_number)
         .single();
 
       if (employee) {
+        // Use full_name if available, otherwise construct from first_name and last_name
+        const fullName = employee.full_name || 
+                         (employee.first_name && employee.last_name ? 
+                          `${employee.first_name} ${employee.last_name}` : 
+                          "User");
+        
         // Create profile for employee with employee_id link
         await admin
           .from("profiles")
           .insert({
             user_id: userId,
             employee_id: employee.id,
-            full_name: employee.full_name,
+            full_name: fullName,
             role: "employee",
             phone: otpData.phone_number,
             avatar_url: null,
@@ -103,6 +109,29 @@ export async function POST(request: Request) {
             phone: otpData.phone_number,
             avatar_url: null,
           });
+      }
+    } else if (existingProfile.full_name === "User" || !existingProfile.employee_id) {
+      // Update existing profile if it has default name or missing employee_id
+      const { data: employee } = await admin
+        .from("employees")
+        .select("id, full_name, first_name, last_name, department")
+        .eq("phone_number", otpData.phone_number)
+        .single();
+
+      if (employee) {
+        // Use full_name if available, otherwise construct from first_name and last_name
+        const fullName = employee.full_name || 
+                         (employee.first_name && employee.last_name ? 
+                          `${employee.first_name} ${employee.last_name}` : 
+                          existingProfile.full_name);
+        
+        await admin
+          .from("profiles")
+          .update({
+            employee_id: employee.id,
+            full_name: fullName,
+          })
+          .eq("user_id", userId);
       }
     }
 
