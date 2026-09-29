@@ -776,6 +776,33 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     }
   }
 
+  // Additional fallback: try to extract staff ID from email and look up by employee_no
+  if (!employeeUuid) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email && user.email.includes('@staff.gtpea.local')) {
+      const staffId = user.email.split('@')[0];
+      console.log('[fetchEmployeeDashboardData] Attempting to find employee by staff_id:', staffId);
+      const byStaffId = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("employee_no", staffId).maybeSingle();
+      if (byStaffId.data) {
+        console.log('[fetchEmployeeDashboardData] Found employee by staff_id');
+        employeeUuid = (byStaffId.data as any).id;
+        const employeeName = (byStaffId.data as any).full_name || 
+                            ((byStaffId.data as any).first_name && (byStaffId.data as any).last_name ? 
+                             `${(byStaffId.data as any).first_name} ${(byStaffId.data as any).last_name}` : 
+                             profile.full_name);
+        profile.full_name = employeeName;
+        
+        // Update the profile in database to store employee_id for future lookups
+        await (supabase.from("profiles") as any).update({ 
+          employee_id: employeeUuid,
+          full_name: employeeName 
+        }).eq("user_id", userId);
+      } else {
+        console.log('[fetchEmployeeDashboardData] No employee found by staff_id');
+      }
+    }
+  }
+
   if (!employeeUuid) {
     console.error('[fetchEmployeeDashboardData] Could not resolve employee UUID for user:', userId, 'profile:', profile);
     return {

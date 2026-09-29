@@ -112,17 +112,59 @@ export async function POST(request: Request) {
           });
         console.log('[/api/otp/verify] Created profile for employee with name:', fullName);
       } else {
-        console.log('[/api/otp/verify] No employee found, creating default profile');
-        // Create default profile for non-employee
-        await admin
-          .from("profiles")
-          .insert({
-            user_id: userId,
-            full_name: "User",
-            role: "employee",
-            phone: otpData.phone_number,
-            avatar_url: null,
-          });
+        console.log('[/api/otp/verify] No employee found by phone, trying staff ID from email');
+        // Try to get staff ID from user email
+        let employeeFromStaffId = null;
+        
+        try {
+          const { data: { user } } = await admin.auth.admin.getUserById(userId);
+          if (user?.email && user.email.includes('@staff.gtpea.local')) {
+            const staffId = user.email.split('@')[0];
+            console.log('[/api/otp/verify] Extracted staff_id from email:', staffId);
+            const byStaffId = await admin
+              .from("employees")
+              .select("id, full_name, first_name, last_name, department")
+              .eq("employee_no", staffId)
+              .maybeSingle();
+            if (byStaffId.data) {
+              console.log('[/api/otp/verify] Employee found by staff_id for profile creation');
+              employeeFromStaffId = byStaffId.data as any;
+            }
+          }
+        } catch (error) {
+          console.log('[/api/otp/verify] Could not get user by ID for profile creation:', error);
+        }
+        
+        if (employeeFromStaffId) {
+          const fullName = employeeFromStaffId.full_name || 
+                           (employeeFromStaffId.first_name && employeeFromStaffId.last_name ? 
+                            `${employeeFromStaffId.first_name} ${employeeFromStaffId.last_name}` : 
+                            "User");
+          
+          await admin
+            .from("profiles")
+            .insert({
+              user_id: userId,
+              employee_id: employeeFromStaffId.id,
+              full_name: fullName,
+              role: "employee",
+              phone: otpData.phone_number,
+              avatar_url: null,
+            });
+          console.log('[/api/otp/verify] Created profile for employee found by staff_id with name:', fullName);
+        } else {
+          console.log('[/api/otp/verify] No employee found, creating default profile');
+          // Create default profile for non-employee
+          await admin
+            .from("profiles")
+            .insert({
+              user_id: userId,
+              full_name: "User",
+              role: "employee",
+              phone: otpData.phone_number,
+              avatar_url: null,
+            });
+        }
       }
     } else if (existingProfile.full_name === "User" || !existingProfile.employee_id) {
       console.log('[/api/otp/verify] Existing profile has default name or missing employee_id, updating');
@@ -154,6 +196,30 @@ export async function POST(request: Request) {
         if (byUserId.data) {
           console.log('[/api/otp/verify] Employee found by user_id');
           employee = byUserId.data as any;
+        }
+      }
+
+      // Additional fallback: try to extract staff ID from phone number and look up by employee_no
+      if (!employee) {
+        console.log('[/api/otp/verify] Trying to find employee by extracting staff ID from context');
+        // Try to get user by ID from auth
+        try {
+          const { data: { user } } = await admin.auth.admin.getUserById(userId);
+          if (user?.email && user.email.includes('@staff.gtpea.local')) {
+            const staffId = user.email.split('@')[0];
+            console.log('[/api/otp/verify] Extracted staff_id from email:', staffId);
+            const byStaffId = await admin
+              .from("employees")
+              .select("id, full_name, first_name, last_name, department")
+              .eq("employee_no", staffId)
+              .maybeSingle();
+            if (byStaffId.data) {
+              console.log('[/api/otp/verify] Employee found by staff_id');
+              employee = byStaffId.data as any;
+            }
+          }
+        } catch (error) {
+          console.log('[/api/otp/verify] Could not get user by ID:', error);
         }
       }
 
