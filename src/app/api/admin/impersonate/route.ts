@@ -107,19 +107,23 @@ export async function POST(request: Request) {
       metadata: { impersonated_email: employee.email },
     });
 
-    // Generate a new session for the target user
-    const { data: sessionData, error: sessionError } = await adminSupabase.auth.admin.createSession({
-      userId: authUser.id,
+    // Generate a magic link for the target user
+    const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
+      type: "magiclink",
+      email: employee.email,
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.gtpea.com'}/dashboard`,
+      },
     });
 
-    if (sessionError) {
-      return NextResponse.json({ error: "Failed to create session." }, { status: 500 });
+    if (linkError) {
+      console.error("[/api/admin/impersonate] Generate link error:", linkError);
+      return NextResponse.json({ error: "Failed to generate impersonation link." }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      access_token: sessionData.session.access_token,
-      refresh_token: sessionData.session.refresh_token,
+      magicLink: linkData.properties?.action_link,
       employee_email: employee.email,
     });
   } catch (error) {
