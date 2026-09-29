@@ -50,3 +50,7 @@ export function canManageUsers(role: StaffRole | null) {
 export function canManagePayroll(role: StaffRole | null) {
   return role !== null && PAYROLL_ROLES.includes(role as (typeof PAYROLL_ROLES)[number]);
 }
+
+export function canImpersonate(role: StaffRole | null) {
+  return role === "super_admin";
+}

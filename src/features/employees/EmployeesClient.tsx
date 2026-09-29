@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck } from "lucide-react";
+import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck, LogIn } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useDownload } from "@/hooks/use-download";
@@ -24,6 +24,8 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const [suspendModal, setSuspendModal] = useState<{ employee: Employee; action: 'suspend' | 'unsuspend' } | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [suspendLoading, setSuspendLoading] = useState(false);
+  const [impersonateLoading, setImpersonateLoading] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,6 +36,22 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    // Check if current user is super admin to show impersonate option
+    async function checkRole() {
+      try {
+        const response = await fetch("/api/user/role");
+        if (response.ok) {
+          const data = await response.json();
+          setIsSuperAdmin(data.role === "super_admin");
+        }
+      } catch (error) {
+        console.error("Failed to check user role:", error);
+      }
+    }
+    checkRole();
   }, []);
 
   const handleSuspendAction = async () => {
@@ -60,6 +78,35 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Action failed." });
     } finally {
       setSuspendLoading(false);
+    }
+  };
+
+  const handleImpersonate = async (employee: Employee) => {
+    setImpersonateLoading(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId: employee.id }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Impersonation failed.");
+      
+      // Store the new session tokens and redirect
+      sessionStorage.setItem("access_token", payload.access_token);
+      sessionStorage.setItem("refresh_token", payload.refresh_token);
+      sessionStorage.setItem("impersonating", "true");
+      
+      setMessage({ type: "success", text: `Impersonating ${employee.first_name} ${employee.last_name}. Redirecting...` });
+      
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1000);
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Impersonation failed." });
+    } finally {
+      setImpersonateLoading(false);
     }
   };
   const [formData, setFormData] = useState({
@@ -435,6 +482,16 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                           </button>
                           {openMenuId === emp.id && (
                             <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-brand-card-border rounded-lg shadow-lg z-20 overflow-hidden">
+                              {isSuperAdmin && (
+                                <button
+                                  onClick={() => { handleImpersonate(emp); setOpenMenuId(null); }}
+                                  disabled={impersonateLoading}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-accent hover:bg-brand-accent/10 transition-colors border-b border-brand-card-border"
+                                >
+                                  <LogIn className="w-4 h-4" />
+                                  {impersonateLoading ? "Switching..." : "Impersonate"}
+                                </button>
+                              )}
                               {emp.status !== "suspended" ? (
                                 <button
                                   onClick={() => { setSuspendModal({ employee: emp, action: "suspend" }); setOpenMenuId(null); }}
