@@ -610,23 +610,24 @@ function BoardMembersTable() {
   const [boardMembers, setBoardMembers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
 
-  React.useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/admin/board-members');
-        const data = await response.json();
-        if (response.ok) {
-          setBoardMembers(data.members || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch board members:', error);
-      } finally {
-        setLoading(false);
+  const fetchBoardMembers = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/board-members');
+      const data = await response.json();
+      if (response.ok) {
+        setBoardMembers(data.members || []);
       }
-    };
-    fetchData();
+    } catch (error) {
+      console.error('Failed to fetch board members:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  React.useEffect(() => {
+    fetchBoardMembers();
+  }, [fetchBoardMembers]);
 
   const handleRemoveRole = async (employeeNo: string) => {
     try {
