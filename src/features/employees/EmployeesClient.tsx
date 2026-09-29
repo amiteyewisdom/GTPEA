@@ -29,12 +29,14 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedEmployeeForRole, setSelectedEmployeeForRole] = useState<Employee | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpenMenuId(null);
+        setMenuPosition(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -485,15 +487,23 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="relative inline-block" ref={openMenuId === emp.id ? menuRef : undefined}>
+                        <div className="relative inline-block">
                           <button
-                            onClick={() => setOpenMenuId(openMenuId === emp.id ? null : emp.id)}
+                            onClick={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setMenuPosition({ top: rect.bottom + 4, left: rect.right - 176 });
+                              setOpenMenuId(openMenuId === emp.id ? null : emp.id);
+                            }}
                             className="text-brand-text-secondary hover:text-brand-text p-1 rounded hover:bg-brand-hover"
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
-                          {openMenuId === emp.id && (
-                            <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-brand-card-border rounded-lg shadow-lg z-20 overflow-hidden">
+                          {openMenuId === emp.id && menuPosition && (
+                            <div 
+                              ref={menuRef}
+                              className="fixed bg-white border border-brand-card-border rounded-lg shadow-lg z-50 overflow-hidden"
+                              style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+                            >
                               {isSuperAdmin && (
                                 <>
                                   <button
@@ -501,6 +511,7 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                                       setSelectedEmployeeForRole(emp);
                                       setShowRoleModal(true);
                                       setOpenMenuId(null);
+                                      setMenuPosition(null);
                                     }}
                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-accent hover:bg-brand-accent/10 transition-colors border-b border-brand-card-border"
                                   >
@@ -508,7 +519,7 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                                     Assign Board Role
                                   </button>
                                   <button
-                                    onClick={() => { handleImpersonate(emp); setOpenMenuId(null); }}
+                                    onClick={() => { handleImpersonate(emp); setOpenMenuId(null); setMenuPosition(null); }}
                                     disabled={impersonateLoading}
                                     className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-brand-accent hover:bg-brand-accent/10 transition-colors border-b border-brand-card-border"
                                   >
@@ -519,7 +530,7 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                               )}
                               {emp.status !== "suspended" ? (
                                 <button
-                                  onClick={() => { setSuspendModal({ employee: emp, action: "suspend" }); setOpenMenuId(null); }}
+                                  onClick={() => { setSuspendModal({ employee: emp, action: "suspend" }); setOpenMenuId(null); setMenuPosition(null); }}
                                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                                 >
                                   <ShieldOff className="w-4 h-4" />
@@ -527,7 +538,7 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                                 </button>
                               ) : (
                                 <button
-                                  onClick={() => { setSuspendModal({ employee: emp, action: "unsuspend" }); setOpenMenuId(null); }}
+                                  onClick={() => { setSuspendModal({ employee: emp, action: "unsuspend" }); setOpenMenuId(null); setMenuPosition(null); }}
                                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 transition-colors"
                                 >
                                   <ShieldCheck className="w-4 h-4" />
