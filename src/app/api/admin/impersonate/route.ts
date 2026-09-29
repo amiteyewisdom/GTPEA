@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     // Get the employee's auth user
     const { data: employee } = await adminSupabase
       .from("employees")
-      .select("email")
+      .select("email, first_name, last_name, id")
       .eq("id", employeeId)
       .single();
 
@@ -33,12 +33,68 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Employee not found." }, { status: 404 });
     }
 
-    // Get the auth user by email
-    const { data: authUsers } = await adminSupabase.auth.admin.listUsers();
-    const authUser = authUsers.users.find((u: any) => u.email === employee.email);
+    // Find the auth user by email (search through all pages)
+    let authUser: any = null;
+    let page = 1;
+    const maxPages = 10;
+    
+    while (page <= maxPages && !authUser) {
+      const { data: authUsers } = await adminSupabase.auth.admin.listUsers({
+        page: page,
+        perPage: 100,
+      });
+      
+      authUser = authUsers.users.find((u: any) => u.email.toLowerCase() === employee.email.toLowerCase());
+      
+      if (authUsers.users.length < 100) {
+        break;
+      }
+      page++;
+    }
 
+    // If auth user doesn't exist, create them
     if (!authUser) {
-      return NextResponse.json({ error: "Auth user not found for this employee." }, { status: 404 });
+      try {
+        const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
+          email: employee.email,
+          email_confirm: true,
+          user_metadata: {
+            full_name: `${employee.first_name} ${employee.last_name}`,
+            employee_id: employee.id,
+            role: "employee",
+          },
+        });
+
+        if (createError) {
+          if (createError.message?.includes("email_exists") || createError.code === "email_exists") {
+            // Search again
+            page = 1;
+            while (page <= maxPages && !authUser) {
+              const { data: retryAuthUsers } = await adminSupabase.auth.admin.listUsers({
+                page: page,
+                perPage: 100,
+              });
+              
+              authUser = retryAuthUsers.users.find((u: any) => u.email.toLowerCase() === employee.email.toLowerCase());
+              
+              if (retryAuthUsers.users.length < 100) {
+                break;
+              }
+              page++;
+            }
+            
+            if (!authUser) {
+              return NextResponse.json({ error: "User account exists but could not be found." }, { status: 404 });
+            }
+          } else {
+            return NextResponse.json({ error: "Failed to create user account." }, { status: 500 });
+          }
+        } else {
+          authUser = newUser.user;
+        }
+      } catch (error) {
+        return NextResponse.json({ error: "Failed to create user account." }, { status: 500 });
+      }
     }
 
     // Log the impersonation for audit purposes
