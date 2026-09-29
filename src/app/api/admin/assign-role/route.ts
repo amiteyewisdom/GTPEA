@@ -63,8 +63,24 @@ export async function POST(request: Request) {
     }
 
     // Find the user associated with this employee
-    const { data: authUser } = await admin.auth.admin.listUsers();
-    let targetUser = authUser.users.find((u: any) => u.email === employee.email);
+    let targetUser: any = null;
+    let page = 1;
+    const maxPages = 10; // Safety limit
+    
+    while (page <= maxPages && !targetUser) {
+      const { data: authUser } = await admin.auth.admin.listUsers({
+        page: page,
+        perPage: 100,
+      });
+      
+      targetUser = authUser.users.find((u: any) => u.email.toLowerCase() === employee.email.toLowerCase());
+      
+      if (authUser.users.length < 100) {
+        // No more users
+        break;
+      }
+      page++;
+    }
 
     // If user doesn't exist, try to create them automatically
     if (!targetUser) {
@@ -80,22 +96,34 @@ export async function POST(request: Request) {
         });
 
         if (createError) {
-          // If user already exists, try to find them again
+          // If user already exists, search again with case-insensitive comparison
           if (createError.message?.includes("email_exists") || createError.code === "email_exists") {
-            const { data: retryAuthUser } = await admin.auth.admin.listUsers();
-            targetUser = retryAuthUser.users.find((u: any) => u.email === employee.email);
+            page = 1;
+            while (page <= maxPages && !targetUser) {
+              const { data: retryAuthUser } = await admin.auth.admin.listUsers({
+                page: page,
+                perPage: 100,
+              });
+              
+              targetUser = retryAuthUser.users.find((u: any) => u.email.toLowerCase() === employee.email.toLowerCase());
+              
+              if (retryAuthUser.users.length < 100) {
+                break;
+              }
+              page++;
+            }
             
             if (!targetUser) {
-              console.error("[/api/admin/assign-role] User exists but not found after retry");
+              console.error("[/api/admin/assign-role] User exists but not found after comprehensive search");
               return NextResponse.json(
-                { error: "User account exists but could not be found. Please contact support." },
-                { status: 500 }
+                { error: "User account exists but could not be found. The email may be different from the employee record." },
+                { status: 404 }
               );
             }
           } else {
             console.error("[/api/admin/assign-role] Create user error:", createError);
             return NextResponse.json(
-              { error: "Failed to create user account." },
+              { error: `Failed to create user account: ${createError.message}` },
               { status: 500 }
             );
           }
