@@ -615,8 +615,11 @@ function BoardMembersTable() {
     try {
       const response = await fetch('/api/admin/board-members');
       const data = await response.json();
+      console.log('[BoardMembersTable] Response:', data);
       if (response.ok) {
         setBoardMembers(data.members || []);
+      } else {
+        console.error('[BoardMembersTable] Error:', data.error);
       }
     } catch (error) {
       console.error('Failed to fetch board members:', error);
