@@ -148,11 +148,22 @@ export async function POST(request: Request) {
       .eq("user_id", targetUser.id);
 
     if (updateError) {
-      console.error("[/api/admin/assign-role] Update error:", updateError);
+      console.error("[/api/admin/assign-role] Update profile error:", updateError);
       return NextResponse.json(
-        { error: "Failed to assign role." },
+        { error: "Failed to assign role to profile." },
         { status: 500 }
       );
+    }
+
+    // Also update the role in employees table for consistency
+    const { error: employeeUpdateError } = await admin
+      .from("employees")
+      .update({ role })
+      .eq("employee_no", employeeId);
+
+    if (employeeUpdateError) {
+      console.error("[/api/admin/assign-role] Update employee error:", employeeUpdateError);
+      // Don't fail the request if employee update fails, profile update succeeded
     }
 
     return NextResponse.json({
