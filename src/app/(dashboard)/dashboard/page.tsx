@@ -33,7 +33,9 @@ export default async function DashboardRouter() {
 
   try {
     if (role === "employee") {
+      console.log('[Dashboard] Fetching employee dashboard data for user:', user.id, 'profile:', profile);
       data = await fetchEmployeeDashboardData(user.id, profile);
+      console.log('[Dashboard] Employee dashboard data:', data);
     } else {
       stats = await fetchDashboardStats();
     }

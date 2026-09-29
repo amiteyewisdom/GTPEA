@@ -677,18 +677,23 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     ? await resolveEmployeeUuid(supabase, profile.employee_id)
     : null;
 
-  // Last resort: look up employee by matching user_id directly on employees table
+  // Last resort: look up employee by matching email to user email
   if (!employeeUuid) {
-    const byUser = await supabase.from("employees").select("id, first_name, last_name").eq("user_id", userId).maybeSingle();
-    employeeUuid = (byUser.data as any)?.id ?? null;
-    if (byUser.data && (byUser.data as any).first_name) {
-      profile.full_name = `${(byUser.data as any).first_name} ${(byUser.data as any).last_name}`;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.email) {
+      const byEmail = await supabase.from("employees").select("id, first_name, last_name").eq("email", user.email).maybeSingle();
+      employeeUuid = (byEmail.data as any)?.id ?? null;
+      if (byEmail.data && (byEmail.data as any).first_name) {
+        profile.full_name = `${(byEmail.data as any).first_name} ${(byEmail.data as any).last_name}`;
+      }
     }
   }
 
   if (!employeeUuid) {
+    console.error('[fetchEmployeeDashboardData] Could not resolve employee UUID for user:', userId, 'profile:', profile);
     return {
       fullName: profile.full_name,
+      firstName: profile.full_name?.split(' ')[0] || profile.full_name || 'User',
       totalSavings: 0,
       totalLoanBalance: 0,
       pendingRequests: 0,
@@ -700,6 +705,8 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
       loanChange: undefined,
     };
   }
+
+  console.log('[fetchEmployeeDashboardData] Resolved employee UUID:', employeeUuid);
 
   const [savingsRes, loansRes, approvalsRes, transactionsRes, allLoansRes, contributionsRes, repaymentsRes] =
     await Promise.all([
@@ -727,6 +734,13 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
         .order("created_at", { ascending: false })
         .limit(50),
     ]);
+
+  console.log('[fetchEmployeeDashboardData] Query results:', {
+    savingsCount: savingsRes.data?.length,
+    loansCount: loansRes.data?.length,
+    savingsData: savingsRes.data,
+    loansData: loansRes.data,
+  });
 
   const savingsData = (savingsRes.data || []) as any[];
   const loansData = (loansRes.data || []) as any[];
