@@ -7,6 +7,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { employeeId, role } = body;
 
+    console.log("[/api/admin/assign-role] Request:", { employeeId, role });
+
     if (!employeeId || !role) {
       return NextResponse.json(
         { error: "Employee ID and role are required." },
@@ -54,6 +56,8 @@ export async function POST(request: Request) {
       .select("id, email, first_name, last_name, employee_no")
       .eq("employee_no", employeeId)
       .single();
+
+    console.log("[/api/admin/assign-role] Employee lookup:", { employee, employeeError });
 
     if (employeeError || !employee) {
       return NextResponse.json(
@@ -146,6 +150,8 @@ export async function POST(request: Request) {
       .from("profiles")
       .update({ role })
       .eq("user_id", targetUser.id);
+
+    console.log("[/api/admin/assign-role] Update profile:", { targetUserId: targetUser.id, role, updateError });
 
     if (updateError) {
       console.error("[/api/admin/assign-role] Update error:", updateError);
