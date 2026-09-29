@@ -612,33 +612,28 @@ function BoardMembersTable() {
 
   console.log('[BoardMembersTable] Component rendered, boardMembers:', boardMembers.length, 'loading:', loading);
 
-  const fetchBoardMembers = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/admin/board-members');
-      const data = await response.json();
-      console.log('[BoardMembersTable] Response:', data);
-      if (response.ok) {
-        console.log('[BoardMembersTable] Setting board members:', data.members);
-        setBoardMembers(data.members || []);
-      } else {
-        console.error('[BoardMembersTable] Error:', data.error);
+  React.useEffect(() => {
+    console.log('[BoardMembersTable] useEffect running...');
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/admin/board-members');
+        const data = await response.json();
+        console.log('[BoardMembersTable] Response:', data);
+        if (response.ok) {
+          console.log('[BoardMembersTable] Setting board members:', data.members);
+          setBoardMembers(data.members || []);
+        } else {
+          console.error('[BoardMembersTable] Error:', data.error);
+        }
+      } catch (error) {
+        console.error('Failed to fetch board members:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to fetch board members:', error);
-    } finally {
-      setLoading(false);
-    }
+    };
+    fetchData();
   }, []);
-
-  React.useEffect(() => {
-    console.log('[BoardMembersTable] Fetching board members...');
-    fetchBoardMembers();
-  }, []); // Empty dependency array to run once on mount
-
-  React.useEffect(() => {
-    console.log('[BoardMembersTable] Board members state updated:', boardMembers);
-  }, [boardMembers]);
 
   const handleRemoveRole = async (employeeNo: string) => {
     try {
