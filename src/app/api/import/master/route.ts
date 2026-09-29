@@ -460,7 +460,8 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
 
     try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
-      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const balanceStr = (row["balance"] || row["Balance"] || "0").replace(/,/g, '');
+      const balance = parseFloat(balanceStr);
       const itemDescription = row["item description"] || row["Item Description"];
 
       if (!staffId || !Number.isFinite(balance)) {
@@ -495,7 +496,7 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
 
       const { error } = await supabase.from("loans").upsert(
         {
-          loan_ref: `HP-${staffId}-${Date.now()}-${rowNo}`,
+          loan_ref: `HP-${staffId}`,
           employee_id: employee.id,
           loan_product_id: hpProductId,
           amount_requested: balance,
@@ -550,7 +551,8 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
 
     try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
-      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const balanceStr = (row["balance"] || row["Balance"] || "0").replace(/,/g, '');
+      const balance = parseFloat(balanceStr);
 
       if (!staffId || !Number.isFinite(balance)) {
         skipped++;
@@ -584,7 +586,7 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
 
       const { error } = await supabase.from("loans").upsert(
         {
-          loan_ref: `NL-${staffId}-${Date.now()}-${rowNo}`,
+          loan_ref: `NL-${staffId}`,
           employee_id: employee.id,
           loan_product_id: nlProductId,
           amount_requested: balance,
@@ -641,7 +643,8 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
 
     try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
-      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const balanceStr = (row["balance"] || row["Balance"] || "0").replace(/,/g, '');
+      const balance = parseFloat(balanceStr);
       const item = row["item"] || row["Item"];
 
       if (!staffId || !Number.isFinite(balance)) {
@@ -676,7 +679,7 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
 
       const { error } = await supabase.from("loans").upsert(
         {
-          loan_ref: `LAND-${staffId}-${Date.now()}-${rowNo}`,
+          loan_ref: `LAND-${staffId}`,
           employee_id: employee.id,
           loan_product_id: landProductId,
           amount_requested: balance,

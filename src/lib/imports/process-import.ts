@@ -246,7 +246,8 @@ async function importGTPEASavings(
     const fullName = row["fullname"] || row["FullName"];
     const staffSavingAccountNumber = row["staffsavingaccountnumber"] || row["StaffSavingAccountNumber"];
     const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const balanceStr = (row["balance"] || row["Balance"] || "0").replace(/,/g, '');
+    const balance = parseFloat(balanceStr);
     const reference = row["reference"] || row["Reference"];
 
     if (!staffId || !Number.isFinite(balance)) {
@@ -320,7 +321,8 @@ async function importGTPEAQuickCash(
     const fullName = row["fullname"] || row["FullName"];
     const staffQuickCashAccountNumber = row["staffquickcashaccountnumber"] || row["StaffQuickCashAccountNumber"];
     const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const balanceStr = (row["balance"] || row["Balance"] || "0").replace(/,/g, '');
+    const balance = parseFloat(balanceStr);
     const reference = row["reference"] || row["Reference"];
 
     if (!staffId || !Number.isFinite(balance)) {
@@ -406,7 +408,8 @@ async function importGTPEAHirePurchase(
     const fullName = row["fullname"] || row["FullName"];
     const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
     const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const balanceStr = (row["balance"] || row["Balance"] || "0").replace(/,/g, '');
+    const balance = parseFloat(balanceStr);
     const reference = row["reference"] || row["Reference"];
     const itemDescription = row["item description"] || row["Item Description"];
 
@@ -442,7 +445,7 @@ async function importGTPEAHirePurchase(
 
     const { error } = await supabase.from("loans").upsert(
       {
-        loan_ref: `HP-${staffId}-${Date.now()}`,
+        loan_ref: `HP-${staffId}`,
         employee_id: employee.id,
         loan_product_id: hpProductId,
         amount_requested: balance,
@@ -498,7 +501,8 @@ async function importGTPEANormalLoans(
     const fullName = row["fullname"] || row["FullName"];
     const nlAccountNumber = row["nlaccountnumber"] || row["NLAccountNumber"];
     const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const balanceStr = (row["balance"] || row["Balance"] || "0").replace(/,/g, '');
+    const balance = parseFloat(balanceStr);
     const reference = row["reference"] || row["Reference"];
 
     if (!staffId || !Number.isFinite(balance)) {
@@ -533,7 +537,7 @@ async function importGTPEANormalLoans(
 
     const { error } = await supabase.from("loans").upsert(
       {
-        loan_ref: `NL-${staffId}-${Date.now()}`,
+        loan_ref: `NL-${staffId}`,
         employee_id: employee.id,
         loan_product_id: nlProductId,
         amount_requested: balance,
@@ -589,7 +593,8 @@ async function importGTPEALands(
     const fullName = row["fullname"] || row["FullName"];
     const savingsAccountNumber = row["savingsaccountnumber"] || row["SavingsAccountNumber"];
     const facilityAccountNumber = row["facilityaccountnumber"] || row["FacilityAccountNumber"];
-    const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+    const balanceStr = (row["balance"] || row["Balance"] || "0").replace(/,/g, '');
+    const balance = parseFloat(balanceStr);
     const reference = row["reference"] || row["Reference"];
     const item = row["item"] || row["Item"];
 
@@ -625,7 +630,7 @@ async function importGTPEALands(
 
     const { error } = await supabase.from("loans").upsert(
       {
-        loan_ref: `LAND-${staffId}-${Date.now()}`,
+        loan_ref: `LAND-${staffId}`,
         employee_id: employee.id,
         loan_product_id: landProductId,
         amount_requested: balance,
