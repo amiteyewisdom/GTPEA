@@ -47,11 +47,14 @@ export async function GET(request: Request) {
     }
 
     if (!profiles || profiles.length === 0) {
+      console.log("[/api/admin/board-members] No profiles found with board roles");
       return NextResponse.json({
         success: true,
         members: [],
       });
     }
+
+    console.log("[/api/admin/board-members] Found profiles:", profiles.length);
 
     // Get auth users to get their emails
     const userIds = profiles.map((p: any) => p.user_id);
@@ -94,17 +97,28 @@ export async function GET(request: Request) {
 
     // Merge data by email
     const members = (employees || []).map((emp: any) => {
-      // Find the profile by matching the auth user email to employee email
+      // Find the profile by matching auth user email to employee email
       const profile = profiles.find((p: any) => authUsersMap.get(p.user_id) === emp.email);
       return {
         ...emp,
         role: profile?.role || null,
       };
-    }).filter((m: any) => m.role !== null).sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
+    });
+
+    console.log("[/api/admin/board-members] Results:", { 
+      profilesCount: profiles.length, 
+      employeesCount: employees.length, 
+      membersCount: members.length,
+      sampleMember: members[0]
+    });
+
+    const filteredMembers = members
+      .filter((m: any) => m.role !== null)
+      .sort((a: any, b: any) => a.first_name.localeCompare(b.first_name));
 
     return NextResponse.json({
       success: true,
-      members,
+      members: filteredMembers,
     });
   } catch (err: any) {
     console.error("[/api/admin/board-members] Error:", err);
