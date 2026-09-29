@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     // Find the employee and their associated user
     const { data: employee, error: employeeError } = await admin
       .from("employees")
-      .select("id, email")
+      .select("id, email, first_name, last_name, employee_no")
       .eq("employee_no", employeeId)
       .single();
 
@@ -64,13 +64,37 @@ export async function POST(request: Request) {
 
     // Find the user associated with this employee
     const { data: authUser } = await admin.auth.admin.listUsers();
-    const targetUser = authUser.users.find((u: any) => u.email === employee.email);
+    let targetUser = authUser.users.find((u: any) => u.email === employee.email);
 
+    // If user doesn't exist, create them automatically
     if (!targetUser) {
-      return NextResponse.json(
-        { error: "User account not found for this employee." },
-        { status: 404 }
-      );
+      try {
+        const { data: newUser, error: createError } = await admin.auth.admin.createUser({
+          email: employee.email,
+          email_confirm: true,
+          user_metadata: {
+            full_name: `${employee.first_name} ${employee.last_name}`,
+            employee_id: employee.id,
+            role: role,
+          },
+        });
+
+        if (createError) {
+          console.error("[/api/admin/assign-role] Create user error:", createError);
+          return NextResponse.json(
+            { error: "Failed to create user account." },
+            { status: 500 }
+          );
+        }
+
+        targetUser = newUser.user;
+      } catch (createErr: any) {
+        console.error("[/api/admin/assign-role] Create user exception:", createErr);
+        return NextResponse.json(
+          { error: "Failed to create user account." },
+          { status: 500 }
+        );
+      }
     }
 
     // Update the role in profiles table
@@ -89,7 +113,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Role ${role} assigned successfully`,
+      message: targetUser.email === employee.email 
+        ? `Role ${role} assigned successfully` 
+        : `User account created and role ${role} assigned successfully`,
     });
   } catch (err: any) {
     console.error("[/api/admin/assign-role] Error:", err);
