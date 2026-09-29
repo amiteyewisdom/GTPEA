@@ -679,8 +679,11 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
 
   // Last resort: look up employee by matching user_id directly on employees table
   if (!employeeUuid) {
-    const byUser = await supabase.from("employees").select("id").eq("user_id", userId).maybeSingle();
+    const byUser = await supabase.from("employees").select("id, first_name, last_name").eq("user_id", userId).maybeSingle();
     employeeUuid = (byUser.data as any)?.id ?? null;
+    if (byUser.data) {
+      profile.full_name = `${byUser.data.first_name} ${byUser.data.last_name}`;
+    }
   }
 
   if (!employeeUuid) {
@@ -692,6 +695,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
       activeLoans: [],
       recentActivity: [],
       pendingApplications: [],
+      savingsAccounts: [],
       savingsChange: undefined,
       loanChange: undefined,
     };
@@ -710,7 +714,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
         .eq("employee_id", employeeUuid)
         .order("created_at", { ascending: false })
         .limit(10),
-      supabase.from("loans").select("id, status, outstanding_balance, amount_approved, amount_requested").eq("employee_id", employeeUuid),
+      supabase.from("loans").select("id, status, outstanding_balance, amount_approved, amount_requested, purpose").eq("employee_id", employeeUuid),
       supabase
         .from("savings_contributions")
         .select("amount, period_year, period_month, created_at")
@@ -830,6 +834,11 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
         created_at: loan?.created_at ?? approval.submitted_at,
       };
     }),
+    savingsAccounts: savingsData.map((s: any) => ({
+      accountNumber: s.account_number,
+      balance: s.balance,
+      type: s.type,
+    })),
     savingsChange:
       currentMonthTotal > 0 || lastMonthTotal > 0
         ? `${currentMonthTotal >= lastMonthTotal ? "+" : ""}${formatCurrency(currentMonthTotal - lastMonthTotal)}`

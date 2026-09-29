@@ -25,6 +25,11 @@ interface DashboardData {
   activeLoans: any[];
   recentActivity: any[];
   pendingApplications: any[];
+  savingsAccounts: Array<{
+    accountNumber: string;
+    balance: number;
+    type: string;
+  }>;
   savingsChange?: string;
   loanChange?: string;
 }
@@ -88,6 +93,36 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
         />
       </div>
 
+      {/* Savings Accounts */}
+      {data.savingsAccounts && data.savingsAccounts.length > 0 && (
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-semibold text-brand-text">Savings Accounts</h3>
+              <p className="text-brand-text-secondary text-sm">Your individual savings balances</p>
+            </div>
+            <button onClick={() => router.push('/savings-history')} className="flex items-center gap-2 text-brand-accent text-sm font-medium hover:text-brand-accent/80 transition-all">
+              View All
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {data.savingsAccounts.map((account: any, index: number) => (
+              <div key={index} className="p-4 rounded-lg bg-brand-card-bg border border-brand-card-border">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <PiggyBank className="w-5 h-5 text-brand-success" />
+                    <span className="text-brand-text font-medium">{account.type || 'Savings'}</span>
+                  </div>
+                  <span className="text-brand-text-secondary text-xs">{account.accountNumber}</span>
+                </div>
+                <p className="text-2xl font-bold text-brand-text">{formatCurrency(account.balance)}</p>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      )}
+
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <QuickActionCard
@@ -130,6 +165,7 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
             <LoanCard
               key={loan.id}
               loanId={loan.loan_ref || 'N/A'}
+              loanType={loan.purpose || 'Loan'}
               amount={formatCurrency(loan.amount_approved || loan.amount_requested || 0)}
               remainingBalance={formatCurrency(loan.outstanding_balance || 0)}
               monthlyPayment={formatCurrency(loan.monthly_payment || 0)}
@@ -213,7 +249,7 @@ function QuickActionCard({ title, description, icon: Icon, color, href }: any) {
   );
 }
 
-function LoanCard({ loanId, amount, remainingBalance, monthlyPayment, nextDueDate, status }: any) {
+function LoanCard({ loanId, amount, remainingBalance, monthlyPayment, nextDueDate, status, loanType }: any) {
   const statusColors = {
     active: 'text-brand-success',
     overdue: 'text-brand-danger',
@@ -232,6 +268,7 @@ function LoanCard({ loanId, amount, remainingBalance, monthlyPayment, nextDueDat
           </div>
           <div>
             <p className="text-brand-text font-medium">{loanId}</p>
+            <p className="text-xs text-brand-text-secondary">{loanType || 'Loan'}</p>
             <p className={`text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </p>
