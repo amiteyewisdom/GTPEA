@@ -352,6 +352,15 @@ export async function fetchAuditLogsData() {
 
 export async function fetchUsersData() {
   const supabase = await createClient();
+  
+  // First, get the employee IDs for ADMIN001 and ADMIN002
+  const { data: adminEmployees } = await supabase
+    .from("employees")
+    .select("id")
+    .in("employee_no", ["ADMIN001", "ADMIN002"]);
+  
+  const excludedEmployeeIds = new Set((adminEmployees ?? []).map((e: any) => e.id));
+  
   const { data } = await supabase
     .from("profiles")
     .select("id, full_name, role, employee_id, is_active, created_at, user_id, must_change_password")
@@ -379,7 +388,9 @@ export async function fetchUsersData() {
   }
 
   return {
-    users: (data ?? []).map((user: any) => ({
+    users: (data ?? [])
+      .filter((user: any) => !excludedEmployeeIds.has(user.employee_id))
+      .map((user: any) => ({
       id: user.id,
       userId: user.user_id,
       name: user.full_name,
