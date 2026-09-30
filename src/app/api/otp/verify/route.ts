@@ -154,25 +154,12 @@ export async function POST(request: Request) {
           console.log('[/api/otp/verify] Created profile for employee found by staff_id with name:', fullName);
         } else {
           console.log('[/api/otp/verify] No employee found, creating default profile');
-          // Try to extract staff ID from user email for a better default name
-          let defaultName = "User";
-          try {
-            const { data: { user } } = await admin.auth.getUser(userId);
-            if (user?.email && user.email.includes('@staff.gtpea.local')) {
-              const staffId = user.email.split('@')[0];
-              defaultName = `Staff ${staffId}`;
-              console.log('[/api/otp/verify] Using staff ID for default name:', defaultName);
-            }
-          } catch (error) {
-            console.log('[/api/otp/verify] Could not get user for default name:', error);
-          }
-          
           // Create default profile for non-employee
           await admin
             .from("profiles")
             .insert({
               user_id: userId,
-              full_name: defaultName,
+              full_name: "User",
               role: "employee",
               phone: otpData.phone_number,
               avatar_url: null,
@@ -230,16 +217,7 @@ export async function POST(request: Request) {
               console.log('[/api/otp/verify] Employee found by staff_id');
               employee = byStaffId.data as any;
             } else {
-              console.log('[/api/otp/verify] No employee found by staff_id, updating profile with staff ID name');
-              // Update profile with a more meaningful name using staff ID
-              const fallbackName = `Staff ${staffId}`;
-              await admin
-                .from("profiles")
-                .update({
-                  full_name: fallbackName,
-                })
-                .eq("user_id", userId);
-              console.log('[/api/otp/verify] Updated profile name to:', fallbackName);
+              console.log('[/api/otp/verify] No employee found by staff_id, keeping existing profile name');
             }
           }
         } catch (error) {
