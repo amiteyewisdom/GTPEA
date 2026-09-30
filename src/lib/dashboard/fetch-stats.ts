@@ -864,6 +864,8 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   console.log('[fetchEmployeeDashboardData] Query results:', {
     savingsCount: savingsRes.data?.length,
     loansCount: loansRes.data?.length,
+    savingsError: savingsRes.error,
+    loansError: loansRes.error,
     savingsData: savingsRes.data,
     loansData: loansRes.data,
   });
