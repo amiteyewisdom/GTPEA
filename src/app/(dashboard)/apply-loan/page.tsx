@@ -42,7 +42,7 @@ export default async function ApplyLoanPage() {
   if (employee?.employeeId) {
     const [savingsRes, loansRes] = await Promise.all([
       supabase.from("savings").select("balance").eq("employee_id", employee.employeeId).eq("status", "active"),
-      supabase.from("loans").select("outstanding_balance").eq("employee_id", employee.employeeId).in("status", ["approved", "active", "repaying"]),
+      supabase.from("loans").select("outstanding_balance").eq("employee_id", employee.employeeId).in("status", ["approved", "active"]),
     ]);
     savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
     activeLoanBalance = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.outstanding_balance ?? 0), 0);

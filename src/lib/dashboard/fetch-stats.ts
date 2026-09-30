@@ -837,8 +837,8 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   const [savingsRes, loansRes, approvalsRes, transactionsRes, allLoansRes, contributionsRes, repaymentsRes] =
     await Promise.all([
       supabase.from("savings").select("balance, account_number, type, status").eq("employee_id", employeeUuid),
-      // Include 'approved', 'active', 'repaying' so loans show as active
-      supabase.from("loans").select("*, loan_products(name)").eq("employee_id", employeeUuid).in("status", ["approved", "active", "repaying"]),
+      // Include 'approved', 'active' so loans show as active
+      supabase.from("loans").select("*, loan_products(name)").eq("employee_id", employeeUuid).in("status", ["approved", "active"]),
       // Match approvals by loans belonging to this employee (not just submitted_by)
       supabase.from("approvals").select("*").eq("status", "pending"),
       supabase
@@ -932,7 +932,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
 
   // Loan balance: use outstanding_balance; fall back to amount_approved / amount_requested
   const totalLoanBalance = ((allLoansRes.data || []) as any[])
-    .filter((loan) => ["approved", "active", "repaying"].includes(loan.status))
+    .filter((loan) => ["approved", "active"].includes(loan.status))
     .reduce((sum: number, loan: any) => {
       return sum + (Number(loan.outstanding_balance) || Number(loan.amount_approved) || 0);
     }, 0);
