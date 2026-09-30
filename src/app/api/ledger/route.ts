@@ -11,6 +11,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from("ledger_entries")
     .select("*, employees (first_name, last_name, employee_no)")
+    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
     .order("posted_at", { ascending: false })
     .limit(limit);
 

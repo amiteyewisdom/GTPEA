@@ -29,7 +29,7 @@ export async function GET() {
       );
     }
 
-    // Fetch all loans with employee information
+    // Fetch all loans with employee information, excluding test admin users
     const { data: loans, error: loansError } = await admin
       .from("loans")
       .select(`
@@ -41,6 +41,7 @@ export async function GET() {
           email
         )
       `)
+      .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
       .order("created_at", { ascending: false });
 
     if (loansError) {

@@ -45,6 +45,7 @@ export async function GET(request: Request) {
         employees (first_name, last_name, employee_no),
         loan_products (name)
       `)
+      .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
       .order("created_at", { ascending: false });
 
     if (loans && loans.length > 0) {
@@ -76,6 +77,7 @@ export async function GET(request: Request) {
         employees (first_name, last_name, employee_no),
         savings (account_number, type)
       `)
+      .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
       .order("requested_at", { ascending: false });
 
     if (withdrawals && withdrawals.length > 0) {

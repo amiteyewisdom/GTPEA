@@ -150,7 +150,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     transactionsTodayRes,
     employeeProfilesRes,
   ] = await Promise.all([
-    supabase.from("employees").select("id, first_name, last_name, status"),
+    supabase.from("employees").select("id, first_name, last_name, status").not("employee_no", "in", '["ADMIN001", "ADMIN002"]'),
     supabase.from("savings").select("id, employee_id, balance, status"),
     supabase
       .from("loans")

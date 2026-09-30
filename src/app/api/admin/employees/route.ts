@@ -29,7 +29,7 @@ export async function GET() {
       );
     }
 
-    // Fetch all employees with their current roles
+    // Fetch all employees with their current roles, excluding test admin users
     const { data: employees, error: employeesError } = await admin
       .from("employees")
       .select(`
@@ -42,6 +42,7 @@ export async function GET() {
           role
         )
       `)
+      .not("employee_no", "in", '["ADMIN001", "ADMIN002"]')
       .order("last_name", { ascending: true });
 
     if (employeesError) {

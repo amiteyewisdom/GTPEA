@@ -29,13 +29,14 @@ export async function GET(request: Request) {
       );
     }
 
-    // Fetch employees with board roles directly from employees table
+    // Fetch employees with board roles directly from employees table, excluding test admin users
     const boardRoles = ["chairperson", "administrator", "fund_manager", "union_rep"];
     
     const { data: employees, error } = await admin
       .from("employees")
       .select("id, first_name, last_name, email, employee_no, department, position, role")
       .in("role", boardRoles)
+      .not("employee_no", "in", '["ADMIN001", "ADMIN002"]')
       .order("first_name", { ascending: true });
 
     if (error) {

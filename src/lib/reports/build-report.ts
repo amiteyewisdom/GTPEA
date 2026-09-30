@@ -78,6 +78,7 @@ async function buildSavingsReport(supabase: AppSupabase) {
       opened_at,
       employees (employee_no, first_name, last_name, department)
     `)
+    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
     .order("opened_at", { ascending: false });
 
   const headers = [
@@ -130,6 +131,7 @@ async function buildLoansReport(supabase: AppSupabase) {
       employees (employee_no, first_name, last_name),
       loan_products (name)
     `)
+    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
     .order("created_at", { ascending: false });
 
   const headers = [
@@ -188,6 +190,7 @@ async function buildRepaymentsReport(supabase: AppSupabase) {
       loans (loan_ref),
       employees (employee_no, first_name, last_name)
     `)
+    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
     .order("due_date", { ascending: true });
 
   const headers = [
@@ -225,6 +228,7 @@ async function buildEmployeesReport(supabase: AppSupabase) {
   const { data } = await supabase
     .from("employees")
     .select("employee_no, first_name, last_name, email, phone, department, position, status, date_joined, salary")
+    .not("employee_no", "in", '["ADMIN001", "ADMIN002"]')
     .order("employee_no", { ascending: true });
 
   const headers = [
@@ -269,6 +273,7 @@ async function buildDefaultsReport(supabase: AppSupabase) {
       disbursement_date,
       employees (employee_no, first_name, last_name, department)
     `)
+    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
     .in("status", ["defaulted", "repaying", "disbursed"])
     .order("outstanding_balance", { ascending: false });
 
@@ -547,6 +552,7 @@ async function buildBankPaymentReport(supabase: AppSupabase) {
       status,
       employees (employee_no, first_name, last_name, bank_name, bank_account_no)
     `)
+    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
     .in("status", ["disbursed", "repaying"])
     .order("disbursement_date", { ascending: false });
 
@@ -589,6 +595,7 @@ async function buildPayrollReport(supabase: AppSupabase, options?: ReportOptions
   const { data: employees } = await supabase
     .from("employees")
     .select("id, employee_no, first_name, last_name, department, salary")
+    .not("employee_no", "in", '["ADMIN001", "ADMIN002"]')
     .eq("status", "active")
     .order("employee_no", { ascending: true });
 
