@@ -799,12 +799,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
         }).eq("user_id", userId);
       } else {
         console.log('[fetchEmployeeDashboardData] No employee found by staff_id');
-        // Update profile name to use staff ID as a fallback name
-        const fallbackName = `Staff ${staffId}`;
-        await (supabase.from("profiles") as any).update({ 
-          full_name: fallbackName 
-        }).eq("user_id", userId);
-        profile.full_name = fallbackName;
+        // Don't update profile - keep existing name
       }
     }
   }
