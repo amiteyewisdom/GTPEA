@@ -21,6 +21,7 @@ export default async function EmployeesPage() {
   const { data: employees, count } = await supabase
     .from("employees")
     .select("*", { count: "exact" })
+    .not("employee_no", "in", '["ADMIN001", "ADMIN002"]')
     .order("created_at", { ascending: false });
 
   const filteredEmployees = (employees ?? []).filter((e: any) => !excludedIds.has(e.id));
