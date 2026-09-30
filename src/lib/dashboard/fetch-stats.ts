@@ -830,8 +830,8 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   const [savingsRes, loansRes, approvalsRes, transactionsRes, allLoansRes, contributionsRes, repaymentsRes] =
     await Promise.all([
       supabase.from("savings").select("balance, account_number, type, status").eq("employee_id", employeeUuid),
-      // Include 'approved' so loans awaiting disbursement still show as active
-      supabase.from("loans").select("*, loan_products(name)").eq("employee_id", employeeUuid).in("status", ["approved", "disbursed", "repaying"]),
+      // Include 'approved', 'active', 'disbursed', 'repaying' so loans show as active
+      supabase.from("loans").select("*, loan_products(name)").eq("employee_id", employeeUuid).in("status", ["approved", "active", "disbursed", "repaying"]),
       // Match approvals by loans belonging to this employee (not just submitted_by)
       supabase.from("approvals").select("*").eq("status", "pending"),
       supabase
@@ -923,7 +923,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
 
   // Loan balance: use outstanding_balance; fall back to amount_approved / amount_requested
   const totalLoanBalance = ((allLoansRes.data || []) as any[])
-    .filter((loan) => ["approved", "disbursed", "repaying"].includes(loan.status))
+    .filter((loan) => ["approved", "active", "disbursed", "repaying"].includes(loan.status))
     .reduce((sum: number, loan: any) => {
       return sum + (Number(loan.outstanding_balance) || Number(loan.amount_approved) || 0);
     }, 0);
