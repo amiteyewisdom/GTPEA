@@ -674,6 +674,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   phone?: string | null;
 }) {
   const supabase = await createClient();
+  const admin = await createAdminClient(); // Use admin client to bypass RLS
   let employeeUuid = profile.employee_id;
 
   console.log('[fetchEmployeeDashboardData] Initial employee_id:', employeeUuid);
@@ -836,24 +837,24 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
 
   const [savingsRes, loansRes, approvalsRes, transactionsRes, allLoansRes, contributionsRes, repaymentsRes] =
     await Promise.all([
-      supabase.from("savings").select("balance, account_number, type, status").eq("employee_id", employeeUuid),
+      admin.from("savings").select("balance, account_number, type, status").eq("employee_id", employeeUuid),
       // Include 'approved', 'active' so loans show as active
-      supabase.from("loans").select("*, loan_products(name)").eq("employee_id", employeeUuid).in("status", ["approved", "active"]),
+      admin.from("loans").select("*, loan_products(name)").eq("employee_id", employeeUuid).in("status", ["approved", "active"]),
       // Match approvals by loans belonging to this employee (not just submitted_by)
-      supabase.from("approvals").select("*").eq("status", "pending"),
-      supabase
+      admin.from("approvals").select("*").eq("status", "pending"),
+      admin
         .from("transactions")
         .select("*")
         .eq("employee_id", employeeUuid)
         .order("created_at", { ascending: false })
         .limit(10),
-      supabase.from("loans").select("id, status, outstanding_balance, amount_approved, amount_requested, purpose, loan_products(name)").eq("employee_id", employeeUuid),
-      supabase
+      admin.from("loans").select("id, status, outstanding_balance, amount_approved, amount_requested, purpose, loan_products(name)").eq("employee_id", employeeUuid),
+      admin
         .from("savings_contributions")
         .select("amount, period_year, period_month, created_at")
         .eq("employee_id", employeeUuid)
         .order("created_at", { ascending: false }),
-      supabase
+      admin
         .from("repayments")
         .select("id, loan_id, amount_paid, amount_due, status, due_date, created_at")
         .eq("employee_id", employeeUuid)
@@ -905,7 +906,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   const loanIds = approvalsData.map((a: any) => a.entity_id).filter(Boolean);
   const pendingLoanDetailsRes =
     loanIds.length > 0
-      ? await supabase.from("loans").select("id, loan_ref, amount_requested, purpose, created_at").in("id", loanIds)
+      ? await admin.from("loans").select("id, loan_ref, amount_requested, purpose, created_at").in("id", loanIds)
       : { data: [] };
   const pendingLoanMap = new Map(
     ((pendingLoanDetailsRes.data || []) as any[]).map((loan) => [loan.id, loan])
