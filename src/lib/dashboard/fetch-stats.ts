@@ -674,9 +674,13 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   phone?: string | null;
 }) {
   const supabase = await createClient();
-  let employeeUuid = profile.employee_id
-    ? await resolveEmployeeUuid(supabase, profile.employee_id)
-    : null;
+  let employeeUuid = profile.employee_id;
+
+  // If employee_id is already a valid UUID, use it directly
+  // Otherwise, try to resolve it
+  if (employeeUuid && !employeeUuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    employeeUuid = await resolveEmployeeUuid(supabase, employeeUuid);
+  }
 
   // Last resort: look up employee by matching email to user email
   if (!employeeUuid) {

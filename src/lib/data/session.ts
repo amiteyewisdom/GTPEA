@@ -25,15 +25,17 @@ export async function getSessionProfile() {
 }
 
 export async function resolveEmployeeUuid(supabase: any, employeeRef: string) {
-  // Try by UUID (cast text to uuid safely)
+  // Try by UUID directly
   try {
     const byId = await supabase
       .from("employees")
       .select("id")
-      .filter("id", "eq", employeeRef)
+      .eq("id", employeeRef)
       .maybeSingle();
     if (byId.data?.id) return byId.data.id as string;
-  } catch {}
+  } catch (error) {
+    console.log('[resolveEmployeeUuid] UUID lookup failed:', error);
+  }
 
   // Fallback: try by employee_no
   const byNo = await supabase.from("employees").select("id").eq("employee_no", employeeRef).maybeSingle();

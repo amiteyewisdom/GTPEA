@@ -26,6 +26,12 @@ export async function getLoggedInEmployee(
   const profile = profileRes.data as { role: string; employee_id: string | null; phone: string | null } | null;
   const role = profile?.role ?? "employee";
 
+  // If employee_id is already a valid UUID, use it directly
+  if (profile?.employee_id && profile.employee_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    console.log("[getLoggedInEmployee] Using employee_id as UUID:", profile.employee_id);
+    return { userId: user.id, employeeId: profile.employee_id, role };
+  }
+
   if (profile?.employee_id) {
     const employeeId = await resolveEmployeeUuid(supabase, profile.employee_id);
     if (employeeId) {
