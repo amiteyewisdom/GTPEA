@@ -257,7 +257,6 @@ function LoanCard({ loanId, amount, remainingBalance, monthlyPayment, nextDueDat
     overdue: 'text-brand-danger',
     pending: 'text-brand-warning',
     approved: 'text-brand-accent',
-    disbursed: 'text-brand-success',
     repaying: 'text-brand-success',
   };
 
