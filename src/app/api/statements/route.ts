@@ -63,7 +63,7 @@ export async function GET(request: Request) {
   const { data: statements } = await supabase
     .from("statement_requests")
     .select("*, employees (first_name, last_name)")
-    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
+    .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
     .order("requested_at", { ascending: false });
 
   return NextResponse.json({ statements: statements ?? [] });

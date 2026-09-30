@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       .from("employees")
       .select("id, first_name, last_name, email, employee_no, department, position, role")
       .in("role", boardRoles)
-      .not("employee_no", "in", '["ADMIN001", "ADMIN002"]')
+      .not("employee_no", "in", "(ADMIN001,ADMIN002)")
       .order("first_name", { ascending: true });
 
     if (error) {

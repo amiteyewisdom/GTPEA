@@ -7,7 +7,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("transactions")
     .select("*, employees(first_name, last_name, employee_no)")
-    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
+    .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
     .in("type", ["fee", "penalty"])
     .order("created_at", { ascending: false })
     .limit(200);

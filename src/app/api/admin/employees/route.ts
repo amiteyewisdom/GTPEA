@@ -42,7 +42,7 @@ export async function GET() {
           role
         )
       `)
-      .not("employee_no", "in", '["ADMIN001", "ADMIN002"]')
+      .not("employee_no", "in", "(ADMIN001,ADMIN002)")
       .order("last_name", { ascending: true });
 
     if (employeesError) {

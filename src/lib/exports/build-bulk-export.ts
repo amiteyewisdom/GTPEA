@@ -48,7 +48,7 @@ async function buildDividendsExport(supabase: AppSupabase) {
       reference,
       employees (employee_no, first_name, last_name)
     `)
-    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
+    .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
     .order("fiscal_year", { ascending: false });
 
   const headers = [
@@ -94,7 +94,7 @@ async function buildWithdrawalsExport(supabase: AppSupabase) {
       employees (employee_no, first_name, last_name),
       savings (account_number, type)
     `)
-    .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
+    .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
     .order("requested_at", { ascending: false });
 
   const headers = [

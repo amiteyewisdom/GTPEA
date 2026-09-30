@@ -41,7 +41,7 @@ export async function GET() {
           email
         )
       `)
-      .not("employees.employee_no", "in", '["ADMIN001", "ADMIN002"]')
+      .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
       .order("created_at", { ascending: false });
 
     if (savingsError) {
