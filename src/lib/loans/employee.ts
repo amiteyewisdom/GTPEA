@@ -19,11 +19,11 @@ export async function getLoggedInEmployee(
 
   const profileRes = await supabase
     .from("profiles")
-    .select("role, employee_id")
+    .select("role, employee_id, phone")
     .eq("user_id", user.id)
     .single();
 
-  const profile = profileRes.data as { role: string; employee_id: string | null } | null;
+  const profile = profileRes.data as { role: string; employee_id: string | null; phone: string | null } | null;
   const role = profile?.role ?? "employee";
 
   if (profile?.employee_id) {
@@ -42,6 +42,29 @@ export async function getLoggedInEmployee(
 
     if (emailRes.data?.id) {
       return { userId: user.id, employeeId: emailRes.data.id, role };
+    }
+  }
+
+  // Fallback: try phone number lookup
+  if (profile?.phone) {
+    const phone = profile.phone;
+    const phoneVariants = [
+      phone,
+      phone.replace(/\+/g, ""),
+      phone.startsWith("233") ? "0" + phone.substring(3) : "233" + phone.substring(1),
+    ];
+
+    for (const phoneVariant of phoneVariants) {
+      const phoneRes = await supabase
+        .from("employees")
+        .select("id")
+        .eq("phone_number", phoneVariant)
+        .maybeSingle();
+
+      if (phoneRes.data?.id) {
+        console.log("[getLoggedInEmployee] Found employee by phone:", phoneVariant);
+        return { userId: user.id, employeeId: phoneRes.data.id, role };
+      }
     }
   }
 
