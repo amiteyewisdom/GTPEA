@@ -25,6 +25,8 @@ export async function getSessionProfile() {
 }
 
 export async function resolveEmployeeUuid(supabase: any, employeeRef: string) {
+  console.log('[resolveEmployeeUuid] Resolving employeeRef:', employeeRef);
+  
   // Try by UUID directly
   try {
     const byId = await supabase
@@ -32,6 +34,7 @@ export async function resolveEmployeeUuid(supabase: any, employeeRef: string) {
       .select("id")
       .eq("id", employeeRef)
       .maybeSingle();
+    console.log('[resolveEmployeeUuid] UUID lookup result:', byId.data);
     if (byId.data?.id) return byId.data.id as string;
   } catch (error) {
     console.log('[resolveEmployeeUuid] UUID lookup failed:', error);
@@ -39,5 +42,6 @@ export async function resolveEmployeeUuid(supabase: any, employeeRef: string) {
 
   // Fallback: try by employee_no
   const byNo = await supabase.from("employees").select("id").eq("employee_no", employeeRef).maybeSingle();
+  console.log('[resolveEmployeeUuid] employee_no lookup result:', byNo.data);
   return (byNo.data?.id as string) ?? null;
 }

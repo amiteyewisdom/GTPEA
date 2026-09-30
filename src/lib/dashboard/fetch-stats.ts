@@ -676,10 +676,17 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   const supabase = await createClient();
   let employeeUuid = profile.employee_id;
 
+  console.log('[fetchEmployeeDashboardData] Initial employee_id:', employeeUuid);
+  console.log('[fetchEmployeeDashboardData] Is UUID?', employeeUuid && employeeUuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i));
+
   // If employee_id is already a valid UUID, use it directly
   // Otherwise, try to resolve it
   if (employeeUuid && !employeeUuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    console.log('[fetchEmployeeDashboardData] Employee_id is not a UUID, attempting to resolve');
     employeeUuid = await resolveEmployeeUuid(supabase, employeeUuid);
+    console.log('[fetchEmployeeDashboardData] Resolved employeeUuid:', employeeUuid);
+  } else if (employeeUuid) {
+    console.log('[fetchEmployeeDashboardData] Employee_id is a valid UUID, using directly');
   }
 
   // Last resort: look up employee by matching email to user email
@@ -808,6 +815,8 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     }
   }
 
+  console.log('[fetchEmployeeDashboardData] Final employee UUID:', employeeUuid);
+
   if (!employeeUuid) {
     console.error('[fetchEmployeeDashboardData] Could not resolve employee UUID for user:', userId, 'profile:', profile);
     return {
@@ -824,8 +833,6 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
       loanChange: undefined,
     };
   }
-
-  console.log('[fetchEmployeeDashboardData] Resolved employee UUID:', employeeUuid);
 
   const [savingsRes, loansRes, approvalsRes, transactionsRes, allLoansRes, contributionsRes, repaymentsRes] =
     await Promise.all([
