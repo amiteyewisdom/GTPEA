@@ -240,8 +240,8 @@ export async function fetchSavingsHistoryData() {
     )
     .reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
 
-  const savingsBalance = (savingsRes.data ?? []).reduce((s, r: any) => s + (Number(r.balance) || 0), 0);
-  const contributionsTotal = contributions.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
+  const savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + (Number(r.balance) || 0), 0);
+  const contributionsTotal = contributions.reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0);
   const totalSavings = savingsBalance > 0 ? savingsBalance : contributionsTotal;
 
   console.log("[fetchSavingsHistoryData] Returning:", { totalSavings, thisMonth, contributionsCount: contributions.length });
