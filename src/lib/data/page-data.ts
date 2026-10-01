@@ -216,9 +216,9 @@ export async function fetchSavingsHistoryData() {
     const nameParts = profile.full_name?.split(' ') || [];
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(' ');
-    
+
     console.log("[fetchSavingsHistoryData] Trying name/phone lookup:", { firstName, lastName, phone: profile.phone });
-    
+
     const byNamePhone = await supabase
       .from("employees")
       .select("id")
@@ -226,9 +226,31 @@ export async function fetchSavingsHistoryData() {
       .eq("last_name", lastName)
       .eq("phone", profile.phone)
       .maybeSingle();
-    
+
     employeeUuid = (byNamePhone.data as any)?.id ?? null;
     console.log("[fetchSavingsHistoryData] Name/phone lookup result:", { byNamePhone: byNamePhone.data, employeeUuid });
+
+    // Fallback 4: try by phone only
+    if (!employeeUuid && profile.phone) {
+      const byPhone = await supabase
+        .from("employees")
+        .select("id, first_name, last_name")
+        .eq("phone", profile.phone)
+        .maybeSingle();
+      employeeUuid = (byPhone.data as any)?.id ?? null;
+      console.log("[fetchSavingsHistoryData] Phone-only lookup result:", { byPhone: byPhone.data, employeeUuid });
+    }
+
+    // Fallback 5: try by first name only
+    if (!employeeUuid && firstName) {
+      const byFirstName = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, phone")
+        .eq("first_name", firstName)
+        .maybeSingle();
+      employeeUuid = (byFirstName.data as any)?.id ?? null;
+      console.log("[fetchSavingsHistoryData] First-name lookup result:", { byFirstName: byFirstName.data, employeeUuid });
+    }
   }
 
   if (!employeeUuid) {
