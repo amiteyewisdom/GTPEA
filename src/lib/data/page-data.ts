@@ -123,13 +123,6 @@ export async function fetchMyLoansData() {
     console.log("[fetchMyLoansData] Resolved employeeUuid:", employeeUuid);
   }
 
-  // Fallback: look up employee by matching user_id directly on employees table
-  if (!employeeUuid && user) {
-    const byUser = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
-    employeeUuid = (byUser.data as any)?.id ?? null;
-    console.log("[fetchMyLoansData] Fallback lookup:", { byUser: byUser.data, employeeUuid });
-  }
-
   if (!employeeUuid) {
     console.log("[fetchMyLoansData] No employeeUuid found, returning empty data");
     return { pending: 0, active: 0, totalBorrowed: 0, netAvailable: 0, savingsBalance: 0, activeLoanBalance: 0, loans: [] as any[], loanProducts: [] as any[] };
@@ -203,13 +196,6 @@ export async function fetchSavingsHistoryData() {
     console.log("[fetchSavingsHistoryData] Employee_id is not a UUID, attempting to resolve");
     employeeUuid = await resolveEmployeeUuid(supabase, employeeUuid);
     console.log("[fetchSavingsHistoryData] Resolved employeeUuid:", employeeUuid);
-  }
-
-  // Fallback: look up employee by matching user_id directly on employees table
-  if (!employeeUuid && user) {
-    const byUser = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
-    employeeUuid = (byUser.data as any)?.id ?? null;
-    console.log("[fetchSavingsHistoryData] Fallback lookup by user_id:", { byUser: byUser.data, employeeUuid });
   }
 
   if (!employeeUuid) {

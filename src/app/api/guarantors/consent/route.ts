@@ -83,16 +83,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Notify the loan applicant about the guarantor's decision
-    const employeeRes = await admin
-      .from("employees")
+    // Resolve the applicant's auth user via profiles.employee_id —
+    // the employees table has no user_id column.
+    const applicantProfileRes = await admin
+      .from("profiles")
       .select("user_id")
-      .eq("id", guarantorRequest.loans.employee_id)
-      .single();
+      .eq("employee_id", guarantorRequest.loans.employee_id)
+      .maybeSingle();
+    const applicantUserId = applicantProfileRes.data?.user_id ?? null;
 
-    if (employeeRes.data) {
+    // Notify the loan applicant about the guarantor's decision
+    if (applicantUserId) {
       await admin.from("notifications").insert({
-        user_id: employeeRes.data.user_id,
+        user_id: applicantUserId,
         type: action === "approved" ? "guarantor_consent_approved" : "guarantor_consent_rejected",
         title: action === "approved" ? "Guarantor Consent Approved" : "Guarantor Consent Rejected",
         message: action === "approved"
@@ -113,91 +116,51 @@ export async function POST(request: Request) {
       const allGuarantors = allGuarantorsRes.data || [];
       const hasOneApproved = allGuarantors.some((g: any) => g.consent_status === "approved");
 
-      console.log("[/api/guarantors/consent] Loan ID:", guarantorRequest.loan_id);
-      console.log("[/api/guarantors/consent] All guarantors for this loan:", allGuarantors);
-      console.log("[/api/guarantors/consent] Total guarantors:", allGuarantors.length);
-      console.log("[/api/guarantors/consent] Has at least one approved:", hasOneApproved);
-
       if (hasOneApproved) {
-        console.log("[/api/guarantors/consent] Creating approval record for loan:", guarantorRequest.loan_id);
-
-        try {
-          // At least one guarantor has consented, move loan to pending status
-          const loanUpdateRes = await admin
-            .from("loans")
-            .update({ status: "pending" })
-            .eq("id", guarantorRequest.loan_id);
-
-          console.log("[/api/guarantors/consent] Loan status update error:", loanUpdateRes.error);
-
-          // Create approval record
-          const loanRes = await admin
-            .from("loans")
-            .select("employee_id")
-            .eq("id", guarantorRequest.loan_id)
-            .single();
-
-          console.log("[/api/guarantors/consent] Loan data:", loanRes.data);
-          console.log("[/api/guarantors/consent] Loan fetch error:", loanRes.error);
-
-          if (loanRes.data) {
-            // First get the employee's user_id from the employees table
-            const employeeRes = await admin
-              .from("employees")
-              .select("user_id")
-              .eq("id", loanRes.data.employee_id)
-              .single();
-
-            console.log("[/api/guarantors/consent] Employee data:", employeeRes.data);
-            console.log("[/api/guarantors/consent] Employee fetch error:", employeeRes.error);
-
-            if (employeeRes.data && employeeRes.data.user_id) {
-              // Then find the profile using the user_id
-              const profileRes = await admin
-                .from("profiles")
-                .select("user_id")
-                .eq("user_id", employeeRes.data.user_id)
-                .single();
-
-              console.log("[/api/guarantors/consent] Profile data:", profileRes.data);
-              console.log("[/api/guarantors/consent] Profile fetch error:", profileRes.error);
-
-              if (profileRes.data) {
-                const approvalInsert = await admin.from("approvals").insert({
-                  entity_type: "loan",
-                  entity_id: guarantorRequest.loan_id,
-                  status: "pending",
-                  current_stage: 1,
-                  total_stages: 3,
-                  submitted_by: profileRes.data.user_id,
-                }).select();
-
-                console.log("[/api/guarantors/consent] Approval record created:", approvalInsert.data);
-                console.log("[/api/guarantors/consent] Approval insert error:", approvalInsert.error);
-
-                if (approvalInsert.error) {
-                  console.error("[/api/guarantors/consent] Failed to create approval record:", approvalInsert.error);
-                  throw new Error(`Failed to create approval record: ${approvalInsert.error.message}`);
-                }
-              } else {
-                console.log("[/api/guarantors/consent] No profile found for user_id:", employeeRes.data.user_id);
-                throw new Error("No profile found for loan applicant");
-              }
-            } else {
-              console.log("[/api/guarantors/consent] No user_id found for employee:", loanRes.data.employee_id);
-              throw new Error("No user_id found for loan applicant");
-            }
-          } else {
-            console.log("[/api/guarantors/consent] No loan data found");
-            throw new Error("Loan not found");
-          }
-        } catch (error) {
-          console.error("[/api/guarantors/consent] Error during approval record creation:", error);
-          // Continue with the response even if approval creation fails
-          // The user will be notified that guarantor consent was approved
+        // At least one guarantor has consented — move the loan into the
+        // approval pipeline (stage 1 = union rep / Relief Committee).
+        const loanUpdateRes = await admin
+          .from("loans")
+          .update({ status: "pending" })
+          .eq("id", guarantorRequest.loan_id);
+        if (loanUpdateRes.error) {
+          console.error("[/api/guarantors/consent] Loan status update error:", loanUpdateRes.error);
         }
-      } else {
-        console.log("[/api/guarantors/consent] No guarantors have approved yet");
+
+        if (!applicantUserId) {
+          console.error("[/api/guarantors/consent] No profile for applicant:", guarantorRequest.loans.employee_id);
+          return NextResponse.json(
+            { error: "Consent recorded, but the applicant has no linked profile — could not start the approval workflow." },
+            { status: 500 }
+          );
+        }
+
+        // Idempotent: skip if an approval record already exists for this loan
+        const existingApproval = await admin
+          .from("approvals")
+          .select("id")
+          .eq("entity_type", "loan")
+          .eq("entity_id", guarantorRequest.loan_id)
+          .maybeSingle();
+
+        if (!existingApproval.data) {
+          const approvalInsert = await admin.from("approvals").insert({
+            entity_type: "loan",
+            entity_id: guarantorRequest.loan_id,
+            status: "pending",
+            current_stage: 1,
+            total_stages: 3,
+            submitted_by: applicantUserId,
+          });
+
+          if (approvalInsert.error) {
+            console.error("[/api/guarantors/consent] Failed to create approval record:", approvalInsert.error);
+            return NextResponse.json(
+              { error: `Consent recorded, but the approval workflow could not be started: ${approvalInsert.error.message}` },
+              { status: 500 }
+            );
+          }
+        }
       }
     }
 

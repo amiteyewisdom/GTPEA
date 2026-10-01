@@ -71,7 +71,7 @@ export async function getLoggedInEmployee(
       const phoneRes = await admin
         .from("employees")
         .select("id")
-        .eq("phone_number", phoneVariant)
+        .eq("phone", phoneVariant)
         .maybeSingle();
 
       if (phoneRes.data?.id) {

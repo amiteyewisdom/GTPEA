@@ -238,14 +238,16 @@ async function handleApply(body: any) {
     }
 
     for (const g of allGuarantorRows) {
-      const { data: guarantor } = await admin
-        .from("employees")
-        .select("user_id, first_name, last_name, employee_no")
-        .eq("id", g.guarantor_id)
+      // Resolve the guarantor's auth user via profiles.employee_id —
+      // employees has no user_id column.
+      const { data: guarantorProfile } = await admin
+        .from("profiles")
+        .select("user_id")
+        .eq("employee_id", g.guarantor_id)
         .maybeSingle();
-      if (guarantor?.user_id) {
+      if (guarantorProfile?.user_id) {
         await (admin.from("notifications") as any).insert({
-          user_id: guarantor.user_id,
+          user_id: guarantorProfile.user_id,
           type: "guarantor_request",
           title: "Guarantor Request",
           message: `You have been listed as a guarantor for facility ${loanRef}.`,

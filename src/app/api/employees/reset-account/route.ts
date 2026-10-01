@@ -25,10 +25,10 @@ export async function POST(request: Request) {
 
     const adminClient = createAdminClient();
 
-    // Get employee details
+    // Get employee details (phone_number does not exist on employees — it's `phone`)
     const { data: employee, error: employeeError } = await (adminClient
       .from("employees") as any)
-      .select("id, employee_no, email, phone_number")
+      .select("id, employee_no, email, phone")
       .eq("id", employeeId)
       .single();
 
@@ -36,14 +36,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Employee not found." }, { status: 404 });
     }
 
-    // Get the auth user ID from profiles
-    const { data: profile, error: profileError } = await (adminClient
+    // Get the auth user ID from profiles — employee_id may hold the employee
+    // UUID (current convention) or a legacy employee_no.
+    let { data: profile } = await (adminClient
       .from("profiles") as any)
       .select("user_id")
-      .eq("employee_id", employee.employee_no)
-      .single();
+      .eq("employee_id", employee.id)
+      .maybeSingle();
 
-    if (profileError || !profile) {
+    if (!profile) {
+      const fallback = await (adminClient
+        .from("profiles") as any)
+        .select("user_id")
+        .eq("employee_id", employee.employee_no)
+        .maybeSingle();
+      profile = fallback.data;
+    }
+
+    if (!profile) {
       return NextResponse.json({ error: "User profile not found." }, { status: 404 });
     }
 

@@ -793,28 +793,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     }
   }
 
-  // Final fallback: try to find employee by user_id if it exists in employees table
-  if (!employeeUuid) {
-    console.log('[fetchEmployeeDashboardData] Attempting to find employee by user_id:', userId);
-    const byUserId = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("user_id", userId).maybeSingle();
-    if (byUserId.data) {
-      console.log('[fetchEmployeeDashboardData] Found employee by user_id');
-      employeeUuid = (byUserId.data as any).id;
-      const employeeName = (byUserId.data as any).full_name || 
-                          ((byUserId.data as any).first_name && (byUserId.data as any).last_name ? 
-                           `${(byUserId.data as any).first_name} ${(byUserId.data as any).last_name}` : 
-                           profile.full_name);
-      profile.full_name = employeeName;
-      
-      // Update the profile in database to store employee_id for future lookups
-      await (supabase.from("profiles") as any).update({ 
-        employee_id: employeeUuid,
-        full_name: employeeName 
-      }).eq("user_id", userId);
-    } else {
-      console.log('[fetchEmployeeDashboardData] No employee found by user_id');
-    }
-  }
+  // employees has no user_id column — there is no further fallback.
 
   // Additional fallback: try to extract staff ID from email and look up by employee_no
   if (!employeeUuid) {
