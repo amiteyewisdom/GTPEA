@@ -264,7 +264,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const totalContributionsSum = contributions.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
   const totalSavings = totalSavingsFromBalances > 0 ? totalSavingsFromBalances : totalContributionsSum;
   const activeLoans = filteredLoans.filter((l) =>
-    ["approved", "disbursed", "repaying"].includes(l.status)
+    ["approved", "disbursed", "repaying", "Active"].includes(l.status)
   );
   const totalLoansOutstanding = activeLoans.reduce((acc, l) => {
     // outstanding_balance is authoritative; fall back to amount_approved or amount_requested
@@ -279,14 +279,14 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     // amount_disbursed is set after disbursement; fall back to amount_approved for approved loans
     const disbursed =
       Number(l.amount_disbursed) ||
-      (["approved", "disbursed", "repaying", "completed"].includes(l.status)
+      (["approved", "disbursed", "repaying", "completed", "Active"].includes(l.status)
         ? Number(l.amount_approved) || Number(l.amount_requested) || 0
         : 0);
     return acc + disbursed;
   }, 0);
   const pendingLoans = filteredLoans.filter((l) => l.status === "pending").length;
   const approvedLoans = filteredLoans.filter((l) =>
-    ["approved", "disbursed", "repaying", "completed"].includes(l.status)
+    ["approved", "disbursed", "repaying", "completed", "Active"].includes(l.status)
   ).length;
   const totalWithdrawals = sum(
     withdrawals.filter((w) => ["approved", "disbursed", "pending"].includes(w.status)),
@@ -302,11 +302,11 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const loansByEmployee = filteredLoans.reduce<Record<string, { total: number; outstanding: number; count: number }>>(
     (acc, loan) => {
       const current = acc[loan.employee_id] || { total: 0, outstanding: 0, count: 0 };
-      if (["approved", "disbursed", "repaying", "completed"].includes(loan.status)) {
+      if (["approved", "disbursed", "repaying", "completed", "Active"].includes(loan.status)) {
         current.total += Number(loan.amount_approved) || Number(loan.amount_disbursed) || 0;
         current.count += 1;
       }
-      if (["approved", "disbursed", "repaying"].includes(loan.status)) {
+      if (["approved", "disbursed", "repaying", "Active"].includes(loan.status)) {
         current.outstanding += Number(loan.outstanding_balance) || Number(loan.amount_approved) || 0;
       }
       acc[loan.employee_id] = current;
@@ -456,7 +456,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       amount: formatCurrency(Number(loan.amount_disbursed) || 0),
       loanId: loan.loan_ref,
       date: formatDate(loan.disbursement_date),
-      status: loan.status === "disbursed" || loan.status === "repaying" ? "completed" : "pending",
+      status: loan.status === "disbursed" || loan.status === "repaying" || loan.status === "Active" ? "completed" : "pending",
     }));
 
   const recentActivity = transactions.map((tx) => ({
@@ -484,8 +484,8 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   // Fallback calendar entries from active loans if no repayment schedule exists yet
   const calendarRepayments = upcomingRepayments.length > 0
     ? upcomingRepayments
-    : loans
-        .filter((l) => ["disbursed", "repaying"].includes(l.status))
+    : filteredLoans
+        .filter((l) => ["disbursed", "repaying", "Active"].includes(l.status))
         .slice(0, 6)
         .map((loan) => {
           const start = loan.disbursement_date ? new Date(loan.disbursement_date) : new Date();
@@ -510,8 +510,8 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
 
   if (forecastSource.length === 0) {
     const now = new Date();
-    forecastSource = loans
-      .filter((l) => ["disbursed", "repaying"].includes(l.status))
+    forecastSource = filteredLoans
+      .filter((l) => ["disbursed", "repaying", "Active"].includes(l.status))
       .flatMap((loan) => {
         const start = loan.disbursement_date ? new Date(loan.disbursement_date) : now;
         const nextDue = new Date(start);
