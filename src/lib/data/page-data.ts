@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchDashboardStats } from "@/lib/dashboard/fetch-stats";
 import { formatCurrency, formatDate, formatRelativeTime } from "@/utils/formatters";
 import { getSessionProfile, resolveEmployeeUuid } from "./session";
+import { borrowingCapacity, committedLoanAmount } from "@/lib/loans/capacity";
 
 function sum(rows: { [key: string]: unknown }[], field: string) {
   return rows.reduce((acc, row) => acc + (Number(row[field]) || 0), 0);
@@ -139,7 +140,7 @@ export async function fetchMyLoansData() {
     admin.from("savings").select("balance").eq("employee_id", employeeUuid).eq("status", "active"),
     admin
       .from("loans")
-      .select("outstanding_balance, amount_approved, status")
+      .select("outstanding_balance, amount_approved, amount_requested, status")
       .eq("employee_id", employeeUuid),
     supabase.from("loan_products").select("*").eq("is_active", true),
   ]);
@@ -154,13 +155,12 @@ export async function fetchMyLoansData() {
   const rows = (loansRes.data ?? []) as any[];
   const savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
   const loanProducts = (productsRes.data ?? []) as any[];
-  const activeLoanBalance = ((activeLoansRes.data ?? []) as any[])
-    .filter((r) => ["active", "approved", "disbursed", "repaying"].includes(r.status))
-    .reduce(
-      (s: number, r: any) => s + (Number(r.outstanding_balance) || Number(r.amount_approved) || 0),
-      0
-    );
-  const netAvailable = Math.max(0, savingsBalance * 3 - activeLoanBalance);
+  const allLoansForCapacity = (activeLoansRes.data ?? []) as any[];
+  const activeLoanBalance = allLoansForCapacity.reduce(
+    (s: number, r: any) => s + committedLoanAmount(r),
+    0
+  );
+  const netAvailable = borrowingCapacity(savingsBalance, allLoansForCapacity);
   const totalBorrowed = rows
     .filter((loan) => ["active", "approved", "disbursed", "repaying", "completed", "paid"].includes(loan.status))
     .reduce((sum, loan) => {

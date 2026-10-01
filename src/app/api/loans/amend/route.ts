@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLoggedInEmployee } from "@/lib/loans/employee";
-import { calculateMonthlyRepayment } from "@/utils/formatters";
+import { borrowingCapacity, committedLoanAmount } from "@/lib/loans/capacity";
+import { calculateMonthlyRepayment, formatCurrency } from "@/utils/formatters";
 import { APPROVAL_STAGES } from "@/lib/loans/workflow";
 
 export async function POST(request: Request) {
@@ -123,14 +124,23 @@ async function handleAmend(body: any) {
 
   const [savingsRes, loansRes] = await Promise.all([
     supabase.from("savings").select("balance").eq("employee_id", employee.employeeId).eq("status", "active"),
-    // status filtered in JS — the deployed loan_status enum may not include
-    // 'disbursed'/'repaying', which would make a DB-level .in() error out.
-    supabase.from("loans").select("outstanding_balance, status").eq("employee_id", employee.employeeId),
+    supabase.from("loans").select("id, outstanding_balance, amount_approved, amount_requested, status").eq("employee_id", employee.employeeId),
   ]);
   const savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
-  const activeLoanBalance = ((loansRes.data ?? []) as any[])
-    .filter((r) => ["approved", "active", "disbursed", "repaying"].includes(r.status))
-    .reduce((s: number, r: any) => s + Number(r.outstanding_balance ?? 0), 0);
+  const memberLoans = (loansRes.data ?? []) as any[];
+  const activeLoanBalance = memberLoans.reduce((s: number, r: any) => s + committedLoanAmount(r), 0);
+
+  // Borrowing cap applies to amendments too — exclude the loan being amended
+  // since its new amount is what's being checked.
+  const otherLoans = memberLoans.filter((l: any) => l.id !== loanId);
+  const maxBorrowable = borrowingCapacity(savingsBalance, otherLoans);
+  if (principal > maxBorrowable) {
+    return NextResponse.json(
+      { error: `Amount exceeds your borrowing capacity of ${formatCurrency(maxBorrowable)} (3× savings minus current loans).` },
+      { status: 400 }
+    );
+  }
+
   const requiresGuarantor = product.requires_guarantor && savingsBalance <= activeLoanBalance;
 
   const existingGuarantors = guarantorsRes.data ?? [];
@@ -156,9 +166,7 @@ async function handleAmend(body: any) {
       amount_disbursed: null,
       outstanding_balance: 0,
       status: "pending",
-      rejection_reason_code: null,
       approved_by: null,
-      approved_at: null,
       disbursed_by: null,
       disbursement_date: null,
     })

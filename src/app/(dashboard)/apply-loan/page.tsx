@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LoanApplication } from "@/features/loans/LoanApplication";
 import { getLoggedInEmployee } from "@/lib/loans/employee";
+import { borrowingCapacity, committedLoanAmount } from "@/lib/loans/capacity";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -38,21 +39,19 @@ export default async function ApplyLoanPage() {
 
   let savingsBalance = 0;
   let activeLoanBalance = 0;
+  let memberLoans: any[] = [];
 
   if (employee?.employeeId) {
     const [savingsRes, loansRes] = await Promise.all([
       supabase.from("savings").select("balance").eq("employee_id", employee.employeeId).eq("status", "active"),
-      // status filtered in JS — the deployed loan_status enum may not include
-      // 'disbursed'/'repaying', which would make a DB-level .in() error out.
-      supabase.from("loans").select("outstanding_balance, status").eq("employee_id", employee.employeeId),
+      supabase.from("loans").select("outstanding_balance, amount_approved, amount_requested, status").eq("employee_id", employee.employeeId),
     ]);
     savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
-    activeLoanBalance = ((loansRes.data ?? []) as any[])
-      .filter((r) => ["approved", "active", "disbursed", "repaying"].includes(r.status))
-      .reduce((s: number, r: any) => s + Number(r.outstanding_balance ?? 0), 0);
+    memberLoans = (loansRes.data ?? []) as any[];
+    activeLoanBalance = memberLoans.reduce((s: number, r: any) => s + committedLoanAmount(r), 0);
   }
 
-  const maxBorrowable = Math.max(0, savingsBalance * 3 - activeLoanBalance);
+  const maxBorrowable = borrowingCapacity(savingsBalance, memberLoans);
 
   // Fetch savings account numbers for guarantors separately
   const guarantorIds = (guarantorEmployeesRes.data ?? []).map((e: any) => e.id);

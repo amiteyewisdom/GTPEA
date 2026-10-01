@@ -62,8 +62,8 @@ function amountError(product: LoanProduct | undefined, amount: number) {
 }
 
 function amountWarning(amount: number, maxBorrowable?: number) {
-  if (maxBorrowable !== undefined && maxBorrowable > 0 && amount > maxBorrowable) {
-    return `Amount exceeds your current borrowing limit of ${formatCurrency(maxBorrowable)}.`;
+  if (maxBorrowable !== undefined && amount > 0 && amount > maxBorrowable) {
+    return `Amount exceeds your borrowing capacity of ${formatCurrency(maxBorrowable)}.`;
   }
   return null;
 }
@@ -144,7 +144,15 @@ export function LoanApplication({
   const amountWarn = amountWarning(principal, maxBorrowable);
   const termValidation = termError(selectedProduct, duration);
   const guarantorMissing = requiresGuarantor && !guarantorId;
-  const formValid = !amountValidation && !termValidation && Boolean(selectedProduct) && principal > 0 && !guarantorMissing;
+  const capacityExhausted = maxBorrowable !== undefined && maxBorrowable <= 0;
+  const formValid =
+    !amountValidation &&
+    !termValidation &&
+    !amountWarn &&
+    !capacityExhausted &&
+    Boolean(selectedProduct) &&
+    principal > 0 &&
+    !guarantorMissing;
 
   const handleProductChange = (nextProductId: string) => {
     const product = loanProducts.find((item) => item.id === nextProductId);
@@ -158,7 +166,13 @@ export function LoanApplication({
 
   const handleSubmit = async () => {
     if (!formValid) {
-      setErrorMessage(amountValidation ?? termValidation ?? "Please fix the form errors.");
+      setErrorMessage(
+        amountValidation ??
+          termValidation ??
+          amountWarn ??
+          (capacityExhausted ? "Your borrowing capacity is exhausted. Repay existing loans to borrow again." : null) ??
+          "Please fix the form errors."
+      );
       return;
     }
     setLoading(true);
@@ -252,21 +266,30 @@ export function LoanApplication({
             </div>
           )}
 
-          {/* How much can I borrow */}
-          {maxBorrowable !== undefined && maxBorrowable > 0 && (
-            <div className="bg-brand-green/10 border border-brand-green/30 rounded-lg p-3 min-w-[220px]">
-              <p className="text-xs text-brand-text-secondary mb-1 font-medium">Maximum You Can Borrow</p>
-              <p className="text-xl font-bold text-brand-green">{formatCurrency(maxBorrowable)}</p>
+          {/* Borrowing capacity */}
+          {maxBorrowable !== undefined && (
+            <div className={`rounded-lg p-3 min-w-[220px] border ${
+              maxBorrowable > 0
+                ? "bg-brand-green/10 border-brand-green/30"
+                : "bg-red-50 border-red-200"
+            }`}>
+              <p className="text-xs text-brand-text-secondary mb-1 font-medium">Borrowing Capacity</p>
+              <p className={`text-xl font-bold ${maxBorrowable > 0 ? "text-brand-green" : "text-red-600"}`}>
+                {formatCurrency(maxBorrowable)}
+              </p>
               {savingsBalance !== undefined && (
                 <p className="text-xs text-brand-text-secondary mt-1">
                   Savings: {formatCurrency(savingsBalance)}
                   {activeLoanBalance !== undefined && activeLoanBalance > 0 && (
-                    <> &nbsp;·&nbsp; Active Loans: {formatCurrency(activeLoanBalance)}</>
+                    <> &nbsp;·&nbsp; Loans: {formatCurrency(activeLoanBalance)}</>
                   )}
                 </p>
               )}
               <p className="text-xs text-brand-text-secondary/70 mt-1 flex items-center gap-1">
-                <Info className="w-3 h-3" /> Based on 3× savings minus active loan balances
+                <Info className="w-3 h-3" />
+                {maxBorrowable > 0
+                  ? "Based on 3× savings minus current loans"
+                  : "Capacity exhausted — repay existing loans to borrow again"}
               </p>
             </div>
           )}
@@ -340,7 +363,7 @@ export function LoanApplication({
               <p className="mt-1 text-xs text-red-600">{amountValidation}</p>
             )}
             {!amountValidation && amountWarn && (
-              <p className="mt-1 text-xs text-amber-600">⚠ {amountWarn}</p>
+              <p className="mt-1 text-xs text-red-600">{amountWarn}</p>
             )}
           </div>
 
@@ -482,7 +505,13 @@ export function LoanApplication({
           <button
             onClick={() => {
               if (!formValid) {
-                setErrorMessage(amountValidation ?? termValidation ?? "Please fix the form errors.");
+                setErrorMessage(
+                  amountValidation ??
+                    termValidation ??
+                    amountWarn ??
+                    (capacityExhausted ? "Your borrowing capacity is exhausted. Repay existing loans to borrow again." : null) ??
+                    "Please fix the form errors."
+                );
                 return;
               }
               setErrorMessage(null);

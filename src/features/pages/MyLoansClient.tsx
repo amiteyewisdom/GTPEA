@@ -149,7 +149,7 @@ export function MyLoansClient({
             <StatCard icon={Clock} label="Pending" value={String(pending)} color="text-brand-warning" />
             <StatCard icon={CheckCircle} label="Active" value={String(active)} color="text-brand-success" />
             <StatCard icon={BadgeCent} label="Total Borrowed" value={formatCurrency(totalBorrowed)} color="text-brand-accent" />
-            <StatCard icon={BadgeCent} label="Net Available" value={formatCurrency(netAvailable)} color="text-brand-green" />
+            <StatCard icon={BadgeCent} label="Borrowing Capacity" value={formatCurrency(netAvailable)} color="text-brand-green" />
           </div>
         }
         items={filteredLoans.map((loan) => {
