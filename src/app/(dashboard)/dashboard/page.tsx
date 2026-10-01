@@ -28,6 +28,8 @@ export default async function DashboardRouter() {
 
   const role = profile.role as UserRole;
 
+  console.log('[Dashboard] User role:', role, 'Full profile:', profile);
+
   let data = null;
   let stats = null;
 
@@ -37,7 +39,9 @@ export default async function DashboardRouter() {
       data = await fetchEmployeeDashboardData(user.id, profile);
       console.log('[Dashboard] Employee dashboard data:', data);
     } else {
+      console.log('[Dashboard] Fetching admin dashboard stats for role:', role);
       stats = await fetchDashboardStats(role);
+      console.log('[Dashboard] Admin dashboard stats:', stats);
     }
   } catch (error) {
     console.error("[Dashboard] Data fetch error:", error);
