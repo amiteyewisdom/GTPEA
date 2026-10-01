@@ -15,6 +15,6 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const stats = await fetchDashboardStats();
+  const stats = await fetchDashboardStats(role);
   return NextResponse.json(stats);
 }

@@ -9,7 +9,8 @@ function sum(rows: { [key: string]: unknown }[], field: string) {
 }
 
 export async function fetchFinancialOverview() {
-  const stats = await fetchDashboardStats();
+  const { profile } = await getSessionProfile();
+  const stats = await fetchDashboardStats(profile?.role);
 
   const supabase = await createClient();
 
@@ -79,7 +80,8 @@ export async function fetchFinancialOverview() {
 }
 
 export async function fetchFundsData() {
-  const stats = await fetchDashboardStats();
+  const { profile } = await getSessionProfile();
+  const stats = await fetchDashboardStats(profile?.role);
   const totalFund = stats.totalSavings;
   const loanPortfolio = stats.totalLoansOutstanding;
   const availableForLoans = stats.fundBalance;

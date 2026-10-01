@@ -24,7 +24,7 @@ export default async function LoanReviewsPage() {
     redirect("/dashboard");
   }
 
-  const stats = await fetchDashboardStats();
+  const stats = await fetchDashboardStats((profile as any).role);
 
   return <LoanReviewsPageComponent stats={stats} />;
 }

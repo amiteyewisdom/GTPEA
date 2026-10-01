@@ -37,7 +37,7 @@ export default async function DashboardRouter() {
       data = await fetchEmployeeDashboardData(user.id, profile);
       console.log('[Dashboard] Employee dashboard data:', data);
     } else {
-      stats = await fetchDashboardStats();
+      stats = await fetchDashboardStats(role);
     }
   } catch (error) {
     console.error("[Dashboard] Data fetch error:", error);
