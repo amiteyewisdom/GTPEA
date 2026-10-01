@@ -270,18 +270,21 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   // Fall back to contributions total if savings balances haven't been populated
   const totalContributionsSum = contributions.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
   const totalSavings = totalSavingsFromBalances > 0 ? totalSavingsFromBalances : totalContributionsSum;
-  const activeLoans = filteredLoans.filter((l) =>
-    ["approved", "disbursed", "repaying", "Active"].includes(l.status)
-  );
 
-  console.log('[fetchDashboardStats] Active loans count:', activeLoans.length);
-  console.log('[fetchDashboardStats] Sample active loans:', activeLoans.slice(0, 5).map(l => ({
+  console.log('[fetchDashboardStats] All loan statuses:', [...new Set(filteredLoans.map(l => l.status))]);
+  console.log('[fetchDashboardStats] Sample loans with statuses:', filteredLoans.slice(0, 5).map(l => ({
     id: l.id,
     status: l.status,
     outstanding: l.outstanding_balance,
     approved: l.amount_approved,
     disbursed: l.amount_disbursed
   })));
+
+  const activeLoans = filteredLoans.filter((l) =>
+    ["approved", "disbursed", "repaying", "Active"].includes(l.status)
+  );
+
+  console.log('[fetchDashboardStats] Active loans count:', activeLoans.length);
   const totalLoansOutstanding = activeLoans.reduce((acc, l) => {
     // outstanding_balance is authoritative; fall back to amount_approved or amount_requested
     const outstanding =
