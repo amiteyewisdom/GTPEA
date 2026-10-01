@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import BecomeGuarantorClient from "@/features/guarantors/BecomeGuarantorClient";
 
@@ -27,11 +28,19 @@ export default async function BecomeGuarantorPage() {
 
   console.log("[BecomeGuarantor] Profile data:", typedProfile);
 
-  const employeeRes = await supabase
-    .from("employees")
-    .select("id, guarantor_status, guarantor_application_date, guarantor_notes, guarantor_approved_at, blacklist_reason")
-    .eq("id", typedProfile.employee_id)
-    .maybeSingle();
+  // Use the admin client for this own-record lookup: the employees RLS policy
+  // "Employees can view own record" relies on current_employee_id(), which does not
+  // yet resolve profiles.employee_id UUIDs on the live DB.
+  const admin = createAdminClient();
+  const employeeRef = typedProfile.employee_id;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(employeeRef ?? "");
+  const employeeRes = employeeRef
+    ? await admin
+        .from("employees")
+        .select("id, guarantor_status, guarantor_application_date, guarantor_notes, guarantor_approved_at, blacklist_reason")
+        .eq(isUuid ? "id" : "employee_no", employeeRef)
+        .maybeSingle()
+    : { data: null, error: null };
 
   console.log("[BecomeGuarantor] Employee lookup result:", employeeRes);
 

@@ -743,10 +743,17 @@ RETURNS TEXT AS $$
   SELECT role::text FROM profiles WHERE user_id = auth.uid() LIMIT 1;
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
--- Helper: get current user's employee_id (text)
+-- Helper: get current user's employee_no (text). profiles.employee_id may hold either the
+-- employees.id UUID or the employee_no; resolve a UUID to its employee_no so RLS matches.
 CREATE OR REPLACE FUNCTION current_employee_id()
 RETURNS TEXT AS $$
-  SELECT employee_id FROM profiles WHERE user_id = auth.uid() LIMIT 1;
+  SELECT COALESCE(
+    (SELECT e.employee_no FROM employees e WHERE e.id::text = p.employee_id),
+    p.employee_id
+  )
+  FROM profiles p
+  WHERE p.user_id = auth.uid()
+  LIMIT 1;
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
 -- ── profiles ──────────────────────────────────────────────────────────────────

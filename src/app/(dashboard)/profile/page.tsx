@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ProfileClient } from "@/features/profile/ProfileClient";
 import type { Metadata } from "next";
 
@@ -15,11 +16,18 @@ export default async function ProfilePage() {
     .eq("user_id", user!.id)
     .single();
 
-  const { data: employee } = await supabase
-    .from("employees")
-    .select("guarantor_status, guarantor_application_date")
-    .eq("user_id", user!.id)
-    .maybeSingle();
+  // employees has no user_id column; resolve via profiles.employee_id using the
+  // admin client (employees RLS own-record policy does not yet handle UUID employee_id).
+  const admin = createAdminClient();
+  const employeeRef = (profile as any)?.employee_id as string | null;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(employeeRef ?? "");
+  const { data: employee } = employeeRef
+    ? await admin
+        .from("employees")
+        .select("guarantor_status, guarantor_application_date")
+        .eq(isUuid ? "id" : "employee_no", employeeRef)
+        .maybeSingle()
+    : { data: null };
 
   const typedProfile = profile as any;
   const typedEmployee = employee as any;

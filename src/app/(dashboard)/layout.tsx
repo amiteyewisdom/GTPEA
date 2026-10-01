@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile } from "@/types/database";
 import { redirect } from "next/navigation";
 import EnterpriseLayout from "@/components/layout/EnterpriseLayout";
@@ -46,7 +47,7 @@ export default async function DashboardLayout({
 
     const profileRes = await supabase
       .from("profiles")
-      .select("full_name, role, avatar_url")
+      .select("full_name, role, avatar_url, employee_id")
       .eq("user_id", user.id)
       .single();
     
@@ -60,14 +61,16 @@ export default async function DashboardLayout({
 
     // For employees, get their name from employees table if profile doesn't have it
     let userName = profile?.full_name ?? user.email ?? "User";
-    if (role === "employee" && (!profile?.full_name || profile?.full_name === "User") && profile?.phone) {
-      const { data: employee } = await (supabase
+    const employeeRef = profile?.employee_id;
+    if (role === "employee" && (!profile?.full_name || profile?.full_name === "User") && employeeRef) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(employeeRef);
+      const { data: employee } = await (createAdminClient()
         .from("employees") as any)
-        .select("full_name")
-        .eq("phone_number", profile.phone)
+        .select("first_name, last_name")
+        .eq(isUuid ? "id" : "employee_no", employeeRef)
         .maybeSingle();
-      if (employee?.full_name) {
-        userName = employee.full_name;
+      if (employee?.first_name) {
+        userName = `${employee.first_name} ${employee.last_name ?? ""}`.trim();
       }
     }
 
@@ -76,7 +79,7 @@ export default async function DashboardLayout({
     return (
       <EnterpriseLayout
         currentRole={(role as UserRole) || "employee"}
-        userName={profile?.full_name ?? user.email ?? "User"}
+        userName={userName}
         avatarUrl={profile?.avatar_url}
         pendingCount={pendingCount}
       >
