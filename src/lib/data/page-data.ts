@@ -336,9 +336,16 @@ export async function fetchDisbursementsData() {
     .order("status", { ascending: true })
     .order("disbursement_date", { ascending: false });
 
-  const recordedStatuses = ["active", "approved", "disbursed", "repaying", "completed", "paid"];
+  // Awaiting disbursement = board-approved but money not yet handed over
+  // (status 'approved'). History = loans actually recorded as disbursed.
+  // Imported 'active' loans were disbursed manually outside the system and
+  // never appear in this queue.
   const filtered = ((data ?? []) as any[])
-    .filter((l) => recordedStatuses.includes(l.status) && !excludedIds.has(l.employee_id))
+    .filter(
+      (l) =>
+        !excludedIds.has(l.employee_id) &&
+        (l.status === "approved" || Number(l.amount_disbursed) > 0)
+    )
     .slice(0, 200);
 
   return { disbursements: filtered };

@@ -96,13 +96,13 @@ export async function POST(request: Request) {
     if (applicantUserId) {
       await admin.from("notifications").insert({
         user_id: applicantUserId,
-        type: action === "approved" ? "guarantor_consent_approved" : "guarantor_consent_rejected",
+        type: "system",
         title: action === "approved" ? "Guarantor Consent Approved" : "Guarantor Consent Rejected",
         message: action === "approved"
           ? `Your guarantor has approved the request for loan ${guarantorRequest.loans.loan_ref}.`
           : `Your guarantor has rejected the request for loan ${guarantorRequest.loans.loan_ref}. ${notes ? `Reason: ${notes}` : ""}`,
-        related_type: "loan",
-        related_id: guarantorRequest.loan_id,
+        entity_type: "loan",
+        entity_id: guarantorRequest.loan_id,
       });
     }
 

@@ -248,11 +248,11 @@ async function handleApply(body: any) {
       if (guarantorProfile?.user_id) {
         await (admin.from("notifications") as any).insert({
           user_id: guarantorProfile.user_id,
-          type: "guarantor_request",
+          type: "approval_required",
           title: "Guarantor Request",
           message: `You have been listed as a guarantor for facility ${loanRef}.`,
-          related_type: "loan",
-          related_id: loanRes.data.id,
+          entity_type: "loan",
+          entity_id: loanRes.data.id,
         });
       }
     }

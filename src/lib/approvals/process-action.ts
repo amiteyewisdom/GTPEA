@@ -143,16 +143,35 @@ export async function processApprovalAction(input: {
         .eq("id", approval.entity_id)
         .single();
 
+      // Final board approval = 'approved' (ready to disburse). The loan only
+      // counts as money out / owed once the fund manager disburses it —
+      // disbursement is manual, the system records it afterwards.
       const loanUpdateRes = await (admin.from("loans") as any)
         .update({
-          status: "active",
+          status: "approved",
           approved_by: userId,
           approved_at: new Date().toISOString(),
           amount_approved: loanRes.data?.amount_requested ?? null,
-          outstanding_balance: loanRes.data?.amount_requested ?? 0,
         })
         .eq("id", approval.entity_id);
       if (loanUpdateRes.error) console.error("[processApprovalAction] loans update error:", loanUpdateRes.error);
+
+      // Notify fund managers that a loan is ready to disburse
+      try {
+        const fmRes = await (admin.from("profiles") as any).select("user_id").eq("role", "fund_manager");
+        for (const fm of (fmRes.data ?? []) as { user_id: string }[]) {
+          await (admin.from("notifications") as any).insert({
+            user_id: fm.user_id,
+            type: "approval_required",
+            title: "Loan ready to disburse",
+            message: `Loan application fully approved and ready for disbursement.`,
+            entity_type: "loan",
+            entity_id: approval.entity_id,
+          });
+        }
+      } catch (fmErr) {
+        console.warn("[processApprovalAction] fund-manager notification failed (non-fatal):", fmErr);
+      }
     }
   }
 
