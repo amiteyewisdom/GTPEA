@@ -7,8 +7,6 @@ import { createRepaymentSchedule } from "@/lib/loans/repayment-schedule";
 export async function POST(request: Request) {
   const body = await request.json();
   const loanId = String(body?.loan_id);
-  const bankName = String(body?.bank_name || "");
-  const bankAccountNo = String(body?.bank_account_no || "");
 
   if (!loanId) {
     return NextResponse.json({ error: "Loan ID is required." }, { status: 400 });
@@ -69,8 +67,6 @@ export async function POST(request: Request) {
       outstanding_balance: disbursedAmount,
       disbursement_date: new Date().toISOString().split("T")[0],
       disbursed_by: user.id,
-      bank_name: bankName,
-      bank_account_no: bankAccountNo,
       status: "repaying", // money is out, repayment begins
     } as any)
     .eq("id", loanId)
@@ -81,16 +77,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: updateError?.message || "Failed to disburse loan." }, { status: 500 });
   }
 
-  // Create transaction record
+  // Create transaction record (transactions table has no status column)
   const { error: transactionError } = await supabase
     .from("transactions")
     .insert([
       {
         type: "loan_disbursement",
         amount: disbursedAmount,
+        employee_id: loan.employee_id,
         reference: loan.loan_ref,
         description: `Loan disbursement for ${loan.loan_ref}`,
-        status: "completed",
+        related_id: loanId,
+        related_type: "loan",
+        performed_by: user.id,
       },
     ] as any);
 
