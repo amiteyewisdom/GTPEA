@@ -211,6 +211,26 @@ export async function fetchSavingsHistoryData() {
     }
   }
 
+  // Fallback 3: try to find employee by name and phone
+  if (!employeeUuid && profile) {
+    const nameParts = profile.full_name?.split(' ') || [];
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ');
+    
+    console.log("[fetchSavingsHistoryData] Trying name/phone lookup:", { firstName, lastName, phone: profile.phone });
+    
+    const byNamePhone = await supabase
+      .from("employees")
+      .select("id")
+      .eq("first_name", firstName)
+      .eq("last_name", lastName)
+      .eq("phone", profile.phone)
+      .maybeSingle();
+    
+    employeeUuid = (byNamePhone.data as any)?.id ?? null;
+    console.log("[fetchSavingsHistoryData] Name/phone lookup result:", { byNamePhone: byNamePhone.data, employeeUuid });
+  }
+
   if (!employeeUuid) {
     console.log("[fetchSavingsHistoryData] No employeeUuid found, returning empty data");
     return { totalSavings: 0, thisMonth: 0, contributions: [] as any[] };
