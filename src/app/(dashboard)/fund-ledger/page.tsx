@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LedgerClient } from "@/features/ledger/LedgerClient";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency } from "@/utils/formatters";
+import { RECORDED_LOAN_STATUSES } from "@/lib/reports/gl-accounts";
 import { Minus, Plus, BadgeCent } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -24,13 +25,12 @@ export default async function FundLedgerPage() {
       .filter(Boolean)
   );
 
-  const [loansRes, contributionsRes, repaymentsRes, withdrawalsRes, dividendsRes, transactionsRes] = await Promise.all([
+  const [loansRes, contributionsRes, repaymentsRes, withdrawalsRes, dividendsRes, transactionsRes, expensesRes] = await Promise.all([
     supabase
       .from("loans")
-      .select("id, employee_id, loan_ref, amount_approved, amount_requested, amount_disbursed, status, created_at, employees!employee_id(first_name, last_name, employee_no)")
-      .in("status", ["approved", "disbursed", "repaying", "completed"])
+      .select("id, employee_id, loan_ref, amount_approved, amount_requested, amount_disbursed, outstanding_balance, status, disbursement_date, created_at, employees!employee_id(first_name, last_name, employee_no)")
       .order("created_at", { ascending: false })
-      .limit(50),
+      .limit(200),
     supabase
       .from("savings_contributions")
       .select("id, employee_id, amount, period_year, period_month, created_at, employees!employee_id(first_name, last_name, employee_no)")
@@ -57,10 +57,31 @@ export default async function FundLedgerPage() {
     supabase
       .from("transactions")
       .select("id, employee_id, reference, amount, type, description, created_at, employees!employee_id(first_name, last_name, employee_no)")
-      .in("type", ["fee", "penalty", "interest"])
       .order("created_at", { ascending: false })
       .limit(50),
+    supabase
+      .from("expenses")
+      .select("id, title, category, amount, expense_date, receipt_ref")
+      .order("expense_date", { ascending: false })
+      .limit(50),
   ]);
+
+  // Surface query failures instead of silently rendering an empty ledger
+  const queryErrors: string[] = [];
+  for (const [res, label] of [
+    [loansRes, "loans"],
+    [contributionsRes, "savings contributions"],
+    [repaymentsRes, "repayments"],
+    [withdrawalsRes, "withdrawals"],
+    [dividendsRes, "dividends"],
+    [transactionsRes, "transactions"],
+    [expensesRes, "expenses"],
+  ] as const) {
+    if (res.error) {
+      console.error(`[fund-ledger] ${label} query failed:`, res.error.message);
+      queryErrors.push(`${label}: ${res.error.message}`);
+    }
+  }
 
   // Build synthetic ledger rows from real data
   type SyntheticRow = {
@@ -70,15 +91,27 @@ export default async function FundLedgerPage() {
     employees?: { first_name: string; last_name: string; employee_no: string } | null;
   };
 
-  const loanRows: SyntheticRow[] = (loansRes.data ?? []).map((l: any) => {
-    const amount = Number(l.amount_disbursed) || Number(l.amount_approved) || Number(l.amount_requested) || 0;
-    const d = new Date(l.created_at);
+  // Filter loan statuses in JS — the deployed loan_status enum may not include
+  // 'disbursed'/'repaying', which would make a DB-level .in() error out.
+  const recordedStatuses = new Set<string>(RECORDED_LOAN_STATUSES);
+  const loanRows: SyntheticRow[] = (loansRes.data ?? [])
+    .filter((l: any) => recordedStatuses.has(l.status))
+    .slice(0, 50)
+    .map((l: any) => {
+    // In-system disbursements record amount_disbursed + disbursement_date.
+    // Imported loans only carry an outstanding balance — show it as an
+    // opening position rather than pretending it was disbursed here.
+    const isDisbursed = Boolean(l.disbursement_date) && Number(l.amount_disbursed) > 0;
+    const amount = isDisbursed
+      ? Number(l.amount_disbursed)
+      : Number(l.outstanding_balance) || Number(l.amount_approved) || Number(l.amount_requested) || 0;
+    const d = new Date(l.disbursement_date || l.created_at);
     return {
       id: l.id, employee_id: l.employee_id, account_type: "loan", debit: amount, credit: 0, running_balance: 0,
-      narration: `Loan disbursement — ${l.loan_ref || l.id.slice(0, 8)}`,
+      narration: `${isDisbursed ? "Loan disbursement" : "Opening loan balance (imported)"} — ${l.loan_ref || l.id.slice(0, 8)}`,
       reference: l.loan_ref || l.id.slice(0, 8).toUpperCase(),
       period_year: d.getFullYear(), period_month: d.getMonth() + 1,
-      posted_at: l.created_at, employees: l.employees ?? null,
+      posted_at: l.disbursement_date || l.created_at, employees: l.employees ?? null,
     };
   });
 
@@ -126,13 +159,17 @@ export default async function FundLedgerPage() {
     };
   });
 
-  const transactionRows: SyntheticRow[] = (transactionsRes.data ?? []).map((t: any) => {
+  // Interest, fees and penalties are fund income — credits. The live
+  // transaction_type enum is a reduced set, so filter the income types here.
+  const INCOME_TXN_TYPES = new Set(["interest_credit", "interest", "fee", "penalty"]);
+  const transactionRows: SyntheticRow[] = (transactionsRes.data ?? [])
+    .filter((t: any) => INCOME_TXN_TYPES.has(t.type))
+    .map((t: any) => {
     const d = new Date(t.created_at);
-    const isCredit = t.type === "interest";
     return {
-      id: t.id, employee_id: t.employee_id, account_type: t.type === "interest" ? "interest" : t.type === "fee" ? "fee" : "penalty",
-      debit: isCredit ? 0 : Number(t.amount) || 0,
-      credit: isCredit ? Number(t.amount) || 0 : 0,
+      id: t.id, employee_id: t.employee_id, account_type: t.type === "interest_credit" || t.type === "interest" ? "interest" : t.type === "fee" ? "fee" : "penalty",
+      debit: 0,
+      credit: Number(t.amount) || 0,
       running_balance: 0,
       narration: t.description || `${t.type} — ${t.reference || t.id.slice(0, 8)}`,
       reference: t.reference || `TXN-${t.id.slice(0, 8).toUpperCase()}`,
@@ -141,8 +178,19 @@ export default async function FundLedgerPage() {
     };
   });
 
+  const expenseRows: SyntheticRow[] = (expensesRes.data ?? []).map((e: any) => {
+    const d = new Date(e.expense_date || e.created_at);
+    return {
+      id: e.id, employee_id: "", account_type: "expense", debit: Number(e.amount) || 0, credit: 0, running_balance: 0,
+      narration: `${e.title}${e.category ? ` — ${e.category}` : ""}`,
+      reference: e.receipt_ref || `EXP-${e.id.slice(0, 8).toUpperCase()}`,
+      period_year: d.getFullYear(), period_month: d.getMonth() + 1,
+      posted_at: e.expense_date || e.created_at, employees: null,
+    };
+  });
+
   // Sort all entries by date descending and compute running balance
-  const allRows = [...loanRows, ...savingsRows, ...repaymentRows, ...withdrawalRows, ...dividendRows, ...transactionRows]
+  const allRows = [...loanRows, ...savingsRows, ...repaymentRows, ...withdrawalRows, ...dividendRows, ...transactionRows, ...expenseRows]
     .filter((row) => !excludedEmployeeIds.has(row.employee_id))
     .sort((a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime());
 
@@ -165,6 +213,17 @@ export default async function FundLedgerPage() {
           Complete record of fund transactions
         </p>
       </div>
+
+      {queryErrors.length > 0 && (
+        <div className="rounded-brand border border-brand-danger/40 bg-brand-danger/10 p-4 text-sm text-brand-danger">
+          <p className="font-semibold">Some ledger sources could not be loaded — the figures below are incomplete:</p>
+          <ul className="mt-1 list-disc pl-5">
+            {queryErrors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <GlassCard className="p-6">

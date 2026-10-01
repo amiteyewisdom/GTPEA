@@ -33,7 +33,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Loan not found." }, { status: 404 });
   }
 
-  if (loan.status !== "approved") {
+  // The approval workflow marks loans 'active' on final approval; 'approved'
+  // covers any loans approved before that convention. amount_disbursed below
+  // is the real double-disbursement guard.
+  if (!["approved", "active"].includes(loan.status)) {
     return NextResponse.json({ error: "Loan must be approved before disbursement." }, { status: 400 });
   }
 
@@ -87,7 +90,7 @@ export async function POST(request: Request) {
       term_months: Number(loan.term_months) || 1,
       interest_rate: Number(loan.interest_rate) || 0,
       start_date: updatedLoan.disbursement_date || new Date().toISOString().split("T")[0],
-      interest_calc_method: null,
+      interest_calc_method: loan.interest_calc_method ?? null,
     });
   } catch (scheduleError) {
     console.error("Failed to create repayment schedule:", scheduleError);

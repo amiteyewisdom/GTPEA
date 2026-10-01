@@ -11,7 +11,7 @@
 DO $$ BEGIN CREATE TYPE user_role AS ENUM ('admin','employee','fund_manager','chairman','union_rep'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN CREATE TYPE employee_status AS ENUM ('active','inactive','suspended','terminated'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN CREATE TYPE department AS ENUM ('management','finance','operations','hr','it','sales','legal','audit'); EXCEPTION WHEN duplicate_object THEN null; END $$;
-DO $$ BEGIN CREATE TYPE loan_status AS ENUM ('pending','approved','disbursed','repaying','completed','rejected','defaulted'); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE TYPE loan_status AS ENUM ('pending','approved','disbursed','repaying','completed','rejected','defaulted','active','paid'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN CREATE TYPE savings_type AS ENUM ('regular','special','emergency','retirement'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN CREATE TYPE savings_status AS ENUM ('active','frozen','closed','suspended'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 DO $$ BEGIN CREATE TYPE approval_status AS ENUM ('pending','approved','rejected','escalated','on_hold'); EXCEPTION WHEN duplicate_object THEN null; END $$;

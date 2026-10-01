@@ -146,9 +146,8 @@ export async function fetchMyLoansData() {
     admin.from("savings").select("balance").eq("employee_id", employeeUuid).eq("status", "active"),
     admin
       .from("loans")
-      .select("outstanding_balance, amount_approved")
-      .eq("employee_id", employeeUuid)
-      .in("status", ["active", "repaying"]),
+      .select("outstanding_balance, amount_approved, status")
+      .eq("employee_id", employeeUuid),
     supabase.from("loan_products").select("*").eq("is_active", true),
   ]);
 
@@ -162,20 +161,22 @@ export async function fetchMyLoansData() {
   const rows = (loansRes.data ?? []) as any[];
   const savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
   const loanProducts = (productsRes.data ?? []) as any[];
-  const activeLoanBalance = (activeLoansRes.data ?? []).reduce(
-    (s: number, r: any) => s + (Number(r.outstanding_balance) || Number(r.amount_approved) || 0),
-    0
-  );
+  const activeLoanBalance = ((activeLoansRes.data ?? []) as any[])
+    .filter((r) => ["active", "approved", "disbursed", "repaying"].includes(r.status))
+    .reduce(
+      (s: number, r: any) => s + (Number(r.outstanding_balance) || Number(r.amount_approved) || 0),
+      0
+    );
   const netAvailable = Math.max(0, savingsBalance * 3 - activeLoanBalance);
   const totalBorrowed = rows
-    .filter((loan) => ["active", "repaying", "completed"].includes(loan.status))
+    .filter((loan) => ["active", "approved", "disbursed", "repaying", "completed", "paid"].includes(loan.status))
     .reduce((sum, loan) => {
       return sum + (Number(loan.amount_disbursed) || Number(loan.amount_approved) || 0);
     }, 0);
 
   const result = {
     pending: rows.filter((l) => l.status === "pending").length,
-    active: rows.filter((l) => ["active", "repaying"].includes(l.status)).length,
+    active: rows.filter((l) => ["active", "disbursed", "repaying"].includes(l.status)).length,
     totalBorrowed,
     netAvailable,
     savingsBalance,
@@ -309,11 +310,13 @@ export async function fetchRepaymentsData() {
       status,
       employees!employee_id (first_name, last_name, employee_no)
     `)
-    .in("status", ["disbursed", "repaying"])
-    .order("created_at", { ascending: false })
-    .limit(200);
+    .order("created_at", { ascending: false });
 
-  return { repayments: repayments ?? [], loans: loans ?? [] };
+  const activeLoans = ((loans ?? []) as any[])
+    .filter((l) => ["active", "approved", "disbursed", "repaying"].includes(l.status))
+    .slice(0, 200);
+
+  return { repayments: repayments ?? [], loans: activeLoans };
 }
 
 export async function fetchDisbursementsData() {
@@ -344,12 +347,13 @@ export async function fetchDisbursementsData() {
       employees!employee_id (first_name, last_name, employee_no),
       loan_products (name)
     `)
-    .in("status", ["active", "repaying", "completed"])
     .order("status", { ascending: true })
-    .order("disbursement_date", { ascending: false })
-    .limit(200);
+    .order("disbursement_date", { ascending: false });
 
-  const filtered = (data ?? []).filter((l: any) => !excludedIds.has(l.employee_id));
+  const recordedStatuses = ["active", "approved", "disbursed", "repaying", "completed", "paid"];
+  const filtered = ((data ?? []) as any[])
+    .filter((l) => recordedStatuses.includes(l.status) && !excludedIds.has(l.employee_id))
+    .slice(0, 200);
 
   return { disbursements: filtered };
 }
@@ -506,13 +510,13 @@ export async function fetchLedgerSummary() {
 
   // Debits = money going OUT of the fund: loan disbursements
   const totalDebits = loans.reduce((acc, l) => {
-    if (!["active", "repaying", "completed"].includes(l.status)) return acc;
+    if (!["active", "approved", "disbursed", "repaying", "completed", "paid"].includes(l.status)) return acc;
     return acc + (Number(l.amount_disbursed) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
   }, 0);
 
   // Current balance = total savings in fund minus outstanding loans
   const totalOutstanding = loans.reduce((acc, l) => {
-    if (!["active", "repaying"].includes(l.status)) return acc;
+    if (!["active", "approved", "disbursed", "repaying"].includes(l.status)) return acc;
     return acc + (Number(l.outstanding_balance) || Number(l.amount_approved) || Number(l.amount_requested) || 0);
   }, 0);
   const currentBalance = Math.max(totalSavingsDeposited - totalOutstanding, 0);

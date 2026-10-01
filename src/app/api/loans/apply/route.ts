@@ -118,10 +118,14 @@ async function handleApply(body: any) {
 
   const [savingsRes, loansRes] = await Promise.all([
     supabase.from("savings").select("balance").eq("employee_id", employee.employeeId).eq("status", "active"),
-    supabase.from("loans").select("outstanding_balance").eq("employee_id", employee.employeeId).in("status", ["approved", "disbursed", "repaying"]),
+    // status filtered in JS — the deployed loan_status enum may not include
+    // 'disbursed'/'repaying', which would make a DB-level .in() error out.
+    supabase.from("loans").select("outstanding_balance, status").eq("employee_id", employee.employeeId),
   ]);
   const savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
-  const activeLoanBalance = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.outstanding_balance ?? 0), 0);
+  const activeLoanBalance = ((loansRes.data ?? []) as any[])
+    .filter((r) => ["approved", "active", "disbursed", "repaying"].includes(r.status))
+    .reduce((s: number, r: any) => s + Number(r.outstanding_balance ?? 0), 0);
   const requiresGuarantor = product.requires_guarantor && savingsBalance <= activeLoanBalance;
 
   if (allGuarantorIds.length > 1) {

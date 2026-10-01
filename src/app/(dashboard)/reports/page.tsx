@@ -30,7 +30,9 @@ export default async function ReportsPage() {
   ] = await Promise.all([
     supabase.from("employees").select("id", { count: "exact", head: true }),
     supabase.from("profiles").select("employee_id, role").not("employee_id", "is", null),
-    supabase.from("loans").select("id", { count: "exact", head: true }).in("status", ["pending", "approved", "disbursed", "repaying"]),
+    // Status counted in JS — the deployed loan_status enum may not include
+    // 'disbursed'/'repaying', which would make a DB-level .in() error out.
+    supabase.from("loans").select("id, status"),
     supabase.from("approvals").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("savings").select("balance, type, status"),
     supabase.from("loans").select("outstanding_balance, amount_approved, amount_requested, amount_disbursed, status, interest_rate"),
@@ -59,13 +61,22 @@ export default async function ReportsPage() {
   const contributionsTotal = contributionsData?.reduce((s, r) => s + (Number(r.amount) || 0), 0) ?? 0;
   const totalSavings = savingsBalanceTotal > 0 ? savingsBalanceTotal : contributionsTotal;
 
-  const totalOutstanding = loanData?.reduce((s, r) => {
-    return s + (Number(r.outstanding_balance) || Number(r.amount_approved) || Number(r.amount_requested) || 0);
-  }, 0) ?? 0;
+  const RECORDED_STATUSES = ["active", "approved", "disbursed", "repaying", "completed", "paid", "defaulted"];
+  const ACTIVE_STATUSES = ["active", "approved", "disbursed", "repaying"];
 
-  const totalDisbursed = loanData?.reduce((s, r) => {
-    return s + (Number(r.amount_disbursed) || Number(r.amount_approved) || Number(r.amount_requested) || 0);
-  }, 0) ?? 0;
+  const recordedLoans = loanData?.filter((l) => RECORDED_STATUSES.includes(l.status)) ?? [];
+
+  const totalOutstanding = recordedLoans
+    .filter((l) => ACTIVE_STATUSES.includes(l.status))
+    .reduce((s, r) => {
+      return s + (Number(r.outstanding_balance) || Number(r.amount_approved) || Number(r.amount_requested) || 0);
+    }, 0);
+
+  // Only loans actually disbursed through the system — imported loans have no
+  // amount_disbursed, and falling back to approved/requested fabricates activity.
+  const totalDisbursed = recordedLoans.reduce((s, r) => {
+    return s + (Number(r.amount_disbursed) || 0);
+  }, 0);
 
   const totalWithdrawals = withdrawalsData?.reduce((s, r) => s + (r.amount ?? 0), 0) ?? 0;
   const totalDividends = dividendsData?.reduce((s, r) => s + (r.dividend_amount ?? 0), 0) ?? 0;
@@ -73,7 +84,7 @@ export default async function ReportsPage() {
   const now = new Date();
   const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
   const interestIncome = transactionsData
-    ?.filter((t) => t.type === "interest_credit" && t.created_at >= yearStart)
+    ?.filter((t) => (t.type === "interest_credit" || t.type === "interest") && t.created_at >= yearStart)
     .reduce((s, t) => s + (Number(t.amount) || 0), 0) ?? 0;
   const totalExpenses = totalDividends + totalWithdrawals;
   const netProfit = interestIncome - totalExpenses;
@@ -170,12 +181,16 @@ export default async function ReportsPage() {
   }, loanChartData);
 
   const activeLoanRows = loanData?.filter((l) =>
-    ["approved", "disbursed", "repaying"].includes(l.status)
+    ["approved", "active", "disbursed", "repaying"].includes(l.status)
   ) ?? [];
+
+  const totalLoanCount = (activeLoansRes.data ?? []).filter((l: any) =>
+    ["pending", "approved", "active", "disbursed", "repaying"].includes(l.status)
+  ).length;
 
   const summary = {
     totalEmployees: totalEmployeeCount,
-    totalLoans: activeLoansRes.count ?? 0,
+    totalLoans: totalLoanCount,
     totalApprovals: totalApprovalsRes.count ?? 0,
     totalSavings,
     totalOutstanding,

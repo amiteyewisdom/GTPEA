@@ -42,10 +42,14 @@ export default async function ApplyLoanPage() {
   if (employee?.employeeId) {
     const [savingsRes, loansRes] = await Promise.all([
       supabase.from("savings").select("balance").eq("employee_id", employee.employeeId).eq("status", "active"),
-      supabase.from("loans").select("outstanding_balance").eq("employee_id", employee.employeeId).in("status", ["active", "repaying"]),
+      // status filtered in JS — the deployed loan_status enum may not include
+      // 'disbursed'/'repaying', which would make a DB-level .in() error out.
+      supabase.from("loans").select("outstanding_balance, status").eq("employee_id", employee.employeeId),
     ]);
     savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
-    activeLoanBalance = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.outstanding_balance ?? 0), 0);
+    activeLoanBalance = ((loansRes.data ?? []) as any[])
+      .filter((r) => ["approved", "active", "disbursed", "repaying"].includes(r.status))
+      .reduce((s: number, r: any) => s + Number(r.outstanding_balance ?? 0), 0);
   }
 
   const maxBorrowable = Math.max(0, savingsBalance * 3 - activeLoanBalance);

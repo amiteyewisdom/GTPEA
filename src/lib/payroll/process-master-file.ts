@@ -257,14 +257,17 @@ async function processRow(
 
   // Loan payment: subtract from outstanding balance and record repayment.
   if (row.loanPayment > 0) {
-    const { data: loan } = await client
+    // Status filtered in JS — the deployed loan_status enum may not include
+    // 'disbursed'/'repaying', which would make a DB-level .in() error out.
+    const { data: employeeLoans } = await client
       .from("loans")
-      .select("id, outstanding_balance")
+      .select("id, outstanding_balance, status")
       .eq("employee_id", employee.id)
-      .in("status", ["disbursed", "repaying"])
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
+      .order("created_at", { ascending: true });
+
+    const loan = ((employeeLoans ?? []) as any[]).find((l) =>
+      ["active", "disbursed", "repaying"].includes(l.status)
+    );
 
     if (!loan) {
       throw new Error(`No active loan for ${row.employeeNo}.`);
@@ -336,9 +339,8 @@ export async function exportPayrollMasterFile(): Promise<string> {
     empIds.length > 0
       ? adminClient
           .from("loans")
-          .select("employee_id, outstanding_balance")
+          .select("employee_id, outstanding_balance, status")
           .in("employee_id", empIds)
-          .in("status", ["disbursed", "repaying"])
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -349,6 +351,7 @@ export async function exportPayrollMasterFile(): Promise<string> {
 
   const loansByEmp: Record<string, number> = {};
   for (const l of (loansRes.data ?? []) as any[]) {
+    if (!["active", "disbursed", "repaying"].includes(l.status)) continue;
     loansByEmp[l.employee_id] = (loansByEmp[l.employee_id] ?? 0) + Number(l.outstanding_balance);
   }
 

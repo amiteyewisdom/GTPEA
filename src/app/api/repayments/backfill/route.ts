@@ -25,17 +25,21 @@ export async function POST() {
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
-  // Find disbursed/repaying loans that have no repayment schedule yet
-  const { data: loans, error: loansError } = (await supabase
+  // Find active/disbursed/repaying loans that have no repayment schedule yet.
+  // Status filtered in JS — the deployed loan_status enum may not include
+  // 'disbursed'/'repaying', which would make a DB-level .in() error out.
+  const { data: allLoans, error: loansError } = (await supabase
     .from("loans")
-    .select("id, employee_id, amount_approved, amount_requested, monthly_repayment, term_months, interest_rate, disbursement_date")
-    .in("status", ["disbursed", "repaying"])) as any;
+    .select("id, employee_id, amount_approved, amount_requested, monthly_repayment, term_months, interest_rate, disbursement_date, interest_calc_method, status")) as any;
 
   if (loansError) {
     return NextResponse.json({ error: loansError.message }, { status: 500 });
   }
 
-  const loanIds = ((loans ?? []) as any[]).map((l) => l.id).filter(Boolean);
+  const loans = ((allLoans ?? []) as any[]).filter((l) =>
+    ["active", "disbursed", "repaying"].includes(l.status)
+  );
+  const loanIds = loans.map((l) => l.id).filter(Boolean);
   if (loanIds.length === 0) {
     return NextResponse.json({ created: 0, message: "No active loans to backfill." });
   }
@@ -46,7 +50,7 @@ export async function POST() {
     .in("loan_id", loanIds)) as any;
 
   const loansWithRepayments = new Set(((existingRepayments ?? []) as any[]).map((r) => r.loan_id));
-  const loansNeedingSchedules = ((loans ?? []) as any[]).filter((l) => !loansWithRepayments.has(l.id));
+  const loansNeedingSchedules = loans.filter((l) => !loansWithRepayments.has(l.id));
 
   let created = 0;
   const errors: string[] = [];

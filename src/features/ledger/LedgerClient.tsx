@@ -13,6 +13,7 @@ const ACCOUNT_BADGE: Record<string, string> = {
   dividend:       "bg-teal-100 text-teal-700",
   penalty:        "bg-orange-100 text-orange-700",
   fee:            "bg-slate-100 text-slate-600",
+  expense:        "bg-rose-100 text-rose-700",
 };
 
 const FILTER_ACTIVE = "bg-brand-green text-white border-brand-green";
@@ -53,6 +54,7 @@ export function LedgerClient({ ledgerEntries, total }: LedgerClientProps) {
     { key: "dividend", label: "Dividends" },
     { key: "penalty", label: "Penalties" },
     { key: "fee", label: "Fees" },
+    { key: "expense", label: "Expenses" },
   ];
 
   const visibleTypes = allAccountTypes;
