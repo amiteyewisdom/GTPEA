@@ -211,11 +211,23 @@ export async function POST(request: Request) {
     }
 
     // Check if phone number exists for OTP
-    if (!phoneNumber) {
+    // Skip OTP for test users (emails ending with @gtpea.test)
+    const isTestUser = authEmail?.endsWith('@gtpea.test');
+
+    if (!phoneNumber && !isTestUser) {
       return NextResponse.json({
         success: true,
         requiresPhoneSetup: true,
         message: "Please set up your phone number for OTP verification.",
+      });
+    }
+
+    // Skip OTP for test users
+    if (isTestUser) {
+      return NextResponse.json({
+        success: true,
+        redirect: '/dashboard',
+        message: "Login successful (test user - OTP skipped)",
       });
     }
 

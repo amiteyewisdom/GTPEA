@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Smartphone, Shield, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
 
 export default function ChangePasswordPage() {
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -17,13 +19,23 @@ export default function ChangePasswordPage() {
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
+    // Redirect test users to dashboard
+    const checkTestUser = async () => {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user?.email?.endsWith('@gtpea.test')) {
+        router.push('/dashboard');
+      }
+    };
+    checkTestUser();
+
     const checkScreenSize = () => {
       setIsDesktop(window.innerWidth >= 1024);
     };
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

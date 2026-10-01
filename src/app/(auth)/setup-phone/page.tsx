@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Typography,
@@ -15,9 +16,22 @@ import { createClient } from "@/lib/supabase/client";
 export const dynamic = "force-dynamic";
 
 export default function SetupPhonePage() {
+  const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect test users to dashboard
+  useEffect(() => {
+    const checkTestUser = async () => {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user?.email?.endsWith('@gtpea.test')) {
+        router.push('/dashboard');
+      }
+    };
+    checkTestUser();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +55,7 @@ export default function SetupPhonePage() {
     // Update employee record with phone number
     const { error: employeeError } = await (supabase
       .from("employees") as any)
-      .update({ 
+      .update({
         phone_number: phoneNumber,
       })
       .eq("email", userData.user.email);
