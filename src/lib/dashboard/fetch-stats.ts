@@ -236,19 +236,12 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       .map((e) => e.id)
   );
 
-  console.log('[fetchDashboardStats] currentRole:', currentRole);
-  console.log('[fetchDashboardStats] shouldFilterAdmins:', shouldFilterAdmins);
-  console.log('[fetchDashboardStats] Total employees:', employees.length);
-  console.log('[fetchDashboardStats] Total loans:', loans.length);
-  console.log('[fetchDashboardStats] Admin employee IDs:', Array.from(adminEmployeeIds));
-
   let filteredEmployees = employees;
   let filteredLoans = loans;
 
   if (shouldFilterAdmins) {
     filteredEmployees = employees.filter((e) => !adminEmployeeNos.has(e.employee_no));
     filteredLoans = loans.filter((l) => !adminEmployeeIds.has(l.employee_id));
-    console.log('[fetchDashboardStats] After filtering - employees:', filteredEmployees.length, 'loans:', filteredLoans.length);
   }
 
   const activeEmployees = filteredEmployees.filter((e) => e.status === "active");
@@ -271,20 +264,9 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const totalContributionsSum = contributions.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
   const totalSavings = totalSavingsFromBalances > 0 ? totalSavingsFromBalances : totalContributionsSum;
 
-  console.log('[fetchDashboardStats] All loan statuses:', [...new Set(filteredLoans.map(l => l.status))]);
-  console.log('[fetchDashboardStats] Sample loans with statuses:', filteredLoans.slice(0, 5).map(l => ({
-    id: l.id,
-    status: l.status,
-    outstanding: l.outstanding_balance,
-    approved: l.amount_approved,
-    disbursed: l.amount_disbursed
-  })));
-
   const activeLoans = filteredLoans.filter((l) =>
-    ["approved", "disbursed", "repaying", "Active"].includes(l.status)
+    ["approved", "disbursed", "repaying", "active", "Active"].includes(l.status)
   );
-
-  console.log('[fetchDashboardStats] Active loans count:', activeLoans.length);
   const totalLoansOutstanding = activeLoans.reduce((acc, l) => {
     // outstanding_balance is authoritative; fall back to amount_approved or amount_requested
     const outstanding =
@@ -298,14 +280,14 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     // amount_disbursed is set after disbursement; fall back to amount_approved for approved loans
     const disbursed =
       Number(l.amount_disbursed) ||
-      (["approved", "disbursed", "repaying", "completed", "Active"].includes(l.status)
+      (["approved", "disbursed", "repaying", "completed", "active", "Active"].includes(l.status)
         ? Number(l.amount_approved) || Number(l.amount_requested) || 0
         : 0);
     return acc + disbursed;
   }, 0);
   const pendingLoans = filteredLoans.filter((l) => l.status === "pending").length;
   const approvedLoans = filteredLoans.filter((l) =>
-    ["approved", "disbursed", "repaying", "completed", "Active"].includes(l.status)
+    ["approved", "disbursed", "repaying", "completed", "active", "Active"].includes(l.status)
   ).length;
   const totalWithdrawals = sum(
     withdrawals.filter((w) => ["approved", "disbursed", "pending"].includes(w.status)),
@@ -321,11 +303,11 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const loansByEmployee = filteredLoans.reduce<Record<string, { total: number; outstanding: number; count: number }>>(
     (acc, loan) => {
       const current = acc[loan.employee_id] || { total: 0, outstanding: 0, count: 0 };
-      if (["approved", "disbursed", "repaying", "completed", "Active"].includes(loan.status)) {
+      if (["approved", "disbursed", "repaying", "completed", "active", "Active"].includes(loan.status)) {
         current.total += Number(loan.amount_approved) || Number(loan.amount_disbursed) || 0;
         current.count += 1;
       }
-      if (["approved", "disbursed", "repaying", "Active"].includes(loan.status)) {
+      if (["approved", "disbursed", "repaying", "active", "Active"].includes(loan.status)) {
         current.outstanding += Number(loan.outstanding_balance) || Number(loan.amount_approved) || 0;
       }
       acc[loan.employee_id] = current;
@@ -475,7 +457,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       amount: formatCurrency(Number(loan.amount_disbursed) || 0),
       loanId: loan.loan_ref,
       date: formatDate(loan.disbursement_date),
-      status: loan.status === "disbursed" || loan.status === "repaying" || loan.status === "Active" ? "completed" : "pending",
+      status: loan.status === "disbursed" || loan.status === "repaying" || loan.status === "active" || loan.status === "Active" ? "completed" : "pending",
     }));
 
   const recentActivity = transactions.map((tx) => ({
@@ -504,7 +486,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const calendarRepayments = upcomingRepayments.length > 0
     ? upcomingRepayments
     : filteredLoans
-        .filter((l) => ["disbursed", "repaying", "Active"].includes(l.status))
+        .filter((l) => ["disbursed", "repaying", "active", "Active"].includes(l.status))
         .slice(0, 6)
         .map((loan) => {
           const start = loan.disbursement_date ? new Date(loan.disbursement_date) : new Date();
@@ -530,7 +512,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   if (forecastSource.length === 0) {
     const now = new Date();
     forecastSource = filteredLoans
-      .filter((l) => ["disbursed", "repaying", "Active"].includes(l.status))
+      .filter((l) => ["disbursed", "repaying", "active", "Active"].includes(l.status))
       .flatMap((loan) => {
         const start = loan.disbursement_date ? new Date(loan.disbursement_date) : now;
         const nextDue = new Date(start);
