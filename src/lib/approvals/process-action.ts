@@ -31,8 +31,8 @@ export async function processApprovalAction(input: {
     return { error: "This approval is already completed.", status: 400 };
   }
 
-  if (!canApproveAtStage(userRole, approval.current_stage)) {
-    const needed = roleForStage(approval.current_stage) ?? "approver";
+  if (!canApproveAtStage(userRole, approval.current_stage, approval.entity_type)) {
+    const needed = roleForStage(approval.current_stage, approval.entity_type) ?? "approver";
     return { error: `This step needs a ${needed.replace("_", " ")}.`, status: 403 };
   }
 
@@ -56,7 +56,7 @@ export async function processApprovalAction(input: {
     const actionData: any = {
       approval_id: approval.id,
       stage: approval.current_stage,
-      required_role: roleForStage(approval.current_stage) ?? userRole,
+      required_role: roleForStage(approval.current_stage, approval.entity_type) ?? userRole,
       action,
       actioned_by: userId,
       notes: notes || null,
@@ -222,7 +222,7 @@ export async function processApprovalAction(input: {
       title: `${entityLabel} ${action === "approved" ? "approved" : "rejected"}`,
       message:
         action === "approved" && !isFinalStage
-          ? `${entityLabel} moved to stage ${nextStage} (${labelForRole(roleForStage(nextStage) ?? "next reviewer")}).`
+          ? `${entityLabel} moved to stage ${nextStage} (${labelForRole(roleForStage(nextStage, approval.entity_type) ?? "next reviewer")}).`
           : action === "approved" && isFinalStage
             ? `${entityLabel} fully approved.`
             : `${entityLabel} was rejected.`,
@@ -231,7 +231,7 @@ export async function processApprovalAction(input: {
     });
 
     if (action === "approved" && !isFinalStage) {
-      const nextRole = roleForStage(nextStage);
+      const nextRole = roleForStage(nextStage, approval.entity_type);
       if (nextRole) {
         const approversRes = await (admin.from("profiles") as any).select("user_id").eq("role", nextRole);
         for (const approver of (approversRes.data ?? []) as { user_id: string }[]) {
@@ -251,10 +251,10 @@ export async function processApprovalAction(input: {
   }
 
   return {
-    message: successMessageAfterApproval(action, approval.current_stage, isFinalStage),
+    message: successMessageAfterApproval(action, approval.current_stage, isFinalStage, approval.entity_type),
     status: 200,
     is_final: isFinalStage && action === "approved",
     next_stage: action === "approved" && !isFinalStage ? nextStage : null,
-    next_reviewer: action === "approved" && !isFinalStage ? roleForStage(nextStage) : null,
+    next_reviewer: action === "approved" && !isFinalStage ? roleForStage(nextStage, approval.entity_type) : null,
   };
 }
