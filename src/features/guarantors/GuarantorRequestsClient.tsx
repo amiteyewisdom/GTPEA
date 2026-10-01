@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, X, Clock, Shield, AlertCircle, BadgeCent } from "lucide-react";
+import { Check, X, Clock, Shield, BadgeCent } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatDate, formatCurrency } from "@/utils/formatters";
 
@@ -41,8 +41,6 @@ export default function GuarantorRequestsClient({
 }: GuarantorRequestsClientProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
 
   const handleAction = async (
@@ -50,8 +48,6 @@ export default function GuarantorRequestsClient({
     action: "approved" | "rejected"
   ) => {
     setLoading(requestId);
-    setError(null);
-    setSuccess(null);
 
     try {
       const response = await fetch("/api/guarantors/consent", {
@@ -79,12 +75,10 @@ export default function GuarantorRequestsClient({
           description: "The applicant has been notified.",
         });
       }
-      setSuccess(data.message || "Request processed successfully");
       setNotes((prev) => ({ ...prev, [requestId]: "" }));
       router.refresh();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An error occurred";
-      setError(msg);
       toast.error(msg);
     } finally {
       setLoading(null);
@@ -99,20 +93,6 @@ export default function GuarantorRequestsClient({
           Review loan applications where you have been selected as a guarantor
         </p>
       </div>
-
-      {success && (
-        <div className="mb-4 flex items-center gap-2 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800">
-          <Check className="w-5 h-5" />
-          <p className="text-sm">{success}</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-4 flex items-center gap-2 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800">
-          <AlertCircle className="w-5 h-5" />
-          <p className="text-sm">{error}</p>
-        </div>
-      )}
 
       {requests.length === 0 ? (
         <GlassCard className="p-8 text-center">
