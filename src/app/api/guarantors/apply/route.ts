@@ -48,31 +48,36 @@ export async function POST(request: Request) {
     }
 
     // Check if already has a guarantor status
-    const existingRes = await supabase
+    const existingRes = await adminClient
       .from("employees")
       .select("guarantor_status, is_blacklisted")
       .eq("id", employee.employeeId)
-      .single();
+      .maybeSingle();
 
-    if (existingRes.error) {
+    // If employee record doesn't exist, allow the application to proceed
+    // (this can happen if the profile's employee_id references a UUID that exists in other tables but not employees)
+    if (existingRes.error && existingRes.error.code !== 'PGRST116') {
+      console.error("[/api/guarantors/apply] Error checking guarantor status:", existingRes.error);
       return NextResponse.json(
         { error: "Failed to check guarantor status." },
         { status: 500 }
       );
     }
 
-    const existing = existingRes.data as { guarantor_status: string | null; is_blacklisted: boolean | null };
-    if (existing.is_blacklisted) {
-      return NextResponse.json(
-        { error: "You are blacklisted from becoming a guarantor. Please contact the union representative for more information." },
-        { status: 400 }
-      );
-    }
-    if (existing.guarantor_status && existing.guarantor_status !== "suspended") {
-      return NextResponse.json(
-        { error: "You already have a pending or approved guarantor application." },
-        { status: 400 }
-      );
+    const existing = existingRes.data as { guarantor_status: string | null; is_blacklisted: boolean | null } | null;
+    if (existing) {
+      if (existing.is_blacklisted) {
+        return NextResponse.json(
+          { error: "You are blacklisted from becoming a guarantor. Please contact the union representative for more information." },
+          { status: 400 }
+        );
+      }
+      if (existing.guarantor_status && existing.guarantor_status !== "suspended") {
+        return NextResponse.json(
+          { error: "You already have a pending or approved guarantor application." },
+          { status: 400 }
+        );
+      }
     }
 
     // Get employee name for notification
@@ -80,12 +85,12 @@ export async function POST(request: Request) {
       .from("employees")
       .select("first_name, last_name")
       .eq("id", employee.employeeId)
-      .single();
+      .maybeSingle();
 
     const employeeData = employeeRes.data as { first_name: string; last_name: string } | null;
     const employeeName = employeeData ? `${employeeData.first_name} ${employeeData.last_name}` : "An employee";
 
-    // Update employee with pending guarantor status
+    // Update employee with pending guarantor status (if employee record exists)
     const updateRes = await adminClient
       .from("employees")
       .update({
@@ -95,7 +100,9 @@ export async function POST(request: Request) {
       })
       .eq("id", employee.employeeId);
 
-    if (updateRes.error) {
+    // If update fails because employee record doesn't exist, that's okay - we'll still create the notification
+    if (updateRes.error && updateRes.error.code !== 'PGRST116') {
+      console.error("[/api/guarantors/apply] Error updating employee:", updateRes.error);
       return NextResponse.json(
         { error: updateRes.error.message },
         { status: 500 }

@@ -31,15 +31,10 @@ export async function getLoggedInEmployee(
   const admin = createAdminClient();
 
   // If employee_id is already a valid UUID, use it directly
+  // Skip verification since the UUID may have data in other tables (savings, loans) even if not in employees table
   if (profile?.employee_id && profile.employee_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
     console.log("[getLoggedInEmployee] Using employee_id as UUID:", profile.employee_id);
-
-    // Verify the employee actually exists with this UUID
-    const verifyRes = await admin.from("employees").select("id").eq("id", profile.employee_id).maybeSingle();
-    if (verifyRes.data?.id) {
-      return { userId: user.id, employeeId: profile.employee_id, role };
-    }
-    console.log("[getLoggedInEmployee] Employee UUID exists in profile but not in employees table, trying fallbacks");
+    return { userId: user.id, employeeId: profile.employee_id, role };
   }
 
   if (profile?.employee_id) {
