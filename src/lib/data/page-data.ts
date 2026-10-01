@@ -179,8 +179,20 @@ export async function fetchMyLoansData() {
 }
 
 export async function fetchSavingsHistoryData() {
-  const { supabase, employeeUuid } = await getSessionProfile();
+  const { supabase, user, profile, employeeUuid: initialUuid } = await getSessionProfile();
+  let employeeUuid = initialUuid;
+
+  console.log("[fetchSavingsHistoryData] Initial state:", { user: user?.id, profile, initialUuid });
+
+  // Fallback: look up employee by matching user_id directly on employees table
+  if (!employeeUuid && user) {
+    const byUser = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
+    employeeUuid = (byUser.data as any)?.id ?? null;
+    console.log("[fetchSavingsHistoryData] Fallback lookup:", { byUser: byUser.data, employeeUuid });
+  }
+
   if (!employeeUuid) {
+    console.log("[fetchSavingsHistoryData] No employeeUuid found, returning empty data");
     return { totalSavings: 0, thisMonth: 0, contributions: [] as any[] };
   }
 
@@ -195,6 +207,11 @@ export async function fetchSavingsHistoryData() {
       .limit(100),
   ]);
 
+  console.log("[fetchSavingsHistoryData] Query results:", {
+    savingsCount: savingsRes.data?.length,
+    contributionsCount: contributionsRes.data?.length,
+  });
+
   const contributions = (contributionsRes.data ?? []) as any[];
   const thisMonth = contributions
     .filter(
@@ -206,6 +223,8 @@ export async function fetchSavingsHistoryData() {
   const savingsBalance = (savingsRes.data ?? []).reduce((s, r: any) => s + (Number(r.balance) || 0), 0);
   const contributionsTotal = contributions.reduce((s, c: any) => s + (Number(c.amount) || 0), 0);
   const totalSavings = savingsBalance > 0 ? savingsBalance : contributionsTotal;
+
+  console.log("[fetchSavingsHistoryData] Returning:", { totalSavings, thisMonth, contributionsCount: contributions.length });
 
   return {
     totalSavings,
