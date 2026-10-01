@@ -36,7 +36,7 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardStatCard
-          title="Savings less Loans"
+          title="Fund Balance"
           value={formatCurrency(stats.fundBalance)}
           icon={Wallet}
           color="text-brand-accent"
