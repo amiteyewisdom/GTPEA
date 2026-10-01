@@ -52,7 +52,6 @@ const ACTIVE_STATUSES = ["approved", "disbursed", "repaying", "active"];
 
 export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalOutstanding, userRole }: LoansClientProps) {
   const isEmployee = userRole === "employee";
-  const isAdmin = ["super_admin", "administrator", "fund_manager", "chairperson"].includes(userRole || "");
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [page, setPage] = useState(0);
@@ -153,7 +152,7 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
         <KPICard title="Defaulted" value={defaulted} icon={AlertTriangle} accent={defaulted > 0 ? "danger" : "primary"} subtitle={`${((defaulted / Math.max(total, 1)) * 100).toFixed(1)}% default rate`} />
       </div>
 
-      {(isEmployee || isAdmin) && <LoanApplication loanProducts={loanProducts} />}
+      {isEmployee && <LoanApplication loanProducts={loanProducts} />}
 
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -177,12 +176,14 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
           <button onClick={() => handleExport('all')} className="flex items-center gap-1.5 rounded-brand border border-brand-card-border bg-white px-3 py-2 text-xs font-medium text-brand-text-secondary hover:bg-brand-hover">
             <Download className="h-3.5 w-3.5" /> Export All
           </button>
-          <button
-            onClick={() => document.getElementById("loan-application")?.scrollIntoView({ behavior: "smooth" })}
-            className="flex items-center gap-1.5 rounded-brand bg-brand-green px-3 py-2 text-xs font-semibold text-white hover:bg-brand-green-dark"
-          >
-            <Plus className="h-3.5 w-3.5" /> New Facility
-          </button>
+          {isEmployee && (
+            <button
+              onClick={() => document.getElementById("loan-application")?.scrollIntoView({ behavior: "smooth" })}
+              className="flex items-center gap-1.5 rounded-brand bg-brand-green px-3 py-2 text-xs font-semibold text-white hover:bg-brand-green-dark"
+            >
+              <Plus className="h-3.5 w-3.5" /> New Facility
+            </button>
+          )}
         </div>
       </div>
 
