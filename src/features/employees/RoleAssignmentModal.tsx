@@ -2,6 +2,8 @@
 
 import React from "react";
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface RoleAssignmentModalProps {
   onClose: () => void;
@@ -9,6 +11,7 @@ interface RoleAssignmentModalProps {
 }
 
 export function RoleAssignmentModal({ onClose, targetEmployee }: RoleAssignmentModalProps) {
+  const router = useRouter();
   const [selectedRole, setSelectedRole] = React.useState('');
   const [loading, setLoading] = React.useState(false);
 
@@ -34,15 +37,16 @@ export function RoleAssignmentModal({ onClose, targetEmployee }: RoleAssignmentM
       });
 
       if (response.ok) {
+        toast.success(`Role assigned — ${targetEmployee.name} now has the new role`);
         onClose();
-        window.location.reload();
+        router.refresh();
       } else {
         const data = await response.json();
-        alert(data.error || 'Failed to assign role');
+        toast.error(data.error || 'Failed to assign role');
       }
     } catch (error) {
       console.error('Failed to assign role:', error);
-      alert('Failed to assign role');
+      toast.error('Failed to assign role');
     } finally {
       setLoading(false);
     }

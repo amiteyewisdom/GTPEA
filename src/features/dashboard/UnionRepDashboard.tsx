@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
@@ -16,7 +16,6 @@ import {
 
 export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) {
   const router = useRouter();
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   return (
     <div className="space-y-6">
@@ -25,13 +24,6 @@ export default function UnionRepDashboard({ stats }: { stats: DashboardStats }) 
         <h1 className="text-2xl md:text-3xl font-bold text-brand-text mb-2">Trustee Dashboard</h1>
         <p className="text-sm md:text-base text-brand-text-secondary">Review and recommend loan applications</p>
       </div>
-
-      {message && (
-        <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
 
       {/* Review Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLoggedInEmployee } from "@/lib/loans/employee";
 import { borrowingCapacity, committedLoanAmount } from "@/lib/loans/capacity";
 import { calculateMonthlyRepayment, formatCurrency } from "@/utils/formatters";
-import { APPROVAL_STAGES } from "@/lib/loans/workflow";
+import { labelForRole, roleForStage } from "@/lib/loans/workflow";
 
 export async function POST(request: Request) {
   let body: any;
@@ -67,17 +67,17 @@ async function handleAmend(body: any) {
       .single(),
     supabase
       .from("loans")
-      .select("id, employee_id, status, loan_guarantors(guarantor_id)")
+      .select("id, employee_id, status, loan_ref, loan_guarantors(guarantor_id)")
       .eq("id", loanId)
       .eq("employee_id", employee.employeeId)
       .single(),
-    supabase.from("loan_guarantors").select("guarantor_id").eq("loan_id", loanId),
+    supabase.from("loan_guarantors").select("id, guarantor_id, consent_status").eq("loan_id", loanId),
     supabase
       .from("approvals")
-      .select("id, status, rejection_stage, rejection_reason")
+      .select("id, status, current_stage")
       .eq("entity_id", loanId)
       .eq("entity_type", "loan")
-      .single(),
+      .maybeSingle(),
   ]);
 
   const product = productRes.data as {
@@ -100,7 +100,7 @@ async function handleAmend(body: any) {
     return NextResponse.json({ error: "This loan product is not available." }, { status: 400 });
   }
 
-  const loan = loanRes.data as { id: string; employee_id: string; status: string } | null;
+  const loan = loanRes.data as { id: string; employee_id: string; status: string; loan_ref: string } | null;
   if (loanRes.error || !loan) {
     return NextResponse.json({ error: "Loan not found or you do not have permission to amend it." }, { status: 404 });
   }
@@ -169,6 +169,7 @@ async function handleAmend(body: any) {
       approved_by: null,
       disbursed_by: null,
       disbursement_date: null,
+      notes: null,
     })
     .eq("id", loanId);
 
@@ -176,6 +177,13 @@ async function handleAmend(body: any) {
     console.error("[/api/loans/amend] loan update error:", updateRes.error);
     return NextResponse.json({ error: updateRes.error.message }, { status: 500 });
   }
+
+  // Determine where the amended application resumes BEFORE deleting the old
+  // workflow rows. A rejected approval's current_stage is the stage that
+  // rejected it — rejection never advances it.
+  const existingApproval = existingApprovalRes.data as { id: string; status: string; current_stage: number } | null;
+  const resumeStage = existingApproval?.status === "rejected" ? existingApproval.current_stage : null;
+  const existingGuarantorRows = (existingGuarantors ?? []) as { id: string; guarantor_id: string; consent_status?: string }[];
 
   // Reset approval workflow
   const existingApprovals = await (admin.from("approvals") as any).select("id").eq("entity_id", loanId).eq("entity_type", "loan");
@@ -185,25 +193,80 @@ async function handleAmend(body: any) {
     await (admin.from("approvals") as any).delete().in("id", approvalIds);
   }
 
-  // If this was a rejected loan, skip to the rejection stage
-  const existingApproval = existingApprovalRes.data as { status: string; rejection_stage?: number; rejection_reason?: string } | null;
-  const startStage = (existingApproval?.status === "rejected" && existingApproval.rejection_stage) ? existingApproval.rejection_stage : 1;
+  let message: string;
 
-  const approvalRes = await (admin.from("approvals") as any).insert({
-    entity_type: "loan",
-    entity_id: loanId,
-    status: "pending",
-    current_stage: 1, // Always start at stage 1 (union rep) after amendment
-    total_stages: 3,
-    submitted_by: employee.userId,
-  });
+  if (!resumeStage && existingGuarantorRows.length > 0) {
+    // Guarantor consent was declined (or never collected) — the amended
+    // application goes back to the guarantor first, not the board.
+    const consentResetRes = await (admin.from("loan_guarantors") as any)
+      .update({
+        consent_status: "pending",
+        consent_responded_at: null,
+        consent_notes: null,
+      })
+      .eq("loan_id", loanId);
+    if (consentResetRes.error) {
+      console.error("[/api/loans/amend] guarantor consent reset error:", consentResetRes.error);
+      return NextResponse.json({ error: consentResetRes.error.message }, { status: 500 });
+    }
 
-  if (approvalRes.error) {
-    console.error("[/api/loans/amend] approval insert error:", approvalRes.error);
-    return NextResponse.json({ error: approvalRes.error.message }, { status: 500 });
+    for (const g of existingGuarantorRows) {
+      const { data: guarantorProfile } = await admin
+        .from("profiles")
+        .select("user_id")
+        .eq("employee_id", g.guarantor_id)
+        .maybeSingle();
+      if (guarantorProfile?.user_id) {
+        await (admin.from("notifications") as any).insert({
+          user_id: guarantorProfile.user_id,
+          type: "approval_required",
+          title: "Guarantor Request",
+          message: `The applicant has amended facility ${loan.loan_ref} — please review and consent again.`,
+          entity_type: "loan",
+          entity_id: loanId,
+        });
+      }
+    }
+
+    message = "Facility application amended and sent back to your guarantor for consent.";
+  } else {
+    // Rejected by the board → resume at the stage that rejected it.
+    // No prior approval row → first submission → start at stage 1.
+    const startStage = resumeStage ?? 1;
+
+    const approvalRes = await (admin.from("approvals") as any).insert({
+      entity_type: "loan",
+      entity_id: loanId,
+      status: "pending",
+      current_stage: startStage,
+      total_stages: 3,
+      submitted_by: employee.userId,
+    });
+
+    if (approvalRes.error) {
+      console.error("[/api/loans/amend] approval insert error:", approvalRes.error);
+      return NextResponse.json({ error: approvalRes.error.message }, { status: 500 });
+    }
+
+    const resumeRole = roleForStage(startStage, "loan");
+    if (resumeRole) {
+      const approversRes = await (admin.from("profiles") as any).select("user_id").eq("role", resumeRole);
+      for (const approver of (approversRes.data ?? []) as { user_id: string }[]) {
+        await (admin.from("notifications") as any).insert({
+          user_id: approver.user_id,
+          type: "approval_required",
+          title: "Amended loan needs your review",
+          message: `An amended facility application needs your review at stage ${startStage}.`,
+          entity_type: "loan",
+          entity_id: loanId,
+        });
+      }
+    }
+
+    message = resumeStage
+      ? `Facility application amended and sent back to the ${labelForRole(resumeRole ?? "approver")} who rejected it.`
+      : "Facility application amended and resubmitted. The Relief Committee will review it first.";
   }
-
-  const message = "Facility application amended and resubmitted. It will go through the approval process again starting from the Union Rep.";
 
   return NextResponse.json({
     message,

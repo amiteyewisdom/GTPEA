@@ -14,9 +14,9 @@ import {
   BadgeCent,
   PiggyBank,
   TrendingUp,
-  UserCheck,
-  AlertCircle
+  UserCheck
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LoanReviewsPageProps {
   stats: DashboardStats;
@@ -25,14 +25,13 @@ interface LoanReviewsPageProps {
 export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
 
   const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
+    if (type === 'success') toast.success(text);
+    else toast.error(text);
   };
 
   const handleApproval = async (approvalId: string, action: 'approved' | 'rejected' | 'on_hold') => {
@@ -43,7 +42,6 @@ export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
     }
 
     setLoading(true);
-    setMessage(null);
 
     try {
       const response = await fetch('/api/approvals/action', {
@@ -74,7 +72,6 @@ export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
     if (!selectedLoanId) return;
 
     setLoading(true);
-    setMessage(null);
 
     try {
       const response = await fetch('/api/approvals/action', {
@@ -112,13 +109,6 @@ export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
         <h1 className="text-2xl md:text-3xl font-bold text-brand-text mb-2">Loan Reviews</h1>
         <p className="text-sm md:text-base text-brand-text-secondary">Review and approve pending loan applications</p>
       </div>
-
-      {message && (
-        <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
 
       {/* Rejection Dialog */}
       {showRejectionDialog && (

@@ -6,6 +6,8 @@ import { StatusChip } from "@/components/ui/StatusChip";
 import { KPICard } from "@/components/ui/KPICard";
 import { formatCurrency, formatDate, generateAmortizationSchedule } from "@/utils/formatters";
 import { LoanApplication } from "@/features/loans/LoanApplication";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface LoanRow {
   id: string;
@@ -51,6 +53,7 @@ const ALL_TABS = ["all", "active", "pending", "approved", "disbursed", "repaying
 const ACTIVE_STATUSES = ["active", "disbursed", "repaying"];
 
 export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalOutstanding, userRole }: LoansClientProps) {
+  const router = useRouter();
   const isEmployee = userRole === "employee";
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
@@ -131,7 +134,8 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
       
       setImportResult(result);
       if (result.imported > 0) {
-        window.location.reload();
+        toast.success(`${result.imported} loan${result.imported === 1 ? "" : "s"} imported`);
+        router.refresh();
       }
     } catch (error) {
       console.error('Import error:', error);

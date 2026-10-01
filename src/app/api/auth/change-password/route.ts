@@ -100,10 +100,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Also update phone number in profiles table
+    // Also update phone number in profiles table and clear the forced
+    // password-change flag — without this the proxy redirects the user back
+    // to /change-password on every request after an admin account reset.
     const { error: profileError } = await admin
       .from("profiles")
-      .update({ phone: phoneNumber })
+      .update({ phone: phoneNumber, must_change_password: false })
       .eq("user_id", user.id);
 
     if (profileError) {

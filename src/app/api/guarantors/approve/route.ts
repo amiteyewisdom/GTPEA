@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       notificationMessage = `Your application to become a guarantor has been blacklisted. ${notes ? `Reason: ${notes}` : ""} You cannot apply to be a guarantor again unless this is reversed.`;
     } else {
       notificationTitle = "Guarantor Application Rejected";
-      notificationMessage = `Your application to become a guarantor has been rejected. ${notes ? `Reason: ${notes}` : ""}`;
+      notificationMessage = `Your application to become a guarantor has been rejected. ${notes ? `Reason: ${notes}. ` : ""}You may update your details and apply again.`;
     }
 
     if (userId) {

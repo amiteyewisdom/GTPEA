@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, X, CheckCircle, AlertCircle, Download, Trash2, Upload, FileText } from "lucide-react";
+import { Plus, X, Download, Trash2, Upload, FileText } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useRouter } from "next/navigation";
 import { useDownload } from "@/hooks/use-download";
+import { toast } from "sonner";
 
 interface Expense {
   id: string;
@@ -38,7 +39,6 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
   const [expenses, setExpenses] = useState<Expense[]>(initial);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Bulk upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +67,6 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     setLoading(true);
-    setMessage(null);
     try {
       const res = await fetch("/api/expenses", {
         method: "POST",
@@ -76,12 +75,12 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
       });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || "Failed to save expense.");
-      setMessage({ type: "success", text: "Expense recorded successfully." });
+      toast.success("Expense recorded");
       setExpenses([payload.expense, ...expenses]);
       setFormData({ title: "", category: "", amount: "", expense_date: new Date().toISOString().split("T")[0], description: "", paid_to: "", receipt_ref: "" });
       setShowForm(false);
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to save expense." });
+      toast.error(err instanceof Error ? err.message : "Failed to save expense.");
     } finally {
       setLoading(false);
     }
@@ -96,7 +95,9 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
     });
     if (res.ok) {
       setExpenses(expenses.filter((e) => e.id !== id));
-      setMessage({ type: "success", text: "Expense deleted." });
+      toast.success("Expense deleted.");
+    } else {
+      toast.error("Could not delete expense.");
     }
   };
 
@@ -154,11 +155,11 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || "Upload failed.");
       setExpenses([...(payload.inserted ?? []), ...expenses]);
-      setMessage({ type: "success", text: payload.message + (payload.skipped?.length ? ` (${payload.skipped.length} rows skipped)` : "") });
+      toast.success(payload.message + (payload.skipped?.length ? ` (${payload.skipped.length} rows skipped)` : ""));
       if (payload.skipped?.length) setBulkErrors(payload.skipped);
       else { setShowBulkModal(false); setBulkRows([]); }
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Upload failed." });
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
     } finally {
       setBulkLoading(false);
     }
@@ -231,13 +232,6 @@ export function ExpensesClient({ expenses: initial }: { expenses: Expense[] }) {
           <p className="mt-1 text-xl font-bold text-brand-text">{Object.keys(byCategory).length}</p>
         </GlassCard>
       </div>
-
-      {message && (
-        <div className={`flex items-center gap-2 rounded-lg p-4 ${message.type === "success" ? "border border-green-200 bg-green-50 text-green-800" : "border border-red-200 bg-red-50 text-red-800"}`}>
-          {message.type === "success" ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
 
       {/* Add Expense Form */}
       {showForm && (

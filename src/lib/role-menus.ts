@@ -7,7 +7,6 @@ import {
   TrendingUp, 
   FileText, 
   Activity,
-  Settings,
   LogOut,
   User,
   CheckCircle,
@@ -110,13 +109,6 @@ export const menuItems: MenuItem[] = [
     label: 'Audit Logs',
     icon: Activity,
     path: '/audit',
-    roles: ['super_admin'],
-  },
-  {
-    id: 'system-settings',
-    label: 'System Settings',
-    icon: Settings,
-    path: '/system-settings',
     roles: ['super_admin'],
   },
 

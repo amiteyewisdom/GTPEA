@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Download, MoreVertical, X, CheckCircle, AlertCircle, ShieldOff, ShieldCheck, Shield, RotateCcw, Trash2 } from "lucide-react";
+import { Search, Plus, Download, MoreVertical, X, ShieldOff, ShieldCheck, Shield, RotateCcw, Trash2 } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useDownload } from "@/hooks/use-download";
 import { useRouter } from "next/navigation";
 import type { Employee } from "@/types/database";
 import { RoleAssignmentModal } from "./RoleAssignmentModal";
+import { toast } from "sonner";
 
 interface EmployeesClientProps {
   employees: Employee[];
@@ -20,7 +21,6 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const { download, loading: exporting } = useDownload();
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [suspendModal, setSuspendModal] = useState<{ employee: Employee; action: 'suspend' | 'unsuspend' } | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
@@ -67,7 +67,6 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const handleSuspendAction = async () => {
     if (!suspendModal) return;
     setSuspendLoading(true);
-    setMessage(null);
     try {
       const response = await fetch("/api/employees/suspend", {
         method: "POST",
@@ -80,12 +79,12 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || "Action failed.");
-      setMessage({ type: "success", text: payload.message });
+      toast.success(payload.message ?? "Done");
       setSuspendModal(null);
       setSuspendReason("");
       router.refresh();
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Action failed." });
+      toast.error(error instanceof Error ? error.message : "Action failed.");
     } finally {
       setSuspendLoading(false);
     }
@@ -94,7 +93,6 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const handleResetAccount = async () => {
     if (!resetAccountModal) return;
     setResetAccountLoading(true);
-    setMessage(null);
     try {
       const response = await fetch("/api/employees/reset-account", {
         method: "POST",
@@ -105,11 +103,11 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || "Failed to reset account.");
-      setMessage({ type: "success", text: payload.message });
+      toast.success("Account reset", { description: payload.message });
       setResetAccountModal(null);
       router.refresh();
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to reset account." });
+      toast.error(error instanceof Error ? error.message : "Failed to reset account.");
     } finally {
       setResetAccountLoading(false);
     }
@@ -118,7 +116,6 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   const handleDeleteEmployee = async () => {
     if (!deleteEmployeeModal) return;
     setDeleteEmployeeLoading(true);
-    setMessage(null);
     try {
       const response = await fetch("/api/employees/delete", {
         method: "POST",
@@ -129,11 +126,11 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || "Failed to delete employee.");
-      setMessage({ type: "success", text: payload.message });
+      toast.success(payload.message ?? "Employee deleted");
       setDeleteEmployeeModal(null);
       router.refresh();
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to delete employee." });
+      toast.error(error instanceof Error ? error.message : "Failed to delete employee.");
     } finally {
       setDeleteEmployeeLoading(false);
     }
@@ -171,22 +168,17 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
   };
 
   const handleExport = async () => {
-    setMessage(null);
     try {
       await download("/api/reports/employees", "gtpea_employees.csv");
-      setMessage({ type: "success", text: "Employee list downloaded." });
+      toast.success("Employee list downloaded.");
     } catch (error) {
-      setMessage({
-        type: "error",
-        text: error instanceof Error ? error.message : "Could not export employees.",
-      });
+      toast.error(error instanceof Error ? error.message : "Could not export employees.");
     }
   };
 
   const handleAddEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/employees", {
@@ -203,7 +195,7 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
         throw new Error(payload?.error || "Failed to add employee");
       }
 
-      setMessage({ type: "success", text: "Employee added successfully" });
+      toast.success("Employee added successfully");
       setFormData({
         first_name: "",
         last_name: "",
@@ -220,7 +212,7 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       });
       setShowForm(false);
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to add employee" });
+      toast.error(error instanceof Error ? error.message : "Failed to add employee");
     } finally {
       setLoading(false);
     }
@@ -267,13 +259,6 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
           </button>
         </div>
       </div>
-
-      {message && (
-        <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
 
       {/* Add Employee Form */}
       {showForm && (

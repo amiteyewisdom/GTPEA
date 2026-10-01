@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Plus, Edit, CheckCircle, X, AlertCircle, BadgeCent, Percent, Calendar, Shield } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency } from "@/utils/formatters";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -25,10 +27,10 @@ interface LoanProductsClientProps {
 }
 
 export function LoanProductsClient({ products }: LoanProductsClientProps) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -81,7 +83,6 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
 
     const payload = {
       ...formData,
@@ -107,7 +108,7 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
           throw new Error(result?.error || "Failed to update loan product");
         }
 
-        setMessage({ type: "success", text: "Loan product updated successfully" });
+        toast.success("Loan product updated");
       } else {
         const response = await fetch("/api/loan-products", {
           method: "POST",
@@ -120,14 +121,14 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
           throw new Error(result?.error || "Failed to add loan product");
         }
 
-        setMessage({ type: "success", text: "Loan product added successfully" });
+        toast.success("Loan product added");
       }
 
       resetForm();
       setShowForm(false);
-      window.location.reload();
+      router.refresh();
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to save loan product" });
+      toast.error(error instanceof Error ? error.message : "Failed to save loan product");
     } finally {
       setLoading(false);
     }
@@ -154,13 +155,6 @@ export function LoanProductsClient({ products }: LoanProductsClientProps) {
           Warning: Changing interest rates will affect all new loan applications. Existing loans will continue with their original rates.
         </p>
       </div>
-
-      {message && (
-        <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
 
       {showForm && (
         <GlassCard className="p-6">

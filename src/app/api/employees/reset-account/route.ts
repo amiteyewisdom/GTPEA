@@ -66,20 +66,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: authError.message }, { status: 500 });
     }
 
-    // Clear phone number from employees table
+    // Return the employee record to its initial setup state — clear both phone
+    // columns (the setup flow writes both) and mark first login again.
     const { error: phoneError } = await (adminClient
       .from("employees") as any)
-      .update({ phone_number: null, password_changed_at: null })
+      .update({
+        phone: null,
+        phone_number: null,
+        password_changed_at: null,
+        is_first_login: true,
+      })
       .eq("id", employeeId);
 
     if (phoneError) {
       return NextResponse.json({ error: phoneError.message }, { status: 500 });
     }
 
-    // Set must_change_password in profiles
+    // Set must_change_password in profiles and clear the stored phone so the
+    // proxy forces the default-password → change-password → add-phone flow.
     const { error: profileUpdateError } = await (adminClient
       .from("profiles") as any)
-      .update({ must_change_password: true })
+      .update({ must_change_password: true, phone: null })
       .eq("user_id", profile.user_id);
 
     if (profileUpdateError) {
@@ -95,7 +102,7 @@ export async function POST(request: Request) {
       details: {
         employee_no: employee.employee_no,
         email: employee.email,
-        previous_phone: employee.phone_number,
+        previous_phone: employee.phone ?? employee.phone_number,
       },
     });
 

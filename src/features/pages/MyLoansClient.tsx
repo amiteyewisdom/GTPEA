@@ -12,7 +12,7 @@ import {
   calculateMonthlyRepayment,
   feedbackDeadline,
 } from "@/utils/formatters";
-import { REJECTION_REASON_CODES } from "@/utils/constants";
+import { toast } from "sonner";
 import { CheckCircle, Clock, BadgeCent, Calendar, X, Users, Shield, Pencil } from "lucide-react";
 
 export function MyLoansClient({
@@ -91,6 +91,7 @@ export function MyLoansClient({
         throw new Error(data?.error || "Unable to amend application.");
       }
       closeAmend();
+      toast.success("Application amended", { description: data?.message });
       router.refresh();
     } catch (err) {
       setAmendError(err instanceof Error ? err.message : "Unexpected error.");
@@ -192,6 +193,7 @@ export function MyLoansClient({
                     {loan.status === "rejected" && (
                       <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
                         <p className="font-semibold">This application was rejected</p>
+                        {loan.notes && <p className="mt-1">Reason: {loan.notes}</p>}
                         <p className="mt-1">You can amend the application and resubmit it for review.</p>
                       </div>
                     )}

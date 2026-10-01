@@ -92,6 +92,22 @@ export async function POST(request: Request) {
       .maybeSingle();
     const applicantUserId = applicantProfileRes.data?.user_id ?? null;
 
+    // A guarantor rejection rejects the loan application itself — the employee
+    // sees the rejected state + reason in My Loans and can amend & resubmit,
+    // which sends the request back to the guarantor.
+    if (action === "rejected") {
+      const loanRejectRes = await admin
+        .from("loans")
+        .update({
+          status: "rejected",
+          notes: `Guarantor declined${notes ? `: ${notes}` : "."}`,
+        })
+        .eq("id", guarantorRequest.loan_id);
+      if (loanRejectRes.error) {
+        console.error("[/api/guarantors/consent] loan reject update error:", loanRejectRes.error);
+      }
+    }
+
     // Notify the loan applicant about the guarantor's decision
     if (applicantUserId) {
       await admin.from("notifications").insert({
@@ -99,8 +115,8 @@ export async function POST(request: Request) {
         type: "system",
         title: action === "approved" ? "Guarantor Consent Approved" : "Guarantor Consent Rejected",
         message: action === "approved"
-          ? `Your guarantor has approved the request for loan ${guarantorRequest.loans.loan_ref}.`
-          : `Your guarantor has rejected the request for loan ${guarantorRequest.loans.loan_ref}. ${notes ? `Reason: ${notes}` : ""}`,
+          ? `Your guarantor has approved the request for loan ${guarantorRequest.loans.loan_ref}. It has been sent to the Relief Committee for review.`
+          : `Your guarantor has rejected the request for loan ${guarantorRequest.loans.loan_ref}. ${notes ? `Reason: ${notes}. ` : ""}You can amend the application and resubmit it.`,
         entity_type: "loan",
         entity_id: guarantorRequest.loan_id,
       });
@@ -159,6 +175,22 @@ export async function POST(request: Request) {
               { error: `Consent recorded, but the approval workflow could not be started: ${approvalInsert.error.message}` },
               { status: 500 }
             );
+          }
+
+          // Notify union reps that a stage-1 approval is waiting
+          const reviewersRes = await admin
+            .from("profiles")
+            .select("user_id")
+            .eq("role", "union_rep");
+          for (const reviewer of (reviewersRes.data ?? []) as { user_id: string }[]) {
+            await (admin.from("notifications") as any).insert({
+              user_id: reviewer.user_id,
+              type: "approval_required",
+              title: "Loan application needs your review",
+              message: `Facility ${guarantorRequest.loans.loan_ref} needs your review at stage 1.`,
+              entity_type: "loan",
+              entity_id: guarantorRequest.loan_id,
+            });
           }
         }
       }

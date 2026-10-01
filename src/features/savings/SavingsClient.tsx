@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { BadgeCent, Plus, X, CheckCircle, AlertCircle, Search, MoreVertical, Edit2, Lock } from "lucide-react";
+import { BadgeCent, Plus, X, Search, MoreVertical, Edit2, Lock } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface SavingsRow {
   id: string;
@@ -40,7 +41,6 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
   const [search, setSearch] = useState("");
   const [showContributeForm, setShowContributeForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [formData, setFormData] = useState({ savings_id: "", amount: "" });
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [updateContribModal, setUpdateContribModal] = useState<{ row: SavingsRow } | null>(null);
@@ -60,7 +60,6 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
   const handleUpdateContrib = async () => {
     if (!updateContribModal) return;
     setContribLoading(true);
-    setMessage(null);
     try {
       const res = await fetch("/api/savings/update-contribution", {
         method: "POST",
@@ -69,12 +68,12 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
       });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || "Update failed.");
-      setMessage({ type: "success", text: payload.message });
+      toast.success(payload.message ?? "Contribution updated");
       setUpdateContribModal(null);
       setNewContrib("");
       router.refresh();
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Update failed." });
+      toast.error(err instanceof Error ? err.message : "Update failed.");
     } finally {
       setContribLoading(false);
     }
@@ -96,15 +95,14 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
 
   const handleCreateAccounts = async () => {
     setCreateLoading(true);
-    setMessage(null);
     try {
       const res = await fetch("/api/savings/create-accounts", { method: "POST" });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || "Failed to create accounts.");
-      setMessage({ type: "success", text: payload.message });
+      toast.success(payload.message ?? "Accounts created");
       router.refresh();
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to create accounts." });
+      toast.error(err instanceof Error ? err.message : "Failed to create accounts.");
     } finally {
       setCreateLoading(false);
     }
@@ -113,7 +111,6 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
   const handleContribute = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/savings/contribute", {
@@ -130,11 +127,12 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
         throw new Error(payload?.error || "Failed to add contribution");
       }
 
-      setMessage({ type: "success", text: "Contribution added successfully" });
+      toast.success("Contribution added successfully");
       setFormData({ savings_id: "", amount: "" });
       setShowContributeForm(false);
+      router.refresh();
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Contribution failed" });
+      toast.error(error instanceof Error ? error.message : "Contribution failed");
     } finally {
       setLoading(false);
     }
@@ -176,13 +174,6 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
           <p className="text-xs text-brand-text-secondary mt-1">Per account</p>
         </GlassCard>
       </div>
-
-      {message && (
-        <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
 
       {/* Controls */}
       <div className="flex items-center justify-between flex-wrap gap-4">

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { BadgeCent, Filter, Plus, X, CheckCircle, AlertCircle, Download, Upload } from "lucide-react";
+import { BadgeCent, Plus, X, Download, Upload } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const STATUS_CONFIG: Record<string, { color: string; bgColor: string; label: string }> = {
   pending: { color: "text-brand-warning", bgColor: "bg-brand-warning/20", label: "Pending" },
@@ -41,9 +43,9 @@ interface WithdrawalsClientProps {
 }
 
 export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [savingsAccounts, setSavingsAccounts] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     savings_id: "",
@@ -95,7 +97,8 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
       
       setImportResult(result);
       if (result.imported > 0) {
-        window.location.reload();
+        toast.success(`${result.imported} withdrawal request${result.imported === 1 ? "" : "s"} imported`);
+        router.refresh();
       }
     } catch (error) {
       console.error('Import error:', error);
@@ -124,7 +127,6 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/withdrawals/request", {
@@ -142,14 +144,14 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
         throw new Error(payload?.error || "Failed to submit withdrawal request");
       }
 
-      setMessage({
-        type: "success",
-        text: "PW request submitted. The approval and administrative process will take a maximum of 2 weeks.",
+      toast.success("PW request submitted", {
+        description: "The approval and administrative process will take a maximum of 2 weeks.",
       });
       setFormData({ savings_id: "", amount: "", reason: "" });
       setShowForm(false);
+      router.refresh();
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Submission failed" });
+      toast.error(error instanceof Error ? error.message : "Submission failed");
     } finally {
       setLoading(false);
     }
@@ -182,10 +184,6 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
             <Download className="w-4 h-4" />
             Export All
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-brand-card-border text-brand-text-secondary rounded-lg hover:bg-brand-hover transition-all">
-            <Filter className="w-4 h-4" />
-            Filter
-          </button>
           <button
             onClick={handleShowForm}
             className="flex items-center gap-2 px-4 py-2 bg-brand-accent text-brand-primary font-semibold rounded-lg hover:bg-brand-accent/90 transition-all"
@@ -195,13 +193,6 @@ export function WithdrawalsClient({ withdrawals, total }: WithdrawalsClientProps
           </button>
         </div>
       </div>
-
-      {message && (
-        <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
 
       {/* Withdrawal Request Form */}
       {showForm && (

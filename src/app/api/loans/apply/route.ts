@@ -221,6 +221,19 @@ async function handleApply(body: any) {
         { status: 500 }
       );
     }
+
+    // Notify union reps that a stage-1 approval is waiting
+    const reviewersRes = await (admin.from("profiles") as any).select("user_id").eq("role", "union_rep");
+    for (const reviewer of (reviewersRes.data ?? []) as { user_id: string }[]) {
+      await (admin.from("notifications") as any).insert({
+        user_id: reviewer.user_id,
+        type: "approval_required",
+        title: "Loan application needs your review",
+        message: `Facility ${loanRef} needs your review at stage 1.`,
+        entity_type: "loan",
+        entity_id: loanRes.data.id,
+      });
+    }
   }
 
   // Persist all guarantors and notify them

@@ -250,7 +250,7 @@ export async function processApprovalAction(input: {
           ? `${entityLabel} moved to stage ${nextStage} (${labelForRole(roleForStage(nextStage, approval.entity_type) ?? "next reviewer")}).`
           : action === "approved" && isFinalStage
             ? `${entityLabel} fully approved.`
-            : `${entityLabel} was rejected.`,
+            : `${entityLabel} was rejected${reasonCode || notes ? ` — ${reasonCode || notes}` : ""}. You can amend the application and resubmit it.`,
       entity_type: approval.entity_type,
       entity_id: approval.entity_id,
     });

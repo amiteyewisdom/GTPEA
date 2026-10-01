@@ -425,19 +425,15 @@ export default function LoginPage() {
                 />
                 Remember me
               </label>
-              <a
-                href="/forgot-password"
+              <span
                 style={{
-                  color: "#16A34A",
-                  textDecoration: "none",
+                  color: isDesktop ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.8)",
                   fontWeight: "500",
-                  transition: "color 0.2s",
+                  fontSize: "12px",
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "#C9A44C"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "#16A34A"}
               >
-                Forgot password?
-              </a>
+                Forgot password? Contact your administrator
+              </span>
             </div>
 
             <button

@@ -124,7 +124,7 @@ export async function POST(request: Request) {
     if (unionRepsRes.data) {
       const notifications = unionRepsRes.data.map((rep: any) => ({
         user_id: rep.user_id,
-        type: "system",
+        type: "approval_required",
         title: "New Guarantor Application",
         message: `${employeeName} has applied to become a guarantor.`,
       }));

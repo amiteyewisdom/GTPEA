@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Edit2, Save, X, Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { Edit2, Save, X, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import GlassCard from "@/components/ui/GlassCard";
 
 interface ProfileData {
@@ -44,7 +45,6 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [imageError, setImageError] = useState(false);
 
   // Internal email for Supabase auth (not user-facing)
@@ -57,7 +57,6 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
 
   const handleSave = async () => {
     setLoading(true);
-    setMessage(null);
     const supabase = createClient() as any;
 
     // Update profile (email is internal and not user-editable)
@@ -68,12 +67,11 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
     }).eq("id", profile!.id);
     
     if (error) {
-      setMessage({ type: "error", text: error.message });
+      toast.error("Could not update profile", { description: error.message });
     } else {
-      setMessage({ type: "success", text: "Profile updated successfully." });
+      toast.success("Profile updated");
       setEditing(false);
       router.refresh();
-      setTimeout(() => setMessage(null), 3000);
     }
     setLoading(false);
   };
@@ -83,7 +81,6 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
     if (!file) return;
 
     setUploading(true);
-    setMessage(null);
 
     try {
       const supabase = createClient();
@@ -117,11 +114,11 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
 
       setAvatarUrl(publicUrl);
       setImageError(false);
-      setMessage({ type: "success", text: "Avatar uploaded and saved successfully." });
+      toast.success("Photo updated");
       setTimeout(() => router.refresh(), 500);
     } catch (error: any) {
       console.error('Avatar upload error:', error);
-      setMessage({ type: "error", text: error.message || "Failed to upload avatar" });
+      toast.error("Photo upload failed", { description: error.message || "Failed to upload avatar" });
     } finally {
       setUploading(false);
     }
@@ -134,20 +131,8 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
     setEditing(false);
   };
 
-  const handlePasswordReset = async () => {
-    setMessage({ type: "error", text: "Contact administrator to reset your password." });
-    setTimeout(() => setMessage(null), 5000);
-  };
-
   return (
     <div className="max-w-2xl space-y-5 animate-fade-in">
-      {message && (
-        <div className={`flex items-center gap-2 rounded-lg border p-4 text-sm ${message.type === "success" ? "border-green-200 bg-green-50 text-green-800" : "border-red-200 bg-red-50 text-red-800"}`}>
-          {message.type === "success" ? <CheckCircle className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
-          {message.text}
-        </div>
-      )}
-
       {/* Header */}
       <GlassCard className="p-5">
         <div className="flex flex-wrap items-center gap-4">
@@ -267,21 +252,13 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
         )}
       </GlassCard>
 
-      {/* Security */}
+      {/* Security — password resets are handled by an administrator */}
       <GlassCard className="p-5">
-        <h3 className="mb-4 text-base font-bold text-brand-text">Security</h3>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-brand-text">Password</p>
-            <p className="text-xs text-brand-text-secondary">Keep your account secure by updating your password regularly.</p>
-          </div>
-          <button
-            onClick={handlePasswordReset}
-            className="inline-flex items-center gap-2 rounded-lg border border-brand-card-border px-4 py-2 text-sm font-medium text-brand-text hover:bg-brand-hover"
-          >
-            <Lock className="h-4 w-4" /> Reset Password
-          </button>
-        </div>
+        <h3 className="mb-2 text-base font-bold text-brand-text">Security</h3>
+        <p className="text-xs text-brand-text-secondary">
+          Forgotten your password? Contact your administrator — they will reset your account
+          to the default password and you&apos;ll be asked to set a new one on next login.
+        </p>
       </GlassCard>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Bell, MessageSquare, User, ChevronDown, Shield, Menu, CheckCheck, Landmark, HandCoins, Info } from "lucide-react";
+import { Search, Bell, User, ChevronDown, Shield, Menu, CheckCheck, Landmark, HandCoins, Info } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { formatRoleLabel } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -220,14 +220,6 @@ export default function EnterpriseTopbar({
               </div>
             )}
           </div>
-
-          <button
-            type="button"
-            className="hidden rounded-lg border border-brand-card-border p-2.5 text-brand-text-secondary hover:bg-brand-hover sm:block"
-            aria-label="Messages"
-          >
-            <MessageSquare className="h-5 w-5" />
-          </button>
 
           <div className="relative">
             <button

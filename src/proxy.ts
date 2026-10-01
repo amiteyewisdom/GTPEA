@@ -29,7 +29,7 @@ export default async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
-  const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/reset-password'];
+  const publicPaths = ['/', '/login', '/signup'];
   const isPublic = publicPaths.includes(pathname) || pathname.startsWith('/auth');
   const isApi = pathname.startsWith('/api');
   const isChangePassword = pathname === '/change-password';
@@ -38,7 +38,7 @@ export default async function proxy(request: NextRequest) {
   if (!user && !isPublic && !isApi) return NextResponse.redirect(new URL('/login', request.url));
   if (user && (pathname === '/login' || pathname === '/signup')) return NextResponse.redirect(new URL('/dashboard', request.url));
 
-  if (user && !isApi && !isChangePassword && !isVerifyOtp && pathname !== '/reset-password') {
+  if (user && !isApi && !isChangePassword && !isVerifyOtp) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('must_change_password, phone')

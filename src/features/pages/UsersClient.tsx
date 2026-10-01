@@ -16,6 +16,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export function UsersClient({ users }: { users: any[] }) {
   const router = useRouter();
@@ -38,10 +39,12 @@ export function UsersClient({ users }: { users: any[] }) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not reset password.");
-      window.alert(`Password reset. ${name} must set a new password on next login.`);
+      toast.success("Password reset", {
+        description: `${name} will sign in with the default password and be asked to set a new password and phone number.`,
+      });
       router.refresh();
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : "Could not reset password.");
+      toast.error(error instanceof Error ? error.message : "Could not reset password.");
     } finally {
       setResettingId(null);
     }

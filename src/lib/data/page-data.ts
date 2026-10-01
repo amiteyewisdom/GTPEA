@@ -133,7 +133,7 @@ export async function fetchMyLoansData() {
     admin
       .from("loans")
       .select(
-        `id, loan_ref, status, amount_requested, amount_approved, amount_disbursed, outstanding_balance, monthly_repayment, purpose, created_at, term_months, interest_rate, interest_calc_method, disbursement_date, loan_product_id, loan_products(name), guarantor_id, guarantor:guarantor_id(first_name, last_name, employee_no, phone), loan_guarantors(guarantor_id, account_number, amount, guarantor:guarantor_id(first_name, last_name, employee_no))`
+        `id, loan_ref, status, amount_requested, amount_approved, amount_disbursed, outstanding_balance, monthly_repayment, purpose, notes, created_at, term_months, interest_rate, interest_calc_method, disbursement_date, loan_product_id, loan_products(name), guarantor_id, guarantor:guarantor_id(first_name, last_name, employee_no, phone), loan_guarantors(guarantor_id, account_number, amount, consent_status, consent_notes, guarantor:guarantor_id(first_name, last_name, employee_no))`
       )
       .eq("employee_id", employeeUuid)
       .order("created_at", { ascending: false }),

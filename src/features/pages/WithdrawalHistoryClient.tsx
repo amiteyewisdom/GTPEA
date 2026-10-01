@@ -4,7 +4,9 @@ import { useState } from "react";
 import GlassCard from "@/components/ui/GlassCard";
 import SearchableList from "@/components/data/SearchableList";
 import { formatCurrency, formatDate } from "@/utils/formatters";
-import { ArrowUpCircle, Plus, X, CheckCircle, AlertCircle, BadgeCent } from "lucide-react";
+import { ArrowUpCircle, Plus, X, BadgeCent } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function WithdrawalHistoryClient({
   totalWithdrawals,
@@ -15,9 +17,9 @@ export function WithdrawalHistoryClient({
   thisMonth: number;
   withdrawals: any[];
 }) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [savingsAccounts, setSavingsAccounts] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     savings_id: "",
@@ -43,7 +45,6 @@ export function WithdrawalHistoryClient({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/withdrawals/request", {
@@ -61,15 +62,14 @@ export function WithdrawalHistoryClient({
         throw new Error(payload?.error || "Failed to submit withdrawal request");
       }
 
-      setMessage({
-        type: "success",
-        text: "PW request submitted. The approval and administrative process will take a maximum of 2 weeks.",
+      toast.success("PW request submitted", {
+        description: "The approval and administrative process will take a maximum of 2 weeks.",
       });
       setFormData({ savings_id: "", amount: "", reason: "" });
       setShowForm(false);
-      window.location.reload();
+      router.refresh();
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Submission failed" });
+      toast.error(error instanceof Error ? error.message : "Submission failed");
     } finally {
       setLoading(false);
     }
@@ -91,13 +91,6 @@ export function WithdrawalHistoryClient({
           New Request
         </button>
       </div>
-
-      {message && (
-        <div className={`flex items-center gap-2 p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
 
       {/* Withdrawal Request Form */}
       {showForm && (

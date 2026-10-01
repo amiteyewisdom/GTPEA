@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, CheckCircle, AlertCircle, Trash2, AlertTriangle, BadgeCent, Paperclip } from "lucide-react";
+import { Plus, X, Trash2, AlertTriangle, BadgeCent, Paperclip } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface Employee {
   id: string;
@@ -57,7 +58,6 @@ export function ChargesClient({
   const [charges, setCharges] = useState<Charge[]>(initial);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [formData, setFormData] = useState({
     employee_id: "",
     type: "fee" as "fee" | "penalty",
@@ -73,7 +73,6 @@ export function ChargesClient({
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     setLoading(true);
-    setMessage(null);
     try {
       let billUrl: string | undefined;
       if (billFile) {
@@ -92,13 +91,13 @@ export function ChargesClient({
       });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload?.error || "Failed to record charge.");
-      setMessage({ type: "success", text: "Charge recorded successfully." });
+      toast.success("Charge recorded");
       setCharges([payload.charge, ...charges]);
       setFormData({ employee_id: "", type: "fee", amount: "", description: "", reference: "" });
       setBillFile(null);
       setShowForm(false);
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed." });
+      toast.error(err instanceof Error ? err.message : "Failed.");
     } finally {
       setLoading(false);
     }
@@ -144,13 +143,6 @@ export function ChargesClient({
           <p className="mt-1 text-xl font-bold text-red-600">{formatCurrency(totalPenalties)}</p>
         </GlassCard>
       </div>
-
-      {message && (
-        <div className={`flex items-center gap-2 rounded-lg p-4 ${message.type === "success" ? "border border-green-200 bg-green-50 text-green-800" : "border border-red-200 bg-red-50 text-red-800"}`}>
-          {message.type === "success" ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-          <p className="text-sm">{message.text}</p>
-        </div>
-      )}
 
       {/* Add Charge Form */}
       {showForm && (
