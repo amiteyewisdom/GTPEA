@@ -6,6 +6,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import {
   Wallet,
+  PiggyBank,
   BadgeCent,
   CreditCard,
   TrendingUp
@@ -34,12 +35,18 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <DashboardStatCard
           title="Fund Balance"
           value={formatCurrency(stats.fundBalance)}
           icon={Wallet}
           color="text-brand-accent"
+        />
+        <DashboardStatCard
+          title="Total Savings"
+          value={formatCurrency(stats.totalSavings)}
+          icon={PiggyBank}
+          color="text-brand-success"
         />
         <DashboardStatCard
           title="Expected Payroll Deductions"
