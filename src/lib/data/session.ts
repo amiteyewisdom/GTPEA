@@ -17,8 +17,10 @@ export async function getSessionProfile() {
     .single() as any);
 
   const profile = profileRes.data;
+  // Use the employee_id from profile directly - it should already be the correct UUID
+  // Only try to resolve if it looks like an employee_no (not a UUID)
   const employeeUuid = profile?.employee_id
-    ? await resolveEmployeeUuid(supabase, profile.employee_id)
+    ? (profile.employee_id.includes('-') ? profile.employee_id : await resolveEmployeeUuid(supabase, profile.employee_id))
     : null;
 
   return { supabase, user, profile, employeeUuid };
