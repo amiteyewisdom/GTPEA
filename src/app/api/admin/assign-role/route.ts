@@ -141,16 +141,34 @@ export async function POST(request: Request) {
       }
     }
 
-    // Update the role in profiles table
-    const { error: updateError } = await admin
-      .from("profiles")
-      .update({ role })
-      .eq("user_id", targetUser.id);
+    // Update the role (and keep employee_id linked) in profiles table.
+    // Use the requester's session client: the guard_profiles_protected_columns trigger
+    // authorises the change via auth.uid() (verified super_admin above), and RLS allows it.
+    const { data: updatedProfiles, error: updateError } = await (supabase
+      .from("profiles") as any)
+      .update({ role, employee_id: employee.id })
+      .eq("user_id", targetUser.id)
+      .select("role");
 
     if (updateError) {
       console.error("[/api/admin/assign-role] Update profile error:", updateError);
       return NextResponse.json(
         { error: "Failed to assign role to profile." },
+        { status: 500 }
+      );
+    }
+
+    if (!updatedProfiles?.length) {
+      return NextResponse.json(
+        { error: "No profile found for this user. Ask the employee to log in once so their profile is created." },
+        { status: 404 }
+      );
+    }
+
+    if (updatedProfiles[0].role !== role) {
+      console.error("[/api/admin/assign-role] Role change was reverted by the profiles guard trigger");
+      return NextResponse.json(
+        { error: "Role change was rejected by the database guard. Apply the latest profiles trigger migration." },
         { status: 500 }
       );
     }

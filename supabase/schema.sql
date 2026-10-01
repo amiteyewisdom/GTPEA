@@ -83,8 +83,8 @@ CREATE TRIGGER set_profiles_updated_at
 -- Guard: the "Users can update own profile" RLS policy only restricts by row (user_id =
 -- auth.uid()), not by column. Without this trigger, any authenticated user could self-update
 -- their own role/is_active/employee_id via the client SDK and escalate privileges. Only
--- super_admin/administrator (or the service role, which bypasses RLS/triggers via BYPASSRLS)
--- may change these protected columns; everyone else keeps their existing values.
+-- super_admin/administrator or the service role (auth.role() = 'service_role'; note BYPASSRLS
+-- does NOT skip triggers) may change these protected columns; everyone else keeps their values.
 CREATE OR REPLACE FUNCTION guard_profiles_protected_columns()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -94,6 +94,10 @@ BEGIN
      OR NEW.is_active IS DISTINCT FROM OLD.is_active
      OR NEW.employee_id IS DISTINCT FROM OLD.employee_id
   THEN
+    IF COALESCE(auth.role(), '') = 'service_role' THEN
+      RETURN NEW;
+    END IF;
+
     SELECT role::text INTO requester_role FROM profiles WHERE user_id = auth.uid();
 
     IF requester_role IS DISTINCT FROM 'super_admin' AND requester_role IS DISTINCT FROM 'administrator' THEN
