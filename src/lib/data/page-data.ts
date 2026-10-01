@@ -184,11 +184,31 @@ export async function fetchSavingsHistoryData() {
 
   console.log("[fetchSavingsHistoryData] Initial state:", { user: user?.id, profile, initialUuid });
 
-  // Fallback: look up employee by matching user_id directly on employees table
+  // Fallback 1: look up employee by matching user_id directly on employees table
   if (!employeeUuid && user) {
     const byUser = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
     employeeUuid = (byUser.data as any)?.id ?? null;
-    console.log("[fetchSavingsHistoryData] Fallback lookup:", { byUser: byUser.data, employeeUuid });
+    console.log("[fetchSavingsHistoryData] Fallback lookup by user_id:", { byUser: byUser.data, employeeUuid });
+  }
+
+  // Fallback 2: if we got a UUID from profile but it returned no results, try user_id lookup
+  if (employeeUuid && user) {
+    const [savingsRes, contributionsRes] = await Promise.all([
+      supabase.from("savings").select("balance").eq("employee_id", employeeUuid),
+      supabase
+        .from("savings_contributions")
+        .select("id")
+        .eq("employee_id", employeeUuid)
+        .limit(1),
+    ]);
+
+    // If no results with profile's employee_id, try looking up by user_id
+    if ((!savingsRes.data || savingsRes.data.length === 0) && (!contributionsRes.data || contributionsRes.data.length === 0)) {
+      console.log("[fetchSavingsHistoryData] No results with profile employee_id, trying user_id lookup");
+      const byUser = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
+      employeeUuid = (byUser.data as any)?.id ?? null;
+      console.log("[fetchSavingsHistoryData] User_id lookup result:", { byUser: byUser.data, employeeUuid });
+    }
   }
 
   if (!employeeUuid) {
