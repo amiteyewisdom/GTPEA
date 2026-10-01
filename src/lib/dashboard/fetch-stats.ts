@@ -265,7 +265,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const totalSavings = totalSavingsFromBalances > 0 ? totalSavingsFromBalances : totalContributionsSum;
 
   const activeLoans = filteredLoans.filter((l) =>
-    ["approved", "disbursed", "repaying", "active", "Active"].includes(l.status)
+    ["active", "repaying", "Active"].includes(l.status)
   );
   const totalLoansOutstanding = activeLoans.reduce((acc, l) => {
     // outstanding_balance is authoritative; fall back to amount_approved or amount_requested
@@ -280,14 +280,14 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     // amount_disbursed is set after disbursement; fall back to amount_approved for approved loans
     const disbursed =
       Number(l.amount_disbursed) ||
-      (["approved", "disbursed", "repaying", "completed", "active", "Active"].includes(l.status)
+      (["active", "repaying", "completed", "Active"].includes(l.status)
         ? Number(l.amount_approved) || Number(l.amount_requested) || 0
         : 0);
     return acc + disbursed;
   }, 0);
   const pendingLoans = filteredLoans.filter((l) => l.status === "pending").length;
   const approvedLoans = filteredLoans.filter((l) =>
-    ["approved", "disbursed", "repaying", "completed", "active", "Active"].includes(l.status)
+    ["active", "repaying", "completed", "Active"].includes(l.status)
   ).length;
   const totalWithdrawals = sum(
     withdrawals.filter((w) => ["approved", "disbursed", "pending"].includes(w.status)),
@@ -303,11 +303,11 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const loansByEmployee = filteredLoans.reduce<Record<string, { total: number; outstanding: number; count: number }>>(
     (acc, loan) => {
       const current = acc[loan.employee_id] || { total: 0, outstanding: 0, count: 0 };
-      if (["approved", "disbursed", "repaying", "completed", "active", "Active"].includes(loan.status)) {
+      if (["active", "repaying", "completed", "Active"].includes(loan.status)) {
         current.total += Number(loan.amount_approved) || Number(loan.amount_disbursed) || 0;
         current.count += 1;
       }
-      if (["approved", "disbursed", "repaying", "active", "Active"].includes(loan.status)) {
+      if (["active", "repaying", "Active"].includes(loan.status)) {
         current.outstanding += Number(loan.outstanding_balance) || Number(loan.amount_approved) || 0;
       }
       acc[loan.employee_id] = current;

@@ -145,7 +145,7 @@ export async function processApprovalAction(input: {
 
       const loanUpdateRes = await (admin.from("loans") as any)
         .update({
-          status: "approved",
+          status: "active",
           approved_by: userId,
           approved_at: new Date().toISOString(),
           amount_approved: loanRes.data?.amount_requested ?? null,

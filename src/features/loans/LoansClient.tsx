@@ -48,7 +48,7 @@ interface LoansClientProps {
 }
 
 const ALL_TABS = ["all", "active", "pending", "approved", "disbursed", "repaying", "completed", "rejected", "defaulted"];
-const ACTIVE_STATUSES = ["approved", "disbursed", "repaying", "active"];
+const ACTIVE_STATUSES = ["active", "repaying"];
 
 export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalOutstanding, userRole }: LoansClientProps) {
   const isEmployee = userRole === "employee";

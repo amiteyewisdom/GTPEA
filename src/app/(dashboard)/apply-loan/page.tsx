@@ -23,11 +23,11 @@ export default async function ApplyLoanPage() {
       .from("loan_products")
       .select("id, name, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, description, requires_guarantor")
       .eq("is_active", true),
-    supabase
+    admin
       .from("employees")
       .select("first_name, last_name, employee_no, department, date_joined, savings(account_number)")
       .eq("id", employee!.employeeId)
-      .single(),
+      .maybeSingle(),
     admin
       .from("employees")
       .select("id, first_name, last_name, employee_no")
@@ -42,7 +42,7 @@ export default async function ApplyLoanPage() {
   if (employee?.employeeId) {
     const [savingsRes, loansRes] = await Promise.all([
       supabase.from("savings").select("balance").eq("employee_id", employee.employeeId).eq("status", "active"),
-      supabase.from("loans").select("outstanding_balance").eq("employee_id", employee.employeeId).in("status", ["approved", "active"]),
+      supabase.from("loans").select("outstanding_balance").eq("employee_id", employee.employeeId).in("status", ["active", "repaying"]),
     ]);
     savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
     activeLoanBalance = (loansRes.data ?? []).reduce((s: number, r: any) => s + Number(r.outstanding_balance ?? 0), 0);

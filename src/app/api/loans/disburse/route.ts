@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       disbursed_by: user.id,
       bank_name: bankName,
       bank_account_no: bankAccountNo,
-      status: "disbursed",
+      status: "repaying", // Changed from "disbursed" to "repaying" to indicate active repayment
     } as any)
     .eq("id", loanId)
     .select()
