@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     // Check if already has a guarantor status
     const existingRes = await adminClient
       .from("employees")
-      .select("guarantor_status, is_blacklisted")
+      .select("guarantor_status, guarantor_application_date, is_blacklisted")
       .eq("id", employee.employeeId)
       .maybeSingle();
 
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const existing = existingRes.data as { guarantor_status: string | null; is_blacklisted: boolean | null } | null;
+    const existing = existingRes.data as { guarantor_status: string | null; guarantor_application_date: string | null; is_blacklisted: boolean | null } | null;
     if (existing) {
       if (existing.is_blacklisted) {
         return NextResponse.json(
@@ -72,7 +72,13 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      if (existing.guarantor_status && existing.guarantor_status !== "suspended") {
+      // guarantor_status historically defaulted to 'pending' on all rows; a pending
+      // row with no application date is not a real application.
+      const hasRealApplication =
+        existing.guarantor_status &&
+        existing.guarantor_status !== "suspended" &&
+        !(existing.guarantor_status === "pending" && !existing.guarantor_application_date);
+      if (hasRealApplication) {
         return NextResponse.json(
           { error: "You already have a pending or approved guarantor application." },
           { status: 400 }

@@ -44,6 +44,12 @@ export default async function BecomeGuarantorPage() {
     blacklist_reason: string | null;
   } | null;
 
+  // guarantor_status historically defaulted to 'pending' on all rows; a pending
+  // row with no application date is not a real application.
+  if (employee && employee.guarantor_status === "pending" && !employee.guarantor_application_date) {
+    employee.guarantor_status = null;
+  }
+
   return (
     <BecomeGuarantorClient
       employee={employee}

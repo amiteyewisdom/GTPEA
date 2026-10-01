@@ -17,16 +17,23 @@ export default async function ProfilePage() {
 
   const { data: employee } = await supabase
     .from("employees")
-    .select("guarantor_status")
+    .select("guarantor_status, guarantor_application_date")
     .eq("user_id", user!.id)
     .maybeSingle();
 
   const typedProfile = profile as any;
   const typedEmployee = employee as any;
 
+  // guarantor_status historically defaulted to 'pending' on all rows; a pending
+  // row with no application date is not a real application.
+  const guarantorStatus =
+    typedEmployee?.guarantor_status === "pending" && !typedEmployee?.guarantor_application_date
+      ? null
+      : typedEmployee?.guarantor_status || null;
+
   const profileWithGuarantor = typedProfile ? {
     ...typedProfile,
-    guarantor_status: typedEmployee?.guarantor_status || null
+    guarantor_status: guarantorStatus
   } : null;
 
   return (

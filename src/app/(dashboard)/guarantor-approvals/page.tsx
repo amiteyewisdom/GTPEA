@@ -42,6 +42,7 @@ export default async function GuarantorApprovalsPage() {
       guarantor_notes
     `)
     .eq("guarantor_status", "pending")
+    .not("guarantor_application_date", "is", null)
     .order("guarantor_application_date", { ascending: true, nullsFirst: true });
 
   const applications = applicationsRes.data || [];
