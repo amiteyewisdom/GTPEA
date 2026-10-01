@@ -26,22 +26,31 @@ export default async function GuarantorRequestsPage() {
   }
 
   const typedProfile = profile as { full_name: string; role: string; employee_id: string };
-  const employeeNo = typedProfile.employee_id;
+  const employeeId = typedProfile.employee_id;
 
-  if (!employeeNo) {
+  if (!employeeId) {
     redirect("/dashboard");
   }
 
-  // Get employee record by employee_no (not id, since employee_id in profiles is employee_no)
-  const employeeRes = await supabase
-    .from("employees")
-    .select("id")
-    .eq("employee_no", employeeNo)
-    .maybeSingle();
+  let employeeUuid: string | null = null;
 
-  const employee = employeeRes.data as { id: string } | null;
+  // If employee_id is already a valid UUID, use it directly
+  if (employeeId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    console.log("[GuarantorRequests] employee_id is a UUID, using directly:", employeeId);
+    employeeUuid = employeeId;
+  } else {
+    // Otherwise, look up by employee_no
+    const employeeRes = await admin
+      .from("employees")
+      .select("id")
+      .eq("employee_no", employeeId)
+      .maybeSingle();
 
-  if (!employee) {
+    employeeUuid = employeeRes.data?.id ?? null;
+  }
+
+  if (!employeeUuid) {
+    console.log("[GuarantorRequests] Could not resolve employee UUID for:", employeeId);
     redirect("/dashboard");
   }
 
@@ -49,7 +58,7 @@ export default async function GuarantorRequestsPage() {
   const allGuarantorsRes = await admin
     .from("loan_guarantors")
     .select("*")
-    .eq("guarantor_id", employee.id);
+    .eq("guarantor_id", employeeUuid);
 
   console.log("[GuarantorRequests] All loan_guarantors for employee:", JSON.stringify(allGuarantorsRes.data, null, 2));
 
@@ -78,9 +87,9 @@ export default async function GuarantorRequestsPage() {
         )
       )
     `)
-    .eq("guarantor_id", employee.id);
+    .eq("guarantor_id", employeeUuid);
 
-  console.log("[GuarantorRequests] Employee ID:", employee.id);
+  console.log("[GuarantorRequests] Employee ID:", employeeUuid);
   console.log("[GuarantorRequests] Query error:", requestsRes.error);
   console.log("[GuarantorRequests] Query result:", JSON.stringify(requestsRes.data, null, 2));
 
@@ -89,7 +98,7 @@ export default async function GuarantorRequestsPage() {
   return (
     <GuarantorRequestsClient
       requests={requests}
-      employeeId={employee.id}
+      employeeId={employeeUuid}
     />
   );
 }
