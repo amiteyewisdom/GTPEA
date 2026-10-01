@@ -148,7 +148,7 @@ export async function fetchMyLoansData() {
       .from("loans")
       .select("outstanding_balance, amount_approved")
       .eq("employee_id", employeeUuid)
-      .in("status", ["approved", "disbursed", "repaying"]),
+      .in("status", ["approved", "disbursed", "repaying", "active"]),
     supabase.from("loan_products").select("*").eq("is_active", true),
   ]);
 
@@ -168,14 +168,14 @@ export async function fetchMyLoansData() {
   );
   const netAvailable = Math.max(0, savingsBalance * 3 - activeLoanBalance);
   const totalBorrowed = rows
-    .filter((loan) => ["approved", "disbursed", "repaying", "completed"].includes(loan.status))
+    .filter((loan) => ["approved", "disbursed", "repaying", "completed", "active"].includes(loan.status))
     .reduce((sum, loan) => {
       return sum + (Number(loan.amount_disbursed) || Number(loan.amount_approved) || 0);
     }, 0);
 
   const result = {
     pending: rows.filter((l) => l.status === "pending").length,
-    active: rows.filter((l) => ["disbursed", "repaying", "approved"].includes(l.status)).length,
+    active: rows.filter((l) => ["disbursed", "repaying", "approved", "active"].includes(l.status)).length,
     totalBorrowed,
     netAvailable,
     savingsBalance,
