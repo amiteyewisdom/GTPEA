@@ -137,16 +137,6 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   // Only filter out ADMIN001/ADMIN002 if the current user is NOT a super_admin
   const shouldFilterAdmins = currentRole !== "super_admin";
 
-  // Get employee IDs for ADMIN001 and ADMIN002 if we need to filter
-  let adminEmployeeIds: string[] = [];
-  if (shouldFilterAdmins) {
-    const { data: adminEmployees } = await supabase
-      .from("employees")
-      .select("id")
-      .in("employee_no", ["ADMIN001", "ADMIN002"]);
-    adminEmployeeIds = (adminEmployees ?? []).map((e: any) => e.id);
-  }
-
   const [
     employeesRes,
     savingsRes,
@@ -163,22 +153,13 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     transactionsTodayRes,
     employeeProfilesRes,
   ] = await Promise.all([
-    shouldFilterAdmins
-      ? supabase.from("employees").select("id, first_name, last_name, status").not("employee_no", "in", "(ADMIN001,ADMIN002)")
-      : supabase.from("employees").select("id, first_name, last_name, status"),
+    supabase.from("employees").select("id, first_name, last_name, status, employee_no"),
     supabase.from("savings").select("id, employee_id, balance, status"),
-    shouldFilterAdmins && adminEmployeeIds.length > 0
-      ? supabase
-          .from("loans")
-          .select(
-            "id, loan_ref, employee_id, amount_requested, amount_approved, amount_disbursed, outstanding_balance, status, purpose, term_months, monthly_repayment, disbursement_date, created_at, loan_product_id, employees!employee_id(first_name, last_name), loan_products(name)"
-          )
-          .not("employee_id", "in", `(${adminEmployeeIds.join(",")})`)
-      : supabase
-          .from("loans")
-          .select(
-            "id, loan_ref, employee_id, amount_requested, amount_approved, amount_disbursed, outstanding_balance, status, purpose, term_months, monthly_repayment, disbursement_date, created_at, loan_product_id, employees!employee_id(first_name, last_name), loan_products(name)"
-          ),
+    supabase
+      .from("loans")
+      .select(
+        "id, loan_ref, employee_id, amount_requested, amount_approved, amount_disbursed, outstanding_balance, status, purpose, term_months, monthly_repayment, disbursement_date, created_at, loan_product_id, employees!employee_id(first_name, last_name), loan_products(name)"
+      ),
     supabase
       .from("approvals")
       .select("id, entity_type, entity_id, status, submitted_at, submitted_by, current_stage, total_stages")
@@ -247,7 +228,23 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const contributions = (contributionsRes.data || []) as any[];
   const approvalActions = (approvalActionsRes.data || []) as any[];
 
-  const activeEmployees = employees.filter((e) => e.status === "active");
+  // Filter out ADMIN001/ADMIN002 employees and their loans if not super_admin
+  const adminEmployeeNos = new Set(["ADMIN001", "ADMIN002"]);
+  const adminEmployeeIds = new Set(
+    employees
+      .filter((e) => adminEmployeeNos.has(e.employee_no))
+      .map((e) => e.id)
+  );
+
+  let filteredEmployees = employees;
+  let filteredLoans = loans;
+
+  if (shouldFilterAdmins) {
+    filteredEmployees = employees.filter((e) => !adminEmployeeNos.has(e.employee_no));
+    filteredLoans = loans.filter((l) => !adminEmployeeIds.has(l.employee_id));
+  }
+
+  const activeEmployees = filteredEmployees.filter((e) => e.status === "active");
 
   // Build set of employee_ids linked to real members. Exclude only employees that are tied to
   // admin/rep/manager profiles; imported employees without a profile are treated as members.
@@ -266,7 +263,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   // Fall back to contributions total if savings balances haven't been populated
   const totalContributionsSum = contributions.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
   const totalSavings = totalSavingsFromBalances > 0 ? totalSavingsFromBalances : totalContributionsSum;
-  const activeLoans = loans.filter((l) =>
+  const activeLoans = filteredLoans.filter((l) =>
     ["approved", "disbursed", "repaying"].includes(l.status)
   );
   const totalLoansOutstanding = activeLoans.reduce((acc, l) => {
@@ -278,7 +275,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       0;
     return acc + outstanding;
   }, 0);
-  const totalLoansDisbursed = loans.reduce((acc, l) => {
+  const totalLoansDisbursed = filteredLoans.reduce((acc, l) => {
     // amount_disbursed is set after disbursement; fall back to amount_approved for approved loans
     const disbursed =
       Number(l.amount_disbursed) ||
@@ -287,8 +284,8 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
         : 0);
     return acc + disbursed;
   }, 0);
-  const pendingLoans = loans.filter((l) => l.status === "pending").length;
-  const approvedLoans = loans.filter((l) =>
+  const pendingLoans = filteredLoans.filter((l) => l.status === "pending").length;
+  const approvedLoans = filteredLoans.filter((l) =>
     ["approved", "disbursed", "repaying", "completed"].includes(l.status)
   ).length;
   const totalWithdrawals = sum(
@@ -302,7 +299,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     return acc;
   }, {});
 
-  const loansByEmployee = loans.reduce<Record<string, { total: number; outstanding: number; count: number }>>(
+  const loansByEmployee = filteredLoans.reduce<Record<string, { total: number; outstanding: number; count: number }>>(
     (acc, loan) => {
       const current = acc[loan.employee_id] || { total: 0, outstanding: 0, count: 0 };
       if (["approved", "disbursed", "repaying", "completed"].includes(loan.status)) {
@@ -330,8 +327,8 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
 
   // Build member-only loan set — exclude any loan whose employee_id belongs to a non-employee role
   const memberOnlyLoans = employeeOnlyIds.size > 0
-    ? loans.filter((l) => employeeOnlyIds.has(l.employee_id))
-    : loans;
+    ? filteredLoans.filter((l) => employeeOnlyIds.has(l.employee_id))
+    : filteredLoans;
 
   const memberOnlyContributions = employeeOnlyIds.size > 0
     ? contributions.filter((c) => employeeOnlyIds.has(c.employee_id))
