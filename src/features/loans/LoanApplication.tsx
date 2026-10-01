@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { addMonths, format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { BadgeCent, Calendar, AlertCircle, CheckCircle, X, Info, Users, Phone, Shield } from "lucide-react";
+import { toast } from "sonner";
+import { BadgeCent, Calendar, AlertCircle, CheckCircle, Info, Users, Phone, Shield } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import {
   formatCurrency,
@@ -94,7 +95,6 @@ export function LoanApplication({
   const [guarantorAccount, setGuarantorAccount] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const selectedProduct = useMemo(
@@ -185,12 +185,23 @@ export function LoanApplication({
         throw new Error(payload?.error || "Unable to submit loan request.");
       }
 
-      setSuccessMessage("Facility application submitted. The approval and administrative process will take a maximum of 2 weeks.");
+      toast.success("Facility application submitted", {
+        description: requiresGuarantor
+          ? "Your guarantor will be asked to consent, then the application goes to the board for approval."
+          : "Your application has entered the approval workflow. The process can take up to 2 weeks.",
+      });
       setConfirmOpen(false);
+      setPrincipalStr("");
+      setDurationStr("");
+      setPurpose("");
+      setGuarantorId("");
+      setGuarantorAccount("");
       setLoading(false);
       router.refresh();
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Submission failed.");
+      const msg = error instanceof Error ? error.message : "Submission failed.";
+      setErrorMessage(msg);
+      toast.error("Submission failed", { description: msg });
       setLoading(false);
     }
   };
@@ -530,15 +541,6 @@ export function LoanApplication({
         </div>
       )}
 
-      {successMessage && (
-        <div className="fixed bottom-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg flex items-center gap-3 max-w-md z-50">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-          <p className="text-sm text-green-800">{successMessage}</p>
-          <button onClick={() => setSuccessMessage(null)} className="ml-auto text-green-600 hover:text-green-800">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      )}
     </GlassCard>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Check, X, Clock, Shield, AlertCircle } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatDate } from "@/utils/formatters";
@@ -35,6 +37,7 @@ export default function GuarantorApprovalsClient({
   approvedGuarantors,
   userRole,
 }: GuarantorApprovalsClientProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -65,11 +68,13 @@ export default function GuarantorApprovalsClient({
         throw new Error(data.error || "Failed to process application");
       }
 
-      setSuccess(data.message || "Application processed successfully");
+      toast.success(data.message || "Application processed successfully");
       setNotes((prev) => ({ ...prev, [applicationId]: "" }));
-      setTimeout(() => window.location.reload(), 1500);
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(null);
     }

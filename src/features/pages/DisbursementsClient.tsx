@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import SearchableList from "@/components/data/SearchableList";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { BadgeCent, CheckCircle } from "lucide-react";
@@ -24,9 +25,14 @@ export function DisbursementsClient({ disbursements }: { disbursements: any[] })
       if (!response.ok) {
         throw new Error(payload.error || "Disbursement failed");
       }
+      toast.success("Loan recorded as disbursed", {
+        description: "The loan is now repaying — repayments will be recovered through payroll.",
+      });
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Disbursement failed");
+      const msg = err instanceof Error ? err.message : "Disbursement failed";
+      setError(msg);
+      toast.error("Disbursement failed", { description: msg });
     } finally {
       setLoadingId(null);
     }

@@ -136,7 +136,10 @@ export async function processApprovalAction(input: {
       const loanRes = await (admin.from("loans") as any)
         .update(loanUpdateData)
         .eq("id", approval.entity_id);
-      if (loanRes.error) console.error("[processApprovalAction] loans update error:", loanRes.error);
+      if (loanRes.error) {
+        console.error("[processApprovalAction] loans update error:", loanRes.error);
+        return { error: `Rejection recorded, but updating the loan failed: ${loanRes.error.message}`, status: 500 };
+      }
     } else if (action === "approved" && isFinalStage) {
       const loanRes = await (admin.from("loans") as any)
         .select("amount_requested")
@@ -146,15 +149,18 @@ export async function processApprovalAction(input: {
       // Final board approval = 'approved' (ready to disburse). The loan only
       // counts as money out / owed once the fund manager disburses it —
       // disbursement is manual, the system records it afterwards.
+      // NB: loans has approved_by but no approved_at column.
       const loanUpdateRes = await (admin.from("loans") as any)
         .update({
           status: "approved",
           approved_by: userId,
-          approved_at: new Date().toISOString(),
           amount_approved: loanRes.data?.amount_requested ?? null,
         })
         .eq("id", approval.entity_id);
-      if (loanUpdateRes.error) console.error("[processApprovalAction] loans update error:", loanUpdateRes.error);
+      if (loanUpdateRes.error) {
+        console.error("[processApprovalAction] loans update error:", loanUpdateRes.error);
+        return { error: `Approval recorded, but updating the loan failed: ${loanUpdateRes.error.message}`, status: 500 };
+      }
 
       // Notify fund managers that a loan is ready to disburse
       try {

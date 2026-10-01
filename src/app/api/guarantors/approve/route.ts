@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     // Get employee details for notification
     const employeeRes = await admin
       .from("employees")
-      .select("id, first_name, last_name")
+      .select("id, first_name, last_name, employee_no")
       .eq("id", employee_id)
       .single();
 
@@ -67,16 +67,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const employee = employeeRes.data as { id: string; first_name: string; last_name: string };
+    const employee = employeeRes.data as { id: string; first_name: string; last_name: string; employee_no: string };
 
-    // Get user_id from profiles table for notification
+    // Get user_id from profiles table for notification — employee_id may be
+    // the employee UUID (current) or a legacy employee_no.
     const employeeProfileRes = await admin
       .from("profiles")
       .select("user_id")
       .eq("employee_id", employee_id)
       .maybeSingle();
 
-    const userId = employeeProfileRes.data?.user_id;
+    let userId = employeeProfileRes.data?.user_id;
+    if (!userId) {
+      const legacyRes = await admin
+        .from("profiles")
+        .select("user_id")
+        .eq("employee_id", employee.employee_no)
+        .maybeSingle();
+      userId = legacyRes.data?.user_id;
+    }
 
     // Update guarantor status
     const updateData: any = {
@@ -107,29 +116,26 @@ export async function POST(request: Request) {
     }
 
     // Notify the employee about the decision
-    let notificationType, notificationTitle, notificationMessage;
+    let notificationTitle, notificationMessage;
     if (action === "approved") {
-      notificationType = "guarantor_approved";
       notificationTitle = "Guarantor Application Approved";
       notificationMessage = "Your application to become a guarantor has been approved.";
     } else if (action === "blacklisted") {
-      notificationType = "guarantor_blacklisted";
       notificationTitle = "Guarantor Application Blacklisted";
       notificationMessage = `Your application to become a guarantor has been blacklisted. ${notes ? `Reason: ${notes}` : ""} You cannot apply to be a guarantor again unless this is reversed.`;
     } else {
-      notificationType = "guarantor_rejected";
       notificationTitle = "Guarantor Application Rejected";
       notificationMessage = `Your application to become a guarantor has been rejected. ${notes ? `Reason: ${notes}` : ""}`;
     }
 
-    await admin.from("notifications").insert({
-      user_id: userId,
-      type: notificationType,
-      title: notificationTitle,
-      message: notificationMessage,
-      related_type: "employee",
-      related_id: employee_id,
-    });
+    if (userId) {
+      await admin.from("notifications").insert({
+        user_id: userId,
+        type: "system",
+        title: notificationTitle,
+        message: notificationMessage,
+      });
+    }
 
     return NextResponse.json({
       message: action === "approved"

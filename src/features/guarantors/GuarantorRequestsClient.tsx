@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Check, X, Clock, Shield, AlertCircle, BadgeCent } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatDate, formatCurrency } from "@/utils/formatters";
@@ -37,6 +39,7 @@ export default function GuarantorRequestsClient({
   requests,
   employeeId,
 }: GuarantorRequestsClientProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -67,11 +70,22 @@ export default function GuarantorRequestsClient({
         throw new Error(data.error || "Failed to process request");
       }
 
+      if (action === "approved") {
+        toast.success("Consent given", {
+          description: "The loan has been sent to the board for approval.",
+        });
+      } else {
+        toast.success("Consent declined", {
+          description: "The applicant has been notified.",
+        });
+      }
       setSuccess(data.message || "Request processed successfully");
       setNotes((prev) => ({ ...prev, [requestId]: "" }));
-      setTimeout(() => window.location.reload(), 1500);
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(null);
     }

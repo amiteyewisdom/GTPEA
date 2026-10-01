@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Shield, CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 
@@ -42,10 +43,15 @@ export default function BecomeGuarantorClient({
         throw new Error(data.error || "Failed to submit application");
       }
 
+      toast.success("Guarantor application submitted", {
+        description: "The union representative will review your application.",
+      });
       setSuccess(true);
-      setTimeout(() => router.refresh(), 2000);
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Search, Check, X, ExternalLink, Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { KPICard } from "@/components/ui/KPICard";
@@ -82,7 +83,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
   const [notes, setNotes] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const [rejectionReason, setRejectionReason] = useState("");
 
   useEffect(() => {
@@ -158,18 +159,19 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
       });
 
       const data = await response.json();
-      console.log("[handleAction] response data:", data);
       if (!response.ok) {
         throw new Error(data?.error || data?.details?.message || "Unable to process approval action.");
       }
 
-      setSuccessMessage(data.message || "Approval updated successfully.");
+      toast.success(data.message || "Approval updated successfully.");
       setSelected(null);
       setNotes("");
       setRejectionReason("");
       router.refresh();
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Unexpected error.");
+      const msg = error instanceof Error ? error.message : "Unexpected error.";
+      setActionError(msg);
+      toast.error(msg);
     }
     setActionLoading(false);
   };
@@ -222,14 +224,6 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
           />
         </div>
       </div>
-
-      {successMessage && (
-        <div className="flex items-center gap-2 rounded-brand border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          <CheckCircle className="h-4 w-4 shrink-0" />
-          {successMessage}
-          <button onClick={() => setSuccessMessage(null)} className="ml-auto"><X className="h-4 w-4" /></button>
-        </div>
-      )}
 
       {/* Table */}
       <div className="overflow-hidden rounded-brand border border-brand-card-border bg-white shadow-sm">
