@@ -133,9 +133,19 @@ export interface DashboardStats {
 export async function fetchDashboardStats(currentRole?: string | null): Promise<DashboardStats> {
   const supabase = createAdminClient();
   const months = lastMonths(6);
-  
+
   // Only filter out ADMIN001/ADMIN002 if the current user is NOT a super_admin
   const shouldFilterAdmins = currentRole !== "super_admin";
+
+  // Get employee IDs for ADMIN001 and ADMIN002 if we need to filter
+  let adminEmployeeIds: string[] = [];
+  if (shouldFilterAdmins) {
+    const { data: adminEmployees } = await supabase
+      .from("employees")
+      .select("id")
+      .in("employee_no", ["ADMIN001", "ADMIN002"]);
+    adminEmployeeIds = (adminEmployees ?? []).map((e: any) => e.id);
+  }
 
   const [
     employeesRes,
@@ -157,13 +167,13 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       ? supabase.from("employees").select("id, first_name, last_name, status").not("employee_no", "in", "(ADMIN001,ADMIN002)")
       : supabase.from("employees").select("id, first_name, last_name, status"),
     supabase.from("savings").select("id, employee_id, balance, status"),
-    shouldFilterAdmins
+    shouldFilterAdmins && adminEmployeeIds.length > 0
       ? supabase
           .from("loans")
           .select(
             "id, loan_ref, employee_id, amount_requested, amount_approved, amount_disbursed, outstanding_balance, status, purpose, term_months, monthly_repayment, disbursement_date, created_at, loan_product_id, employees!employee_id(first_name, last_name), loan_products(name)"
           )
-          .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
+          .not("employee_id", "in", `(${adminEmployeeIds.join(",")})`)
       : supabase
           .from("loans")
           .select(
