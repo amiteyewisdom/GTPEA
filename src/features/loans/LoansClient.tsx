@@ -48,10 +48,11 @@ interface LoansClientProps {
 }
 
 const ALL_TABS = ["all", "active", "pending", "approved", "disbursed", "repaying", "completed", "rejected", "defaulted"];
-const ACTIVE_STATUSES = ["approved", "disbursed", "repaying"];
+const ACTIVE_STATUSES = ["approved", "disbursed", "repaying", "active"];
 
 export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalOutstanding, userRole }: LoansClientProps) {
   const isEmployee = userRole === "employee";
+  const isAdmin = ["super_admin", "administrator", "fund_manager", "chairperson"].includes(userRole || "");
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [page, setPage] = useState(0);
@@ -66,6 +67,11 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
 
   const activeLoans = loans.filter((l) => ACTIVE_STATUSES.includes(l.status));
   const activeLoansBalance = activeLoans.reduce((s, l) => s + (Number(l.outstanding_balance) || 0), 0);
+
+  console.log('[LoansClient] Total loans:', loans.length);
+  console.log('[LoansClient] Active loans:', activeLoans.length);
+  console.log('[LoansClient] Active statuses:', ACTIVE_STATUSES);
+  console.log('[LoansClient] Sample loan statuses:', loans.slice(0, 5).map(l => ({ id: l.id, status: l.status })));
 
   const filtered = loans.filter((l) => {
     const q = search.toLowerCase();
@@ -147,7 +153,7 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
         <KPICard title="Defaulted" value={defaulted} icon={AlertTriangle} accent={defaulted > 0 ? "danger" : "primary"} subtitle={`${((defaulted / Math.max(total, 1)) * 100).toFixed(1)}% default rate`} />
       </div>
 
-      {isEmployee && <LoanApplication loanProducts={loanProducts} />}
+      {(isEmployee || isAdmin) && <LoanApplication loanProducts={loanProducts} />}
 
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">

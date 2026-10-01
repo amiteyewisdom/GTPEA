@@ -22,6 +22,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Forbidden. Only fund managers and admins can export applications." }, { status: 403 });
   }
 
+  // Get employee IDs for ADMIN001 and ADMIN002 if not super_admin
+  let adminEmployeeIds: string[] = [];
+  if (role !== "super_admin") {
+    const { data: adminEmployees } = await supabase
+      .from("employees")
+      .select("id")
+      .in("employee_no", ["ADMIN001", "ADMIN002"]);
+    adminEmployeeIds = (adminEmployees ?? []).map((e: any) => e.id);
+  }
+
   let csvContent = "";
   let filename = "";
 
@@ -45,14 +55,18 @@ export async function GET(request: Request) {
         employees (first_name, last_name, employee_no),
         loan_products (name)
       `)
-      .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
       .order("created_at", { ascending: false });
 
-    if (loans && loans.length > 0) {
+    // Filter out admin loans if not super_admin
+    const filteredLoans = (role !== "super_admin" && adminEmployeeIds.length > 0)
+      ? (loans ?? []).filter((l: any) => !adminEmployeeIds.includes(l.employee_id))
+      : (loans ?? []);
+
+    if (filteredLoans.length > 0) {
       csvContent += "LOAN APPLICATIONS\n";
       csvContent += "Reference,Employee,Employee No,Product,Amount Requested,Amount Approved,Amount Disbursed,Outstanding Balance,Interest Rate,Term (months),Monthly Repayment,Status,Purpose,Created At,Disbursement Date,Expected Completion\n";
-      
-      for (const loan of loans as any[]) {
+
+      for (const loan of filteredLoans as any[]) {
         const employee = loan.employees ? `${loan.employees.first_name} ${loan.employees.last_name}` : "N/A";
         const employeeNo = loan.employees?.employee_no || "N/A";
         const product = loan.loan_products?.name || "N/A";
@@ -65,7 +79,7 @@ export async function GET(request: Request) {
   }
 
   if (type === "all" || type === "withdrawals") {
-    const { data: withdrawals } = await supabase
+    let withdrawalsQuery = supabase
       .from("withdrawal_requests")
       .select(`
         request_ref,
@@ -77,14 +91,20 @@ export async function GET(request: Request) {
         employees (first_name, last_name, employee_no),
         savings (account_number, type)
       `)
-      .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
       .order("requested_at", { ascending: false });
 
-    if (withdrawals && withdrawals.length > 0) {
+    const { data: withdrawals } = await withdrawalsQuery;
+
+    // Filter out admin withdrawals if not super_admin
+    const filteredWithdrawals = (role !== "super_admin" && adminEmployeeIds.length > 0)
+      ? (withdrawals ?? []).filter((w: any) => !adminEmployeeIds.includes(w.employee_id))
+      : (withdrawals ?? []);
+
+    if (filteredWithdrawals.length > 0) {
       csvContent += "WITHDRAWAL REQUESTS\n";
       csvContent += "Reference,Employee,Employee No,Account Number,Account Type,Amount,Reason,Status,Requested At,Disbursement Date\n";
-      
-      for (const withdrawal of withdrawals as any[]) {
+
+      for (const withdrawal of filteredWithdrawals as any[]) {
         const employee = withdrawal.employees ? `${withdrawal.employees.first_name} ${withdrawal.employees.last_name}` : "N/A";
         const employeeNo = withdrawal.employees?.employee_no || "N/A";
         const accountNumber = withdrawal.savings?.account_number || "N/A";
