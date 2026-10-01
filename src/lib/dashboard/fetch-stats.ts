@@ -236,12 +236,19 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       .map((e) => e.id)
   );
 
+  console.log('[fetchDashboardStats] currentRole:', currentRole);
+  console.log('[fetchDashboardStats] shouldFilterAdmins:', shouldFilterAdmins);
+  console.log('[fetchDashboardStats] Total employees:', employees.length);
+  console.log('[fetchDashboardStats] Total loans:', loans.length);
+  console.log('[fetchDashboardStats] Admin employee IDs:', Array.from(adminEmployeeIds));
+
   let filteredEmployees = employees;
   let filteredLoans = loans;
 
   if (shouldFilterAdmins) {
     filteredEmployees = employees.filter((e) => !adminEmployeeNos.has(e.employee_no));
     filteredLoans = loans.filter((l) => !adminEmployeeIds.has(l.employee_id));
+    console.log('[fetchDashboardStats] After filtering - employees:', filteredEmployees.length, 'loans:', filteredLoans.length);
   }
 
   const activeEmployees = filteredEmployees.filter((e) => e.status === "active");
@@ -266,6 +273,15 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const activeLoans = filteredLoans.filter((l) =>
     ["approved", "disbursed", "repaying", "Active"].includes(l.status)
   );
+
+  console.log('[fetchDashboardStats] Active loans count:', activeLoans.length);
+  console.log('[fetchDashboardStats] Sample active loans:', activeLoans.slice(0, 5).map(l => ({
+    id: l.id,
+    status: l.status,
+    outstanding: l.outstanding_balance,
+    approved: l.amount_approved,
+    disbursed: l.amount_disbursed
+  })));
   const totalLoansOutstanding = activeLoans.reduce((acc, l) => {
     // outstanding_balance is authoritative; fall back to amount_approved or amount_requested
     const outstanding =
