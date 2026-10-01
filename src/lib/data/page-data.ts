@@ -109,9 +109,19 @@ export async function fetchFundsData() {
 
 export async function fetchMyLoansData() {
   const { supabase, user, profile, employeeUuid: initialUuid } = await getSessionProfile();
+  const admin = await createAdminClient(); // Use admin client to bypass RLS
   let employeeUuid = initialUuid;
 
   console.log("[fetchMyLoansData] Initial state:", { user: user?.id, profile, initialUuid });
+
+  // If employee_id is already a valid UUID, use it directly (same logic as dashboard)
+  if (employeeUuid && employeeUuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    console.log("[fetchMyLoansData] Employee_id is a valid UUID, using directly");
+  } else if (employeeUuid) {
+    console.log("[fetchMyLoansData] Employee_id is not a UUID, attempting to resolve");
+    employeeUuid = await resolveEmployeeUuid(supabase, employeeUuid);
+    console.log("[fetchMyLoansData] Resolved employeeUuid:", employeeUuid);
+  }
 
   // Fallback: look up employee by matching user_id directly on employees table
   if (!employeeUuid && user) {
@@ -126,15 +136,15 @@ export async function fetchMyLoansData() {
   }
 
   const [loansRes, savingsRes, activeLoansRes, productsRes] = await Promise.all([
-    supabase
+    admin
       .from("loans")
       .select(
         `id, loan_ref, status, amount_requested, amount_approved, amount_disbursed, outstanding_balance, monthly_repayment, purpose, created_at, term_months, interest_rate, interest_calc_method, disbursement_date, loan_product_id, loan_products(name), guarantor_id, guarantor:guarantor_id(first_name, last_name, employee_no, phone), loan_guarantors(guarantor_id, account_number, amount, guarantor:guarantor_id(first_name, last_name, employee_no))`
       )
       .eq("employee_id", employeeUuid)
       .order("created_at", { ascending: false }),
-    supabase.from("savings").select("balance").eq("employee_id", employeeUuid).eq("status", "active"),
-    supabase
+    admin.from("savings").select("balance").eq("employee_id", employeeUuid).eq("status", "active"),
+    admin
       .from("loans")
       .select("outstanding_balance, amount_approved")
       .eq("employee_id", employeeUuid)
@@ -180,77 +190,25 @@ export async function fetchMyLoansData() {
 
 export async function fetchSavingsHistoryData() {
   const { supabase, user, profile, employeeUuid: initialUuid } = await getSessionProfile();
+  const admin = await createAdminClient(); // Use admin client to bypass RLS
   let employeeUuid = initialUuid;
 
   console.log("[fetchSavingsHistoryData] Initial state:", { user: user?.id, profile, initialUuid });
 
-  // Fallback 1: look up employee by matching user_id directly on employees table
+  // If employee_id is already a valid UUID, use it directly (same logic as dashboard)
+  if (employeeUuid && employeeUuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+    console.log("[fetchSavingsHistoryData] Employee_id is a valid UUID, using directly");
+  } else if (employeeUuid) {
+    console.log("[fetchSavingsHistoryData] Employee_id is not a UUID, attempting to resolve");
+    employeeUuid = await resolveEmployeeUuid(supabase, employeeUuid);
+    console.log("[fetchSavingsHistoryData] Resolved employeeUuid:", employeeUuid);
+  }
+
+  // Fallback: look up employee by matching user_id directly on employees table
   if (!employeeUuid && user) {
     const byUser = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
     employeeUuid = (byUser.data as any)?.id ?? null;
     console.log("[fetchSavingsHistoryData] Fallback lookup by user_id:", { byUser: byUser.data, employeeUuid });
-  }
-
-  // Fallback 2: if we got a UUID from profile but it returned no results, try user_id lookup
-  if (employeeUuid && user) {
-    const [savingsRes, contributionsRes] = await Promise.all([
-      supabase.from("savings").select("balance").eq("employee_id", employeeUuid),
-      supabase
-        .from("savings_contributions")
-        .select("id")
-        .eq("employee_id", employeeUuid)
-        .limit(1),
-    ]);
-
-    // If no results with profile's employee_id, try looking up by user_id
-    if ((!savingsRes.data || savingsRes.data.length === 0) && (!contributionsRes.data || contributionsRes.data.length === 0)) {
-      console.log("[fetchSavingsHistoryData] No results with profile employee_id, trying user_id lookup");
-      const byUser = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
-      employeeUuid = (byUser.data as any)?.id ?? null;
-      console.log("[fetchSavingsHistoryData] User_id lookup result:", { byUser: byUser.data, employeeUuid });
-    }
-  }
-
-  // Fallback 3: try to find employee by name and phone
-  if (!employeeUuid && profile) {
-    const nameParts = profile.full_name?.split(' ') || [];
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ');
-
-    console.log("[fetchSavingsHistoryData] Trying name/phone lookup:", { firstName, lastName, phone: profile.phone });
-
-    const byNamePhone = await supabase
-      .from("employees")
-      .select("id")
-      .eq("first_name", firstName)
-      .eq("last_name", lastName)
-      .eq("phone", profile.phone)
-      .maybeSingle();
-
-    employeeUuid = (byNamePhone.data as any)?.id ?? null;
-    console.log("[fetchSavingsHistoryData] Name/phone lookup result:", { byNamePhone: byNamePhone.data, employeeUuid });
-
-    // Fallback 4: try by phone only
-    if (!employeeUuid && profile.phone) {
-      const byPhone = await supabase
-        .from("employees")
-        .select("id, first_name, last_name")
-        .eq("phone", profile.phone)
-        .maybeSingle();
-      employeeUuid = (byPhone.data as any)?.id ?? null;
-      console.log("[fetchSavingsHistoryData] Phone-only lookup result:", { byPhone: byPhone.data, employeeUuid });
-    }
-
-    // Fallback 5: try by first name only
-    if (!employeeUuid && firstName) {
-      const byFirstName = await supabase
-        .from("employees")
-        .select("id, first_name, last_name, phone")
-        .eq("first_name", firstName)
-        .maybeSingle();
-      employeeUuid = (byFirstName.data as any)?.id ?? null;
-      console.log("[fetchSavingsHistoryData] First-name lookup result:", { byFirstName: byFirstName.data, employeeUuid });
-    }
   }
 
   if (!employeeUuid) {
@@ -260,8 +218,8 @@ export async function fetchSavingsHistoryData() {
 
   const now = new Date();
   const [savingsRes, contributionsRes] = await Promise.all([
-    supabase.from("savings").select("balance").eq("employee_id", employeeUuid),
-    supabase
+    admin.from("savings").select("balance").eq("employee_id", employeeUuid),
+    admin
       .from("savings_contributions")
       .select("id, amount, contribution_type, period_year, period_month, reference, created_at, narration")
       .eq("employee_id", employeeUuid)
