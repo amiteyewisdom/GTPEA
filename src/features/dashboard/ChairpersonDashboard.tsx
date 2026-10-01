@@ -34,9 +34,15 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
   const loanToSavings = stats.totalSavings
     ? Math.round((stats.totalLoansOutstanding / stats.totalSavings) * 100)
     : 0;
-  const recoveryRate = stats.totalLoansDisbursed
-    ? Math.round(((stats.totalLoansDisbursed - stats.totalLoansOutstanding) / stats.totalLoansDisbursed) * 100)
-    : 0;
+  const collectionRate = stats.lastPayrollRecovery && stats.expectedCollections > 0
+    ? Math.round((stats.lastPayrollRecovery.total / stats.expectedCollections) * 100)
+    : null;
+  const collectionRateNote = stats.lastPayrollRecovery
+    ? `Last payroll: ${stats.lastPayrollRecovery.period}`
+    : "No payroll file processed yet";
+  const hasLoanActivity = stats.loanTrend.some(
+    (m) => m.disbursements !== 0 || m.repayments !== 0
+  );
 
   return (
     <div className="space-y-6">
@@ -98,11 +104,6 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
               <h3 className="text-xl font-semibold text-brand-text">Savings Trend</h3>
               <p className="text-brand-text-secondary text-sm">12-month overview</p>
             </div>
-            <select className="bg-brand-card-bg border border-brand-card-border rounded-lg px-3 py-1.5 text-sm text-brand-text focus:outline-none focus:border-brand-accent">
-              <option>Last 12 months</option>
-              <option>Last 6 months</option>
-              <option>YTD</option>
-            </select>
           </div>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -126,33 +127,36 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
           </div>
         </GlassCard>
 
-        {/* Loan Trend */}
+        {/* Loan Activity */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-semibold text-brand-text">Loan Trend</h3>
-              <p className="text-brand-text-secondary text-sm">Disbursement and repayment analysis</p>
+              <h3 className="text-xl font-semibold text-brand-text">Loan Activity</h3>
+              <p className="text-brand-text-secondary text-sm">Payroll recoveries and in-system disbursements</p>
             </div>
-            <select className="bg-brand-card-bg border border-brand-card-border rounded-lg px-3 py-1.5 text-sm text-brand-text focus:outline-none focus:border-brand-accent">
-              <option>Last 12 months</option>
-              <option>Last 6 months</option>
-              <option>YTD</option>
-            </select>
           </div>
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.loanTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `₵${(value / 1000000).toFixed(1)}M`} />
-                <Tooltip
-                  formatter={(value) => `₵${(value as number).toLocaleString()}`}
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
-                />
-                <Bar dataKey="disbursements" fill="#b59a6d" name="Disbursements" />
-                <Bar dataKey="repayments" fill="#2D7A4D" name="Repayments" />
-              </BarChart>
-            </ResponsiveContainer>
+            {hasLoanActivity ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.loanTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
+                  <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `₵${(value / 1000000).toFixed(1)}M`} />
+                  <Tooltip
+                    formatter={(value) => `₵${(value as number).toLocaleString()}`}
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
+                  />
+                  <Bar dataKey="disbursements" fill="#b59a6d" name="Disbursed (in-system)" />
+                  <Bar dataKey="repayments" fill="#2D7A4D" name="Payroll recoveries" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-sm text-brand-text-secondary text-center">
+                  No payroll recoveries or in-system disbursements recorded yet.
+                </p>
+              </div>
+            )}
           </div>
         </GlassCard>
       </div>
@@ -171,21 +175,21 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
               <span className="text-3xl font-bold text-brand-text">{solvencyRatio}%</span>
             </div>
             <p className="text-brand-text font-semibold text-lg">Solvency Ratio</p>
-            <p className="text-brand-success text-sm mt-1">Excellent</p>
+            <p className="text-brand-text-secondary text-sm mt-1">Savings less loans, as % of savings</p>
           </div>
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-accent flex items-center justify-center mb-4">
               <span className="text-3xl font-bold text-brand-text">{loanToSavings}%</span>
             </div>
             <p className="text-brand-text font-semibold text-lg">Loan-to-Savings</p>
-            <p className="text-brand-accent text-sm mt-1">Healthy</p>
+            <p className="text-brand-text-secondary text-sm mt-1">Loan balance as % of savings</p>
           </div>
           <div className="text-center p-6 bg-brand-card-bg rounded-lg">
             <div className="w-32 h-32 mx-auto rounded-full border-8 border-brand-warning flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-brand-text">{recoveryRate}%</span>
+              <span className="text-3xl font-bold text-brand-text">{collectionRate !== null ? `${collectionRate}%` : "—"}</span>
             </div>
-            <p className="text-brand-text font-semibold text-lg">Recovery Rate</p>
-            <p className="text-brand-warning text-sm mt-1">Good</p>
+            <p className="text-brand-text font-semibold text-lg">Collection Rate</p>
+            <p className="text-brand-text-secondary text-sm mt-1">{collectionRateNote}</p>
           </div>
         </div>
       </GlassCard>

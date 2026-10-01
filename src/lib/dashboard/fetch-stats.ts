@@ -113,6 +113,13 @@ export interface DashboardStats {
     status: "eligible" | "review" | "caution" | "ineligible";
   }[];
   expectedCollections: number;
+  activeLoanCount: number;
+  lastPayrollRecovery: {
+    period: string;
+    total: number;
+    totalFormatted: string;
+    loanCount: number;
+  } | null;
   recentRecommendations: {
     employee: string;
     action: string;
@@ -152,6 +159,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     auditCountRes,
     transactionsTodayRes,
     employeeProfilesRes,
+    paidRepaymentsRes,
   ] = await Promise.all([
     supabase.from("employees").select("id, first_name, last_name, status, employee_no"),
     supabase.from("savings").select("id, employee_id, balance, status"),
@@ -203,6 +211,12 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       .from("profiles")
       .select("employee_id, role")
       .not("employee_id", "is", null),
+    supabase
+      .from("repayments")
+      .select("amount_paid, due_date, paid_date, loan_id")
+      .eq("status", "paid")
+      .order("due_date", { ascending: false })
+      .limit(5000),
   ]);
 
   for (const [label, result] of [
@@ -225,6 +239,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
   const dividends = (dividendsRes.data || []) as any[];
   const transactions = (transactionsRes.data || []) as any[];
   const repayments = (repaymentsRes.data || []) as any[];
+  const paidRepayments = (paidRepaymentsRes.data || []) as any[];
   const contributions = (contributionsRes.data || []) as any[];
   const approvalActions = (approvalActionsRes.data || []) as any[];
 
@@ -355,24 +370,23 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     color: LOAN_COLORS[index % LOAN_COLORS.length],
   }));
 
+  // Only real, recorded events: disbursements require an actual disbursement_date and
+  // amount_disbursed; repayments come from payroll master files (status 'paid').
   const loanTrend = months.map(({ key, label }) => {
     const [year, month] = key.split("-").map(Number);
-    const disbursements = memberOnlyLoans
-      .filter((loan) => {
-        const dateStr = loan.disbursement_date || loan.created_at;
-        if (!dateStr) return false;
-        const date = new Date(dateStr);
-        return date.getFullYear() === year && date.getMonth() + 1 === month;
-      })
-      .reduce((acc, loan) => acc + (Number(loan.amount_disbursed || loan.amount_approved || loan.amount_requested) || 0), 0);
+    const inMonth = (dateStr: string | null | undefined) => {
+      if (!dateStr) return false;
+      const date = new Date(dateStr);
+      return date.getFullYear() === year && date.getMonth() + 1 === month;
+    };
 
-    const monthRepayments = repayments
-      .filter((r) => {
-        if (!r.due_date) return false;
-        const date = new Date(r.due_date);
-        return date.getFullYear() === year && date.getMonth() + 1 === month;
-      })
-      .reduce((acc, r) => acc + (Number(r.amount_due) || 0), 0);
+    const disbursements = memberOnlyLoans
+      .filter((loan) => inMonth(loan.disbursement_date) && Number(loan.amount_disbursed) > 0)
+      .reduce((acc, loan) => acc + Number(loan.amount_disbursed), 0);
+
+    const monthRepayments = paidRepayments
+      .filter((r) => inMonth(r.paid_date ?? r.due_date))
+      .reduce((acc, r) => acc + (Number(r.amount_paid) || 0), 0);
 
     return { month: label, disbursements, repayments: monthRepayments };
   });
@@ -482,76 +496,68 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     };
   });
 
-  // Fallback calendar entries from active loans if no repayment schedule exists yet
-  const calendarRepayments = upcomingRepayments.length > 0
-    ? upcomingRepayments
-    : filteredLoans
-        .filter((l) => ["disbursed", "repaying", "active", "Active"].includes(l.status))
-        .slice(0, 6)
-        .map((loan) => {
-          const start = loan.disbursement_date ? new Date(loan.disbursement_date) : new Date();
-          const nextDue = new Date(start);
-          nextDue.setMonth(nextDue.getMonth() + 1);
-          const amountValue = Number(loan.monthly_repayment) || 0;
-          return {
-            id: `${loan.id}-next`,
-            borrower: `${loan.employees?.first_name || ""} ${loan.employees?.last_name || ""}`.trim() || "—",
-            amount: formatCurrency(amountValue),
-            amountValue,
-            dueDate: formatDate(nextDue.toISOString().split("T")[0]),
-            status: "pending" as const,
-          };
-        });
+  // What the next payroll run will deduct: monthly_repayment capped at remaining balance.
+  // Loans are known only via balance imports, so this projects payroll deductions
+  // rather than reading a repayment schedule.
+  const forecastLoans = filteredLoans.filter((l) =>
+    ["active", "repaying", "Active"].includes(l.status)
+  );
+  const expectedCollections = forecastLoans.reduce((acc, l) => {
+    // Negative balances/repayments are overpaid artifacts of balance imports.
+    const monthly = Math.max(Number(l.monthly_repayment) || 0, 0);
+    const balance = Math.max(Number(l.outstanding_balance) || 0, 0);
+    return acc + Math.min(monthly, balance);
+  }, 0);
 
-  // Aggregate collection forecast by month from repayments or from active loans
-  let forecastSource = repayments.map((r) => ({
-    dueDate: r.due_date as string | null,
-    amountValue: Number(r.amount_due) || 0,
+  // Project the next 3 calendar months; each loan's remaining balance decreases
+  // month over month so paid-off loans drop out of later months.
+  const forecastMonths = Array.from({ length: 3 }, (_, i) => {
+    const date = new Date();
+    date.setDate(1);
+    date.setMonth(date.getMonth() + 1 + i);
+    return date;
+  });
+  const projectedAmounts = forecastLoans.length > 0
+    ? forecastMonths.map((_, i) =>
+        forecastLoans.reduce((acc, l) => {
+          const monthly = Math.max(Number(l.monthly_repayment) || 0, 0);
+          const balance = Math.max(Number(l.outstanding_balance) || 0, 0);
+          const remaining = Math.max(balance - monthly * i, 0);
+          return acc + Math.min(monthly, remaining);
+        }, 0)
+      )
+    : [0, 0, 0];
+
+  const forecastTotal = projectedAmounts.reduce((acc, amount) => acc + amount, 0);
+
+  const collectionForecast = forecastMonths.map((date, i) => ({
+    month: format(date, "MMM yyyy"),
+    amount: formatCurrency(projectedAmounts[i]),
+    amountValue: projectedAmounts[i],
+    percentage: forecastTotal > 0 ? `${Math.round((projectedAmounts[i] / forecastTotal) * 100)}%` : "0%",
   }));
 
-  if (forecastSource.length === 0) {
-    const now = new Date();
-    forecastSource = filteredLoans
-      .filter((l) => ["disbursed", "repaying", "active", "Active"].includes(l.status))
-      .flatMap((loan) => {
-        const start = loan.disbursement_date ? new Date(loan.disbursement_date) : now;
-        const nextDue = new Date(start);
-        nextDue.setMonth(nextDue.getMonth() + 1);
-        const monthly = Number(loan.monthly_repayment) || 0;
-        return Array.from({ length: 3 }).map((_, i) => {
-          const due = new Date(nextDue);
-          due.setMonth(due.getMonth() + i);
-          return { dueDate: due.toISOString().split("T")[0], amountValue: monthly };
-        });
-      });
-  }
+  const activeLoanCount = forecastLoans.length;
 
-  const forecastByMonth = new Map<string, number>();
-  forecastSource.forEach((item) => {
-    if (!item.dueDate) return;
-    const label = formatDate(item.dueDate, "MMM yyyy");
-    forecastByMonth.set(label, (forecastByMonth.get(label) || 0) + item.amountValue);
-  });
-
-  const sortedForecast = Array.from(forecastByMonth.entries()).sort((a, b) => {
-    const parse = (label: string) => {
-      const [monthStr, yearStr] = label.split(" ");
-      const monthIndex = new Date(`${monthStr} 1, ${yearStr}`).getMonth();
-      return new Date(Number(yearStr), monthIndex, 1).getTime();
-    };
-    return parse(a[0]) - parse(b[0]);
-  });
-
-  const forecastTotal = sortedForecast.slice(0, 3).reduce((acc, [, amount]) => acc + amount, 0);
-
-  const collectionForecast = sortedForecast.slice(0, 3).map(([month, amountValue]) => ({
-    month,
-    amount: formatCurrency(amountValue),
-    amountValue,
-    percentage: forecastTotal > 0 ? `${Math.round((amountValue / forecastTotal) * 100)}%` : "0%",
-  }));
-
-  const expectedCollections = forecastSource.reduce((acc, r) => acc + r.amountValue, 0);
+  // Repayments are only recorded when a payroll master file is processed; the
+  // latest due_date month is the most recent payroll recovery.
+  const lastPayrollRecovery = paidRepayments.length === 0
+    ? null
+    : (() => {
+        const latestPeriod = String(paidRepayments[0].due_date).slice(0, 7); // yyyy-MM
+        const periodRows = paidRepayments.filter(
+          (r) => String(r.due_date).slice(0, 7) === latestPeriod
+        );
+        const total = periodRows.reduce((acc, r) => acc + (Number(r.amount_paid) || 0), 0);
+        const loanCount = new Set(periodRows.map((r) => r.loan_id)).size;
+        const periodDate = new Date(`${latestPeriod}-01T00:00:00`);
+        return {
+          period: format(periodDate, "MMMM yyyy"),
+          total,
+          totalFormatted: formatCurrency(total),
+          loanCount,
+        };
+      })();
 
   // Filter employees shown in summaries to actual members only
   const memberEmployees = activeEmployees.filter((e) => employeeOnlyIds.size === 0 || employeeOnlyIds.has(e.id));
@@ -672,9 +678,11 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     loanTrend,
     recentActivity,
     approvalQueue,
-    upcomingRepayments: calendarRepayments,
+    upcomingRepayments,
     collectionForecast,
     expectedCollections,
+    activeLoanCount,
+    lastPayrollRecovery,
     pendingLoanReviews,
     chairpersonQueue,
     recentDisbursements,

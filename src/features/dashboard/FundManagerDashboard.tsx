@@ -8,35 +8,22 @@ import {
   Wallet,
   BadgeCent,
   CreditCard,
-  TrendingUp,
-  Calendar,
-  BarChart3,
-  Clock
+  TrendingUp
 } from 'lucide-react';
 import type { DashboardStats } from '@/lib/dashboard/fetch-stats';
-import { formatCurrency, formatNumber } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   AreaChart,
-  Area,
-  BarChart,
-  Bar
+  Area
 } from 'recharts';
 
 export default function FundManagerDashboard({ stats }: { stats: DashboardStats }) {
-  const fundPerformanceData = stats.loanTrend.map((item) => ({
-    month: item.month,
-    returns: item.repayments > 0
-      ? Math.round((item.repayments / Math.max(item.disbursements, 1)) * 100)
-      : 0,
-  }));
-  const forecastTotal = stats.expectedCollections;
+  const forecastTotal = stats.collectionForecast.reduce((acc, item) => acc + item.amountValue, 0);
 
   return (
     <div className="space-y-6">
@@ -49,20 +36,20 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardStatCard
-          title="Fund Balance"
+          title="Savings less Loans"
           value={formatCurrency(stats.fundBalance)}
           icon={Wallet}
           color="text-brand-accent"
         />
         <DashboardStatCard
-          title="Expected Collections"
+          title="Expected Payroll Deductions"
           value={formatCurrency(stats.expectedCollections)}
           icon={BadgeCent}
           color="text-brand-success"
         />
         <DashboardStatCard
-          title="Disbursements"
-          value={formatCurrency(stats.totalLoansDisbursed)}
+          title="Active Loans"
+          value={stats.activeLoanCount.toLocaleString()}
           icon={CreditCard}
           color="text-brand-warning"
         />
@@ -74,67 +61,32 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
         />
       </div>
 
-      {/* Repayment Calendar */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-brand-text">Repayment Calendar</h3>
-            <p className="text-brand-text-secondary text-sm">Upcoming loan repayments</p>
-          </div>
-          <Calendar className="w-5 h-5 text-brand-accent" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stats.upcomingRepayments.length > 0 ? stats.upcomingRepayments.map((repayment) => (
-            <RepaymentCard
-              key={repayment.id}
-              borrower={repayment.borrower}
-              amount={repayment.amount}
-              dueDate={repayment.dueDate}
-              status={repayment.status}
-            />
-          )) : (
-            <p className="text-brand-text-secondary text-sm col-span-full">No upcoming repayments</p>
-          )}
-        </div>
-      </GlassCard>
-
-      {/* Fund Performance */}
+      {/* Payroll Recovery & Projected Collections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-semibold text-brand-text">Fund Performance</h3>
-              <p className="text-brand-text-secondary text-sm">Monthly returns analysis</p>
+              <h3 className="text-xl font-semibold text-brand-text">Last Payroll Recovery</h3>
+              <p className="text-brand-text-secondary text-sm">Loan deductions recorded from the most recent payroll file</p>
             </div>
-            <BarChart3 className="w-5 h-5 text-brand-accent" />
+            <BadgeCent className="w-5 h-5 text-brand-accent" />
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={fundPerformanceData}>
-                <defs>
-                  <linearGradient id="colorReturns" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#b59a6d" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#b59a6d" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `${value}%`} />
-                <Tooltip
-                  formatter={(value) => `${value}%`}
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
-                />
-                <Area type="monotone" dataKey="returns" stroke="#b59a6d" fillOpacity={1} fill="url(#colorReturns)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {stats.lastPayrollRecovery ? (
+            <div>
+              <p className="text-sm text-brand-text-secondary">{stats.lastPayrollRecovery.period}</p>
+              <p className="text-brand-text text-2xl font-bold mt-1">{stats.lastPayrollRecovery.totalFormatted}</p>
+              <p className="text-sm text-brand-text-secondary mt-2">across {stats.lastPayrollRecovery.loanCount} loans</p>
+            </div>
+          ) : (
+            <p className="text-sm text-brand-text-secondary">No payroll file has been processed yet.</p>
+          )}
         </GlassCard>
 
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-semibold text-brand-text">Collection Forecast</h3>
-              <p className="text-brand-text-secondary text-sm">Projected collections for next quarter</p>
+              <h3 className="text-xl font-semibold text-brand-text">Projected Collections</h3>
+              <p className="text-brand-text-secondary text-sm">Based on monthly payroll deductions, next 3 months</p>
             </div>
             <TrendingUp className="w-5 h-5 text-brand-success" />
           </div>
@@ -152,7 +104,7 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
           </div>
           <div className="mt-6 p-4 bg-brand-card-bg rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-brand-text-secondary text-sm">Total Forecast</span>
+              <span className="text-brand-text-secondary text-sm">3-month total</span>
               <span className="text-brand-text text-xl font-bold">{formatCurrency(forecastTotal)}</span>
             </div>
           </div>
@@ -190,31 +142,6 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
             </ResponsiveContainer>
           </div>
         </GlassCard>
-
-        {/* Loan Trend */}
-        <GlassCard className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-xl font-semibold text-brand-text">Loan Trend</h3>
-              <p className="text-brand-text-secondary text-sm">Disbursement and repayment analysis</p>
-            </div>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.loanTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `₵${(value / 1000000).toFixed(1)}M`} />
-                <Tooltip
-                  formatter={(value) => `₵${(value as number).toLocaleString()}`}
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
-                />
-                <Bar dataKey="disbursements" fill="#b59a6d" name="Disbursements" />
-                <Bar dataKey="repayments" fill="#2D7A4D" name="Repayments" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </GlassCard>
       </div>
 
       <ApprovalQueuePanel
@@ -235,37 +162,6 @@ export default function FundManagerDashboard({ stats }: { stats: DashboardStats 
         emptyText="No applications waiting for Fund Manager approval."
       />
 
-    </div>
-  );
-}
-
-function RepaymentCard({ borrower, amount, dueDate, status }: any) {
-  const statusColors = {
-    pending: 'text-brand-warning',
-    overdue: 'text-brand-danger',
-    completed: 'text-brand-success',
-  };
-
-  return (
-    <div className="p-4 rounded-lg bg-brand-card-bg border border-brand-card-border hover:bg-brand-hover transition-all">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-brand-accent/20 flex items-center justify-center text-brand-accent font-bold">
-            {borrower.charAt(0)}
-          </div>
-          <div>
-            <p className="text-brand-text font-medium">{borrower}</p>
-            <p className="text-brand-text-secondary text-xs">{dueDate}</p>
-          </div>
-        </div>
-        <Clock className={`w-4 h-4 ${statusColors[status as keyof typeof statusColors]}`} />
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-brand-text text-lg font-bold">{amount}</span>
-        <span className={`text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
-      </div>
     </div>
   );
 }

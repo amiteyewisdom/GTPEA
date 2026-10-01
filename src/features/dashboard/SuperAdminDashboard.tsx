@@ -612,6 +612,9 @@ export default function SuperAdminDashboard({ stats }: { stats: DashboardStats }
   const loanPct = Math.round((stats.totalLoansOutstanding / totalCapital) * 100);
   const savingsPct = Math.round((stats.totalSavings / totalCapital) * 100);
   const reservePct = Math.max(0, 100 - loanPct - savingsPct);
+  const hasLoanActivity = stats.loanTrend.some(
+    (m) => m.disbursements !== 0 || m.repayments !== 0
+  );
   
   const [showEmployeeImport, setShowEmployeeImport] = React.useState(false);
   const [showFinancialImport, setShowFinancialImport] = React.useState(false);
@@ -701,28 +704,36 @@ export default function SuperAdminDashboard({ stats }: { stats: DashboardStats }
           </div>
         </GlassCard>
 
-        {/* Loan Trend */}
+        {/* Loan Activity */}
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-semibold text-brand-text">Loan Trend</h3>
-              <p className="text-brand-text-secondary text-sm">Disbursements vs repayments</p>
+              <h3 className="text-lg font-semibold text-brand-text">Loan Activity</h3>
+              <p className="text-brand-text-secondary text-sm">Payroll recoveries and in-system disbursements</p>
             </div>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.loanTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `₵${(value / 1000000).toFixed(1)}M`} />
-                <Tooltip
-                  formatter={(value) => `₵${(value as number).toLocaleString()}`}
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
-                />
-                <Bar dataKey="disbursements" fill="#b59a6d" name="Disbursements" />
-                <Bar dataKey="repayments" fill="#2D7A4D" name="Repayments" />
-              </BarChart>
-            </ResponsiveContainer>
+            {hasLoanActivity ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.loanTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis dataKey="month" stroke="#64748B" fontSize={12} />
+                  <YAxis stroke="#64748B" fontSize={12} tickFormatter={(value) => `₵${(value / 1000000).toFixed(1)}M`} />
+                  <Tooltip
+                    formatter={(value) => `₵${(value as number).toLocaleString()}`}
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }}
+                  />
+                  <Bar dataKey="disbursements" fill="#b59a6d" name="Disbursed (in-system)" />
+                  <Bar dataKey="repayments" fill="#2D7A4D" name="Payroll recoveries" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-sm text-brand-text-secondary text-center">
+                  No payroll recoveries or in-system disbursements recorded yet.
+                </p>
+              </div>
+            )}
           </div>
         </GlassCard>
 
