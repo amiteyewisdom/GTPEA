@@ -851,8 +851,10 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   const [savingsRes, loansRes, approvalsRes, transactionsRes, allLoansRes, contributionsRes, repaymentsRes] =
     await Promise.all([
       admin.from("savings").select("balance, account_number, type, status").eq("employee_id", employeeUuid),
-      // Include 'approved', 'active' so loans show as active
-      admin.from("loans").select("*, loan_products(name)").eq("employee_id", employeeUuid).in("status", ["approved", "active"]),
+      // Include every status that represents money committed or owed —
+      // 'repaying'/'disbursed'/'defaulted' were previously missing, so a
+      // loan vanished from the dashboard the moment it was disbursed.
+      admin.from("loans").select("*, loan_products(name)").eq("employee_id", employeeUuid).in("status", ["approved", "active", "disbursed", "repaying", "defaulted"]),
       // Match approvals by loans belonging to this employee (not just submitted_by)
       admin.from("approvals").select("*").eq("status", "pending"),
       admin
@@ -944,9 +946,10 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   const contributionsTotal = (contributionsRes.data || []).reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0);
   const totalSavings = savingsBalance > 0 ? savingsBalance : contributionsTotal;
 
-  // Loan balance: use outstanding_balance; fall back to amount_approved / amount_requested
+  // Loan balance: use outstanding_balance; fall back to amount_approved / amount_requested.
+  // 'approved' counts committed-but-undisbursed; 'repaying'/'disbursed'/'defaulted' are owed.
   const totalLoanBalance = ((allLoansRes.data || []) as any[])
-    .filter((loan) => ["approved", "active"].includes(loan.status))
+    .filter((loan) => ["approved", "active", "disbursed", "repaying", "defaulted"].includes(loan.status))
     .reduce((sum: number, loan: any) => {
       return sum + (Number(loan.outstanding_balance) || Number(loan.amount_approved) || 0);
     }, 0);
