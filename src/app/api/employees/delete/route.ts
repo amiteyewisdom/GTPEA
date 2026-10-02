@@ -63,17 +63,43 @@ export async function POST(request: Request) {
     // 2. Delete loan guarantor relationships
     await (adminClient.from("loan_guarantors") as any).delete().eq("guarantor_id", employeeId);
 
-    // 3. Get loan IDs before deleting loans
+    // 3. Get loan IDs and withdrawal IDs before deleting them, so their
+    // approval pipeline records don't end up orphaned.
     const { data: loans } = await (adminClient.from("loans") as any)
       .select("id")
       .eq("employee_id", employeeId);
+    const loanIds = (loans ?? []).map((l: any) => l.id);
 
-    // 4. Delete loan amortization schedules for the employee's loans
-    if (loans && loans.length > 0) {
-      const loanIds = loans.map((l: any) => l.id);
+    const { data: withdrawalRows } = await (adminClient.from("withdrawal_requests") as any)
+      .select("id")
+      .eq("employee_id", employeeId);
+    const withdrawalIds = (withdrawalRows ?? []).map((w: any) => w.id);
+
+    // 4. Delete loan amortization schedules, guarantor rows, and approvals
+    if (loanIds.length > 0) {
       await (adminClient.from("loan_amortization_schedules") as any)
         .delete()
         .in("loan_id", loanIds);
+      await (adminClient.from("loan_guarantors") as any)
+        .delete()
+        .in("loan_id", loanIds);
+    }
+
+    const orphanFilters = [
+      loanIds.length ? `and(entity_type.eq.loan,entity_id.in.(${loanIds.join(",")}))` : null,
+      withdrawalIds.length ? `and(entity_type.eq.withdrawal,entity_id.in.(${withdrawalIds.join(",")}))` : null,
+    ].filter(Boolean) as string[];
+
+    if (orphanFilters.length > 0) {
+      const { data: orphanApprovals } = await (adminClient.from("approvals") as any)
+        .select("id")
+        .or(orphanFilters.join(","));
+
+      const approvalIds = (orphanApprovals ?? []).map((a: any) => a.id);
+      if (approvalIds.length > 0) {
+        await (adminClient.from("approval_actions") as any).delete().in("approval_id", approvalIds);
+        await (adminClient.from("approvals") as any).delete().in("id", approvalIds);
+      }
     }
 
     // 5. Delete loan applications
