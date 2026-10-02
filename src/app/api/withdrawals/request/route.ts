@@ -92,6 +92,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: approvalError.message || "Failed to create approval workflow." }, { status: 500 });
   }
 
+  // Notify fund managers that a withdrawal needs their review
+  try {
+    const fmRes = await (admin.from("profiles") as any).select("user_id").eq("role", "fund_manager");
+    for (const fm of (fmRes.data ?? []) as { user_id: string }[]) {
+      await (admin.from("notifications") as any).insert({
+        user_id: fm.user_id,
+        type: "approval_required",
+        title: "Withdrawal needs your review",
+        message: `A savings withdrawal request (${requestRef}) needs your approval.`,
+        entity_type: "withdrawal",
+        entity_id: withdrawal.id,
+      });
+    }
+  } catch (notifErr) {
+    console.warn("[withdrawals/request] fund-manager notification failed (non-fatal):", notifErr);
+  }
+
   return NextResponse.json({
     message: "Withdrawal request submitted. The approval and administrative process will take a maximum of 2 weeks.",
     withdrawal,

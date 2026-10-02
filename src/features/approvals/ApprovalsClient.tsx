@@ -13,6 +13,7 @@ import {
   canApproveAtStage,
   labelForStage,
   labelForRole,
+  roleForStage,
 } from "@/lib/loans/workflow";
 
 interface ApprovalAction {
@@ -97,13 +98,9 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
   const isApproverRole = ["union_rep", "fund_manager", "chairperson"].includes(userRole);
   const [view, setView] = useState<"action" | "all">(isApproverRole ? "action" : "all");
 
-  const STAGE_ROLE_MAP: Record<number, string> = Object.fromEntries(
-    APPROVAL_STAGES.map((s) => [s.stage, s.role])
-  );
-
   const needsMyAction = (approval: ApprovalRow) => {
     if (approval.status !== "pending") return false;
-    if (!canApproveAtStage(userRole, approval.current_stage ?? 1)) return false;
+    if (!canApproveAtStage(userRole, approval.current_stage ?? 1, approval.entity_type)) return false;
     // Check if this stage already has an action recorded (someone already approved/rejected)
     const actions = approval.approval_actions ?? [];
     const stageAlreadyActioned = actions.some((a) => a.stage === (approval.current_stage ?? 1));
@@ -265,14 +262,16 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-semibold text-brand-text">{approval.current_stage ?? 1}/{approval.total_stages ?? 3}</span>
-                      {(approval.current_stage ?? 1) < (approval.total_stages ?? 3) && (
+                      {approval.entity_type === "withdrawal" ? (
+                        <p className="text-xs text-brand-text-secondary">{labelForRole("fund_manager")}</p>
+                      ) : (approval.current_stage ?? 1) < (approval.total_stages ?? 3) && (
                         <p className="text-xs text-brand-text-secondary">{labelForStage(approval.current_stage ?? 1)}</p>
                       )}
                       {approval.status === "pending" && needsMyAction(approval) && (
                         <span className="mt-1 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">Your turn</span>
                       )}
                       {approval.status === "pending" && !needsMyAction(approval) && (
-                        <p className="mt-1 text-xs text-brand-text-secondary">Waiting for {labelForStage(approval.current_stage ?? 1)}</p>
+                        <p className="mt-1 text-xs text-brand-text-secondary">Waiting for {labelForRole(roleForStage(approval.current_stage ?? 1, approval.entity_type) ?? "approver")}</p>
                       )}
                     </td>
                     <td className="hidden px-4 py-3 text-brand-text-secondary md:table-cell">
@@ -283,7 +282,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        {approval.status === "pending" && canApproveAtStage(userRole, approval.current_stage ?? 1) && (
+                        {approval.status === "pending" && canApproveAtStage(userRole, approval.current_stage ?? 1, approval.entity_type) && (
                           <>
                             <button
                               title="Approve"
@@ -495,7 +494,7 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
               {/* Waiting info */}
               {selected.status === "pending" && !needsMyAction(selected) && (
                 <div className="rounded-brand border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                  Waiting for <strong>{labelForRole(STAGE_ROLE_MAP[selected.current_stage ?? 1] ?? "next reviewer")}</strong> to review.
+                  Waiting for <strong>{labelForRole(roleForStage(selected.current_stage ?? 1, selected.entity_type) ?? "next reviewer")}</strong> to review.
                 </div>
               )}
 
