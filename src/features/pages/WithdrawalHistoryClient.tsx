@@ -8,6 +8,15 @@ import { ArrowUpCircle, Plus, X, BadgeCent } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending approval",
+  under_review: "Under review",
+  approved: "Approved — awaiting payout",
+  disbursed: "Paid out",
+  rejected: "Rejected",
+  on_hold: "On hold",
+};
+
 export function WithdrawalHistoryClient({
   totalWithdrawals,
   thisMonth,
@@ -194,14 +203,14 @@ export function WithdrawalHistoryClient({
         emptyMessage="No PW transactions found."
         items={withdrawals.map((item) => ({
           id: item.id,
-          searchText: `${item.request_ref} ${item.reason ?? ""} ${item.status}`,
+          searchText: `${item.request_ref} ${item.reason ?? ""} ${item.status} ${STATUS_LABELS[item.status] ?? ""}`,
           content: (
             <div className="flex items-center gap-4 rounded-lg bg-brand-card-bg p-4">
               <ArrowUpCircle className="h-5 w-5 text-brand-danger" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-brand-text">{item.request_ref}</p>
                 <p className="text-xs text-brand-text-secondary">
-                  {formatCurrency(item.amount)} · {item.status}
+                  {formatCurrency(item.amount)} · {STATUS_LABELS[item.status] ?? item.status}
                 </p>
               </div>
               <p className="text-xs text-brand-text-secondary">{formatDate(item.requested_at)}</p>

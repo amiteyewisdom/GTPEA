@@ -38,7 +38,7 @@ export function successMessageAfterApproval(action: "approved" | "rejected", sta
 
   if (isFinal) {
     return entityType === "withdrawal"
-      ? "Withdrawal approved. Amount has been deducted from savings balance."
+      ? "Withdrawal approved. It is now queued for disbursement."
       : "Final approval complete. The loan is now approved.";
   }
 

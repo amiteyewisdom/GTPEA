@@ -262,7 +262,8 @@ export async function fetchWithdrawalHistoryData() {
     .reduce((acc, w) => acc + (Number(w.amount) || 0), 0);
 
   return {
-    totalWithdrawals: sum(rows.filter((w) => ["approved", "disbursed"].includes(w.status)), "amount"),
+    // Only count money actually paid out — 'approved' is still awaiting disbursement
+    totalWithdrawals: sum(rows.filter((w) => w.status === "disbursed"), "amount"),
     thisMonth,
     withdrawals: rows,
   };
@@ -346,9 +347,34 @@ export async function fetchDisbursementsData() {
         !excludedIds.has(l.employee_id) &&
         (l.status === "approved" || Number(l.amount_disbursed) > 0)
     )
+    .map((l) => ({ ...l, kind: "loan" }))
     .slice(0, 200);
 
-  return { disbursements: filtered };
+  // Approved savings withdrawals awaiting payout, plus payout history
+  const { data: withdrawalRows } = await supabase
+    .from("withdrawal_requests")
+    .select(
+      `id, request_ref, amount, status, disbursement_date, requested_at, employee_id, employees (first_name, last_name, employee_no), savings (account_number, type)`
+    )
+    .in("status", ["approved", "disbursed"])
+    .order("requested_at", { ascending: false })
+    .limit(200) as any;
+
+  const withdrawalItems = ((withdrawalRows ?? []) as any[])
+    .filter((w) => !excludedIds.has(w.employee_id))
+    .map((w) => ({ ...w, kind: "withdrawal" }));
+
+  // Awaiting items first (approved), then history
+  const awaiting = [
+    ...filtered.filter((i) => i.status === "approved"),
+    ...withdrawalItems.filter((i) => i.status === "approved"),
+  ];
+  const history = [
+    ...filtered.filter((i) => i.status !== "approved"),
+    ...withdrawalItems.filter((i) => i.status === "disbursed"),
+  ];
+
+  return { disbursements: [...awaiting, ...history] };
 }
 
 export async function fetchAuditLogsData() {

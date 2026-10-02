@@ -16,14 +16,29 @@ const STAGE_FOR_ROLE: Record<string, number> = {
 async function fetchPendingCount(supabase: any, role: string): Promise<number> {
   if (!APPROVER_ROLES.includes(role)) return 0;
   try {
-    const query = supabase
+    const stage = STAGE_FOR_ROLE[role];
+
+    // Loan approvals: pending at this role's stage
+    const loanQuery = supabase
       .from("approvals")
       .select("id", { count: "exact", head: true })
-      .eq("status", "pending");
-    const stage = STAGE_FOR_ROLE[role];
-    if (stage) query.eq("current_stage", stage);
-    const { count } = await query;
-    return count ?? 0;
+      .eq("status", "pending")
+      .eq("entity_type", "loan")
+      .eq("current_stage", stage);
+    const { count: loanCount } = await loanQuery;
+
+    // Withdrawal approvals are a single-stage fund-manager flow (always stage 1)
+    let withdrawalCount = 0;
+    if (role === "fund_manager") {
+      const { count } = await supabase
+        .from("approvals")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending")
+        .eq("entity_type", "withdrawal");
+      withdrawalCount = count ?? 0;
+    }
+
+    return (loanCount ?? 0) + withdrawalCount;
   } catch {
     return 0;
   }

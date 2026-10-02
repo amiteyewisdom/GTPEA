@@ -198,43 +198,33 @@ export async function processApprovalAction(input: {
         .eq("id", withdrawal.id);
       if (wRes.error) console.error("[processApprovalAction] withdrawal update error:", wRes.error);
     } else if (action === "approved" && isFinalStage) {
-      // Deduct from savings balance on final approval
-      const savingsRes = await (admin.from("savings") as any)
-        .select("id, balance")
-        .eq("id", withdrawal.savings_id)
-        .single();
-      const savings = savingsRes.data;
-      const amount = Number(withdrawal.amount) || 0;
-      if (savings && amount > 0) {
-        const currentBalance = Number(savings.balance) || 0;
-        if (currentBalance >= amount) {
-          const newBalance = currentBalance - amount;
-          const balanceUpdateRes = await (admin.from("savings") as any)
-            .update({ balance: newBalance })
-            .eq("id", savings.id);
-          if (balanceUpdateRes.error) console.error("[processApprovalAction] savings balance update error:", balanceUpdateRes.error);
-
-          // Record withdrawal transaction
-          await (admin.from("transactions") as any).insert({
-            reference: `WDR-${Date.now()}`,
-            employee_id: withdrawal.employee_id,
-            type: "savings_withdrawal",
-            amount: amount,
-            balance_before: currentBalance,
-            balance_after: newBalance,
-            description: "Approved savings withdrawal",
-            related_id: withdrawal.id,
-            related_type: "withdrawal_request",
-            performed_by: userId,
-          });
-        } else {
-          console.error("[processApprovalAction] insufficient savings balance for withdrawal", withdrawal.id);
-        }
-      }
+      // Fund manager approval = 'approved' (ready to disburse). Savings are
+      // only deducted when the fund manager pays out via /api/withdrawals/disburse —
+      // the money is handed over manually, the system records it afterwards.
       const wRes = await (admin.from("withdrawal_requests") as any)
-        .update({ status: "disbursed", disbursed_at: new Date().toISOString() })
+        .update({ status: "approved" })
         .eq("id", withdrawal.id);
-      if (wRes.error) console.error("[processApprovalAction] withdrawal status update error:", wRes.error);
+      if (wRes.error) {
+        console.error("[processApprovalAction] withdrawal status update error:", wRes.error);
+        return { error: `Approval recorded, but updating the withdrawal failed: ${wRes.error.message}`, status: 500 };
+      }
+
+      // Notify fund managers that a withdrawal is ready to disburse
+      try {
+        const fmRes = await (admin.from("profiles") as any).select("user_id").eq("role", "fund_manager");
+        for (const fm of (fmRes.data ?? []) as { user_id: string }[]) {
+          await (admin.from("notifications") as any).insert({
+            user_id: fm.user_id,
+            type: "approval_required",
+            title: "Withdrawal ready to disburse",
+            message: `A savings withdrawal is approved and waiting for disbursement.`,
+            entity_type: "withdrawal",
+            entity_id: withdrawal.id,
+          });
+        }
+      } catch (fmErr) {
+        console.warn("[processApprovalAction] fund-manager notification failed (non-fatal):", fmErr);
+      }
     }
   }
 
@@ -249,7 +239,9 @@ export async function processApprovalAction(input: {
         action === "approved" && !isFinalStage
           ? `${entityLabel} moved to stage ${nextStage} (${labelForRole(roleForStage(nextStage, approval.entity_type) ?? "next reviewer")}).`
           : action === "approved" && isFinalStage
-            ? `${entityLabel} fully approved.`
+            ? approval.entity_type === "withdrawal"
+              ? `${entityLabel} approved — it is now queued for disbursement.`
+              : `${entityLabel} fully approved.`
             : `${entityLabel} was rejected${reasonCode || notes ? ` — ${reasonCode || notes}` : ""}. You can amend the application and resubmit it.`,
       entity_type: approval.entity_type,
       entity_id: approval.entity_id,
