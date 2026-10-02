@@ -190,9 +190,15 @@ export function ApprovalsClient({ approvals, total, userRole, userId }: Approval
           ? <KPICard title="Needs My Action" value={myActionCount} icon={Clock} accent={myActionCount > 0 ? "warning" : "primary"} subtitle="Ready for your review" />
           : <KPICard title="All Approvals" value={approvals.length} icon={Clock} accent="primary" subtitle="In the system" />
         }
-        <KPICard title="Pending Review" value={pending} icon={Clock} accent="primary" subtitle="All pending" />
-        <KPICard title="Approved" value={approved} icon={CheckCircle} accent="success" subtitle="This period" />
-        <KPICard title="Rejected" value={rejected} icon={XCircle} accent="danger" subtitle="This period" />
+        <KPICard
+          title={isApproverRole ? "In Pipeline" : "Pending Review"}
+          value={pending}
+          icon={Clock}
+          accent="primary"
+          subtitle={isApproverRole ? "Awaiting other stages" : "All pending"}
+        />
+        <KPICard title="Approved" value={approved} icon={CheckCircle} accent="success" subtitle="All stages complete" />
+        <KPICard title="Rejected" value={rejected} icon={XCircle} accent="danger" subtitle="Turned down" />
       </div>
 
       {/* View toggle + Search */}
