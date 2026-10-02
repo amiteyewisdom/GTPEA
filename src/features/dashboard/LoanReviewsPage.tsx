@@ -190,6 +190,9 @@ export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
               key={loan.id}
               name={loan.name}
               employeeId={loan.employeeId}
+              requestedAmount={loan.requestedAmount}
+              term={loan.term}
+              purpose={loan.purpose}
               currentSavings={loan.currentSavings}
               currentLoans={loan.currentLoans}
               monthlyRepayments={loan.monthlyRepayments}
@@ -236,6 +239,9 @@ export default function LoanReviewsPage({ stats }: LoanReviewsPageProps) {
 function EmployeeEligibilityCard({
   name,
   employeeId,
+  requestedAmount,
+  term,
+  purpose,
   currentSavings,
   currentLoans,
   monthlyRepayments,
@@ -290,6 +296,23 @@ function EmployeeEligibilityCard({
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${config.bgColor} ${config.color}`}>
           {config.label}
         </span>
+      </div>
+
+      {/* Requested facility */}
+      <div className="mb-4 p-3 rounded-lg bg-brand-green/10 border border-brand-green/30">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-brand-text-secondary text-xs mb-0.5">Amount Requested</p>
+            <p className="text-brand-text font-bold text-lg">{requestedAmount}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-brand-text-secondary text-xs mb-0.5">Term</p>
+            <p className="text-brand-text font-medium text-sm">{term}</p>
+          </div>
+        </div>
+        {purpose && purpose !== "—" && (
+          <p className="text-brand-text-secondary text-xs mt-2 line-clamp-2">{purpose}</p>
+        )}
       </div>
 
       {/* Financial Metrics */}

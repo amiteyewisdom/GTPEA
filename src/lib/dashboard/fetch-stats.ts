@@ -105,6 +105,9 @@ export interface DashboardStats {
     id: string;
     name: string;
     employeeId: string;
+    requestedAmount: string;
+    term: string;
+    purpose: string;
     currentSavings: string;
     currentLoans: string;
     monthlyRepayments: string;
@@ -604,6 +607,9 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       id: item.loanId,
       name: item.applicant,
       employeeId: loan?.employee_id ?? "",
+      requestedAmount: item.amount,
+      term: item.duration,
+      purpose: item.purpose,
       currentSavings: formatCurrency(savingsTotal),
       currentLoans: formatCurrency(outstanding),
       monthlyRepayments: loan ? formatCurrency(Number(loan.monthly_repayment) || 0) : item.amount,
