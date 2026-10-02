@@ -14,6 +14,7 @@ interface ProfileData {
   avatar_url: string | null;
   phone: string | null;
   employee_id: string | null;
+  staff_no: string | null;
   guarantor_status: string | null;
 }
 
@@ -37,7 +38,7 @@ const GUARANTOR_BADGE: Record<string, string> = {
   blacklisted: "bg-gray-100 text-gray-700",
 };
 
-export function ProfileClient({ profile, email }: ProfileClientProps) {
+export function ProfileClient({ profile }: ProfileClientProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
@@ -47,8 +48,7 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // Internal email for Supabase auth (not user-facing)
-  const internalEmail = email || (profile?.employee_id ? `${profile.employee_id.toLowerCase()}@staff.gtpea.local` : "");
+  const staffId = profile?.staff_no || "—";
 
   const displayRole = profile?.role === "super_admin" ? "administrator" : (profile?.role ?? "employee");
   const roleBadge = ROLE_BADGE[displayRole] ?? ROLE_BADGE.employee;
@@ -171,7 +171,7 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-bold text-brand-text truncate">{fullName || "—"}</h2>
-            <p className="text-sm text-brand-text-secondary truncate">Staff ID: {profile?.employee_id || "—"}</p>
+            <p className="text-sm text-brand-text-secondary truncate">Staff ID: {staffId}</p>
             <div className="mt-1.5 flex flex-wrap gap-2">
               <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadge}`}>
                 {displayRole}
@@ -231,7 +231,7 @@ export function ProfileClient({ profile, email }: ProfileClientProps) {
             <label className="mb-1 block text-xs font-medium text-brand-text-secondary">Employee ID</label>
             <input
               type="text"
-              value={profile?.employee_id ?? "—"}
+              value={staffId}
               disabled
               className="w-full rounded-lg border border-brand-card-border bg-slate-50 px-3 py-2.5 text-sm font-mono text-brand-text"
             />

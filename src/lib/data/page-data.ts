@@ -405,6 +405,14 @@ export async function fetchUsersData() {
     .neq("role", "super_admin")
     .order("created_at", { ascending: false });
 
+  // profiles.employee_id holds the internal employees.id UUID; resolve to the
+  // human-readable employee_no for display.
+  const employeeIds = [...new Set(((data ?? []) as any[]).map((u) => u.employee_id).filter(Boolean))];
+  const { data: linkedEmployees } = employeeIds.length
+    ? await supabase.from("employees").select("id, employee_no").in("id", employeeIds)
+    : { data: [] as any[] };
+  const employeeNoById = new Map((linkedEmployees ?? []).map((e: any) => [e.id, e.employee_no]));
+
   const userIds = ((data ?? []) as any[]).map((user) => user.user_id).filter(Boolean);
 
   let emailByUserId = new Map<string, string>();
@@ -434,7 +442,7 @@ export async function fetchUsersData() {
       name: user.full_name,
       email: emailByUserId.get(user.user_id) || "",
       role: user.role,
-      employeeId: user.employee_id ?? "—",
+      employeeId: (user.employee_id ? employeeNoById.get(user.employee_id) : null) ?? user.employee_id ?? "—",
       status: user.is_active ? "Active" : "Inactive",
       joined: user.created_at ? formatDate(user.created_at) : "—",
       mustChangePassword: !!user.must_change_password,

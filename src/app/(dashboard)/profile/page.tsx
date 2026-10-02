@@ -24,7 +24,7 @@ export default async function ProfilePage() {
   const { data: employee } = employeeRef
     ? await admin
         .from("employees")
-        .select("guarantor_status, guarantor_application_date")
+        .select("guarantor_status, guarantor_application_date, employee_no")
         .eq(isUuid ? "id" : "employee_no", employeeRef)
         .maybeSingle()
     : { data: null };
@@ -41,7 +41,9 @@ export default async function ProfilePage() {
 
   const profileWithGuarantor = typedProfile ? {
     ...typedProfile,
-    guarantor_status: guarantorStatus
+    guarantor_status: guarantorStatus,
+    // Display the human-readable staff number, never the internal employee UUID
+    staff_no: typedEmployee?.employee_no ?? (isUuid ? null : employeeRef)
   } : null;
 
   return (

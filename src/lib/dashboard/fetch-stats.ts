@@ -169,7 +169,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     supabase
       .from("loans")
       .select(
-        "id, loan_ref, employee_id, amount_requested, amount_approved, amount_disbursed, outstanding_balance, status, purpose, term_months, monthly_repayment, disbursement_date, created_at, loan_product_id, employees!employee_id(first_name, last_name), loan_products(name)"
+        "id, loan_ref, employee_id, amount_requested, amount_approved, amount_disbursed, outstanding_balance, status, purpose, term_months, monthly_repayment, disbursement_date, created_at, loan_product_id, employees!employee_id(first_name, last_name, employee_no), loan_products(name)"
       ),
     supabase
       .from("approvals")
@@ -606,7 +606,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       approvalId: item.approvalId,
       id: item.loanId,
       name: item.applicant,
-      employeeId: loan?.employee_id ?? "",
+      employeeId: loan?.employees?.employee_no ?? "—",
       requestedAmount: item.amount,
       term: item.duration,
       purpose: item.purpose,
