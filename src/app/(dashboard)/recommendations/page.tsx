@@ -110,7 +110,7 @@ export default async function RecommendationsPage() {
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-brand-text mb-2">My Recommendations</h1>
         <p className="text-sm md:text-base text-brand-text-secondary">
-          History of loan recommendations you have submitted at stage 1.
+          History of loan recommendations you have submitted as Trustee at stage 3.
         </p>
       </div>
 

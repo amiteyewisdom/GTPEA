@@ -52,6 +52,7 @@ async function handleApply(body: any) {
   }
 
   const supabase = await createClient();
+  const admin = createAdminClient();
   const employee = await getLoggedInEmployee(supabase);
 
   if (!employee) {
@@ -140,14 +141,18 @@ async function handleApply(body: any) {
     );
   }
 
-  const requiresGuarantor = product.requires_guarantor && savingsBalance <= activeLoanBalance;
+  const requiresGuarantor = principal > savingsBalance;
 
-  if (allGuarantorIds.length > 1) {
-    return NextResponse.json({ error: "You can list at most 1 guarantor." }, { status: 400 });
+  if (allGuarantorIds.length > 2) {
+    return NextResponse.json({ error: "You can list at most 2 guarantors." }, { status: 400 });
   }
 
   if (requiresGuarantor && allGuarantorIds.length === 0) {
-    return NextResponse.json({ error: "This product requires a guarantor." }, { status: 400 });
+    return NextResponse.json({ error: "Select up to two guarantors because the requested amount exceeds your savings." }, { status: 400 });
+  }
+
+  if (!requiresGuarantor && allGuarantorIds.length > 0) {
+    return NextResponse.json({ error: "A guarantor is not required when your savings cover the requested amount." }, { status: 400 });
   }
 
   if (allGuarantorIds.some((id) => id === employee.employeeId)) {
@@ -158,6 +163,35 @@ async function handleApply(body: any) {
     return NextResponse.json({ error: "Each guarantor can only be listed once." }, { status: 400 });
   }
 
+  if (requiresGuarantor) {
+    const [guarantorEmployeesRes, guarantorSavingsRes, guarantorLoansRes] = await Promise.all([
+      admin.from("employees").select("id, status").in("id", allGuarantorIds),
+      admin.from("savings").select("employee_id, balance").eq("status", "active").in("employee_id", allGuarantorIds),
+      admin.from("loans").select("employee_id, outstanding_balance, amount_approved, amount_requested, status").in("employee_id", allGuarantorIds),
+    ]);
+
+    if ((guarantorEmployeesRes.data ?? []).length !== allGuarantorIds.length ||
+        (guarantorEmployeesRes.data ?? []).some((row: any) => row.status !== "active")) {
+      return NextResponse.json({ error: "Every guarantor must be an active employee." }, { status: 400 });
+    }
+
+    const guarantorCover = allGuarantorIds.reduce((total, id) => {
+      const savings = (guarantorSavingsRes.data ?? [])
+        .filter((row: any) => row.employee_id === id)
+        .reduce((sum: number, row: any) => sum + Number(row.balance ?? 0), 0);
+      const committed = (guarantorLoansRes.data ?? [])
+        .filter((row: any) => row.employee_id === id)
+        .reduce((sum: number, row: any) => sum + committedLoanAmount(row), 0);
+      return total + Math.max(0, savings - committed);
+    }, 0);
+
+    if (savingsBalance + guarantorCover < principal) {
+      return NextResponse.json({
+        error: `Insufficient guarantee cover. Your savings plus the selected guarantors' available savings must cover ${formatCurrency(principal)}.`,
+      }, { status: 400 });
+    }
+  }
+
   const calcMethod = product.interest_calc_method ?? 'reducing_balance';
   const monthlyRepayment = calculateMonthlyRepayment(
     principal,
@@ -166,7 +200,6 @@ async function handleApply(body: any) {
     calcMethod
   );
   const loanRef = generateReference("LOAN");
-  const admin = createAdminClient();
 
   const loanRes = await (admin.from("loans") as any)
     .insert({
@@ -222,8 +255,8 @@ async function handleApply(body: any) {
       );
     }
 
-    // Notify union reps that a stage-1 approval is waiting
-    const reviewersRes = await (admin.from("profiles") as any).select("user_id").eq("role", "union_rep");
+    // Stage 1 is Fund Manager review
+    const reviewersRes = await (admin.from("profiles") as any).select("user_id").eq("role", "fund_manager");
     for (const reviewer of (reviewersRes.data ?? []) as { user_id: string }[]) {
       await (admin.from("notifications") as any).insert({
         user_id: reviewer.user_id,
@@ -288,7 +321,7 @@ async function handleApply(body: any) {
   return NextResponse.json({
     message: allGuarantorIds.length > 0
       ? "Facility application submitted. Waiting for guarantor consent."
-      : "Facility application submitted. The Relief Committee will review it first.",
+      : "Facility application submitted. The Fund Manager will review it first.",
     loan: loanRes.data,
   });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Edit2, Save, X, CheckCircle } from "lucide-react";
+import { Edit2, Save, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -31,13 +31,6 @@ const ROLE_BADGE: Record<string, string> = {
   employee:      "bg-slate-100 text-slate-600",
 };
 
-const GUARANTOR_BADGE: Record<string, string> = {
-  approved: "bg-green-100 text-green-700",
-  pending: "bg-amber-100 text-amber-700",
-  suspended: "bg-red-100 text-red-700",
-  blacklisted: "bg-gray-100 text-gray-700",
-};
-
 export function ProfileClient({ profile }: ProfileClientProps) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -51,8 +44,8 @@ export function ProfileClient({ profile }: ProfileClientProps) {
   const staffId = profile?.staff_no || "—";
 
   const displayRole = profile?.role === "super_admin" ? "administrator" : (profile?.role ?? "employee");
+  const displayRoleLabel = displayRole === "union_rep" ? "Trustee" : displayRole.replace(/_/g, " ");
   const roleBadge = ROLE_BADGE[displayRole] ?? ROLE_BADGE.employee;
-  const guarantorBadge = profile?.guarantor_status ? GUARANTOR_BADGE[profile.guarantor_status] : null;
   const initial = (fullName?.[0] ?? "U").toUpperCase();
 
   const handleSave = async () => {
@@ -174,14 +167,8 @@ export function ProfileClient({ profile }: ProfileClientProps) {
             <p className="text-sm text-brand-text-secondary truncate">Staff ID: {staffId}</p>
             <div className="mt-1.5 flex flex-wrap gap-2">
               <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${roleBadge}`}>
-                {displayRole}
+                {displayRoleLabel}
               </span>
-              {guarantorBadge && (
-                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${guarantorBadge}`}>
-                  <CheckCircle className="h-3 w-3" />
-                  Guarantor: {profile?.guarantor_status?.replace("_", " ")}
-                </span>
-              )}
             </div>
           </div>
           {!editing ? (

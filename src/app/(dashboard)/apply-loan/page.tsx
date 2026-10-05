@@ -33,7 +33,6 @@ export default async function ApplyLoanPage() {
       .from("employees")
       .select("id, first_name, last_name, employee_no")
       .eq("status", "active")
-      .eq("guarantor_status", "approved")
       .order("first_name"),
   ]);
 
@@ -53,24 +52,28 @@ export default async function ApplyLoanPage() {
 
   const maxBorrowable = borrowingCapacity(savingsBalance, memberLoans);
 
-  // Fetch savings account numbers for guarantors separately
   const guarantorIds = (guarantorEmployeesRes.data ?? []).map((e: any) => e.id);
-  const savingsRes = await supabase
-    .from("savings")
-    .select("employee_id, account_number")
-    .eq("status", "active")
-    .in("employee_id", guarantorIds);
-
-  const savingsMap = new Map(
-    (savingsRes.data ?? []).map((s: any) => [s.employee_id, s.account_number])
-  );
+  const [guarantorSavingsRes, guarantorLoansRes] = guarantorIds.length
+    ? await Promise.all([
+        admin.from("savings").select("employee_id, account_number, balance").eq("status", "active").in("employee_id", guarantorIds),
+        admin.from("loans").select("employee_id, outstanding_balance, amount_approved, amount_requested, status").in("employee_id", guarantorIds),
+      ])
+    : [{ data: [] }, { data: [] }];
 
   const guarantorEmployees = (guarantorEmployeesRes.data ?? [])
     .filter((e: any) => e.id !== employee!.employeeId)
-    .map((e: any) => ({
-      ...e,
-      account_number: savingsMap.get(e.id) ?? null,
-    }));
+    .map((e: any) => {
+      const savings = (guarantorSavingsRes.data ?? []).filter((s: any) => s.employee_id === e.id);
+      const loans = (guarantorLoansRes.data ?? []).filter((loan: any) => loan.employee_id === e.id);
+      const totalSavings = savings.reduce((sum: number, row: any) => sum + Number(row.balance ?? 0), 0);
+      const committed = loans.reduce((sum: number, loan: any) => sum + committedLoanAmount(loan), 0);
+      return {
+        ...e,
+        account_number: savings[0]?.account_number ?? null,
+        available_cover: Math.max(0, totalSavings - committed),
+      };
+    })
+    .filter((e: any) => e.available_cover > 0);
 
   const raw = employeeDetailsRes.data as any;
   const employeeDetails = raw

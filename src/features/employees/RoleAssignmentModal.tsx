@@ -19,7 +19,7 @@ export function RoleAssignmentModal({ onClose, targetEmployee }: RoleAssignmentM
     { value: 'chairperson', label: 'Chairperson' },
     { value: 'administrator', label: 'Administrator' },
     { value: 'fund_manager', label: 'Fund Manager' },
-    { value: 'union_rep', label: 'Union Representative' },
+    { value: 'union_rep', label: 'Trustee' },
   ];
 
   const handleAssign = async () => {

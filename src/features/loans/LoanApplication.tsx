@@ -42,6 +42,7 @@ interface GuarantorOption {
   last_name: string;
   employee_no: string;
   account_number: string | null;
+  available_cover: number;
 }
 
 interface LoanApplicationProps {
@@ -92,6 +93,7 @@ export function LoanApplication({
   const duration = durationStr === "" ? 0 : Number(durationStr);
   const [purpose, setPurpose] = useState("");
   const [guarantorId, setGuarantorId] = useState("");
+  const [secondGuarantorId, setSecondGuarantorId] = useState("");
   const [guarantorAccount, setGuarantorAccount] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -106,6 +108,10 @@ export function LoanApplication({
     () => guarantorEmployees.find((e) => e.id === guarantorId),
     [guarantorEmployees, guarantorId]
   );
+  const secondGuarantor = useMemo(
+    () => guarantorEmployees.find((e) => e.id === secondGuarantorId),
+    [guarantorEmployees, secondGuarantorId]
+  );
 
   useMemo(() => {
     if (selectedGuarantor) {
@@ -115,10 +121,11 @@ export function LoanApplication({
     }
   }, [selectedGuarantor]);
 
-  const requiresGuarantor =
-    savingsBalance !== undefined && activeLoanBalance !== undefined
-      ? savingsBalance <= activeLoanBalance
-      : selectedProduct?.requires_guarantor ?? false;
+  const requiresGuarantor = savingsBalance !== undefined && principal > savingsBalance;
+  const combinedCover = (savingsBalance ?? 0) +
+    (selectedGuarantor?.available_cover ?? 0) +
+    (secondGuarantor?.available_cover ?? 0);
+  const guarantorCoverMissing = requiresGuarantor && combinedCover < principal;
 
   const calcMethod = selectedProduct?.interest_calc_method ?? "reducing_balance";
 
@@ -152,7 +159,8 @@ export function LoanApplication({
     !capacityExhausted &&
     Boolean(selectedProduct) &&
     principal > 0 &&
-    !guarantorMissing;
+    !guarantorMissing &&
+    !guarantorCoverMissing;
 
   const handleProductChange = (nextProductId: string) => {
     const product = loanProducts.find((item) => item.id === nextProductId);
@@ -171,6 +179,8 @@ export function LoanApplication({
           termValidation ??
           amountWarn ??
           (capacityExhausted ? "Your borrowing capacity is exhausted. Repay existing loans to borrow again." : null) ??
+          (guarantorMissing ? "Select a guarantor for the part of the loan not covered by your savings." : null) ??
+          (guarantorCoverMissing ? "Your savings plus the selected guarantors' available savings must cover the requested amount." : null) ??
           "Please fix the form errors."
       );
       return;
@@ -191,6 +201,9 @@ export function LoanApplication({
           guarantor_name: selectedGuarantor ? `${selectedGuarantor.first_name} ${selectedGuarantor.last_name}` : null,
           guarantor_staff_id: selectedGuarantor?.employee_no,
           guarantor_account: guarantorAccount || null,
+          additional_guarantors: secondGuarantor
+            ? [{ guarantor_id: secondGuarantor.id, guarantor_account: secondGuarantor.account_number }]
+            : [],
         }),
       });
 
@@ -209,6 +222,7 @@ export function LoanApplication({
       setDurationStr("");
       setPurpose("");
       setGuarantorId("");
+      setSecondGuarantorId("");
       setGuarantorAccount("");
       setLoading(false);
       router.refresh();
@@ -241,7 +255,7 @@ export function LoanApplication({
           <div>
             <h3 className="text-xl font-bold text-brand-text mb-1">Loan Application Form</h3>
             <p className="text-brand-text-secondary text-sm">
-              Submit a facility request and track progress through Relief Committee, Fund Manager, and Chairperson review.
+              Submit a facility request and track progress through Fund Manager, Chairperson, and Trustee review.
             </p>
           </div>
 
@@ -346,6 +360,10 @@ export function LoanApplication({
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^0-9.]/g, "");
                   setPrincipalStr(val);
+                  if (Number(val) <= (savingsBalance ?? 0)) {
+                    setGuarantorId("");
+                    setSecondGuarantorId("");
+                  }
                   setErrorMessage(null);
                 }}
                 className="w-full pl-14 pr-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
@@ -415,58 +433,61 @@ export function LoanApplication({
           />
         </div>
 
-        {/* Guarantor */}
+        {/* Guarantors */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-brand-accent" />
-            <label className="text-sm font-medium text-brand-text">Guarantor</label>
-            {requiresGuarantor && <span className="text-xs text-red-600 font-medium">* required</span>}
-            {!requiresGuarantor && savingsBalance !== undefined && activeLoanBalance !== undefined && (
-              <span className="text-xs text-brand-green font-medium">(not required because savings exceed total loan balance)</span>
+            <label className="text-sm font-medium text-brand-text">Guarantors</label>
+            {requiresGuarantor ? (
+              <span className="text-xs text-red-600 font-medium">* required when the request exceeds your savings</span>
+            ) : (
+              <span className="text-xs text-brand-green font-medium">(not required—your savings cover this request)</span>
             )}
           </div>
-          <select
-            value={guarantorId}
-            onChange={(e) => setGuarantorId(e.target.value)}
-            className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent"
-          >
-            <option value="">{guarantorEmployees.length ? "Select a guarantor" : "No guarantors available"}</option>
-            {guarantorEmployees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.first_name} {emp.last_name} ({emp.employee_no})
-              </option>
-            ))}
-          </select>
-          {selectedGuarantor ? (
-            <div className="space-y-3 rounded-lg border border-brand-card-border bg-brand-card-bg/50 p-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-brand-text-secondary" />
-                  <div>
-                    <p className="text-xs text-brand-text-secondary">Staff ID</p>
-                    <p className="text-sm font-semibold text-brand-text">{selectedGuarantor.employee_no}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-brand-text-secondary" />
-                  <div>
-                    <p className="text-xs text-brand-text-secondary">Name</p>
-                    <p className="text-sm font-semibold text-brand-text">{selectedGuarantor.first_name} {selectedGuarantor.last_name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-brand-text-secondary" />
-                  <div>
-                    <p className="text-xs text-brand-text-secondary">Account No.</p>
-                    <p className="text-sm font-semibold text-brand-text">{guarantorAccount || selectedGuarantor.account_number || "—"}</p>
-                  </div>
-                </div>
+          {requiresGuarantor && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <select
+                  value={guarantorId}
+                  onChange={(e) => {
+                    setGuarantorId(e.target.value);
+                    if (e.target.value === secondGuarantorId) setSecondGuarantorId("");
+                  }}
+                  className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green"
+                >
+                  <option value="">{guarantorEmployees.length ? "Select first guarantor" : "No eligible guarantors available"}</option>
+                  {guarantorEmployees.filter((emp) => emp.id !== secondGuarantorId).map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.first_name} {emp.last_name} ({emp.employee_no}) — cover {formatCurrency(emp.available_cover)}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={secondGuarantorId}
+                  onChange={(e) => setSecondGuarantorId(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-white border border-brand-card-border rounded-lg text-brand-text focus:outline-none focus:ring-2 focus:ring-brand-green"
+                >
+                  <option value="">Second guarantor (if needed)</option>
+                  {guarantorEmployees.filter((emp) => emp.id !== guarantorId).map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.first_name} {emp.last_name} ({emp.employee_no}) — cover {formatCurrency(emp.available_cover)}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </div>
-          ) : requiresGuarantor ? (
-            <p className="text-xs text-red-600">This product requires a guarantor before submission.</p>
-          ) : null}
-
+              <div className={`rounded-lg border p-3 text-sm ${guarantorCoverMissing ? "border-red-200 bg-red-50 text-red-700" : "border-brand-green/30 bg-brand-green/10 text-brand-green"}`}>
+                Combined cover: {formatCurrency(combinedCover)} of {formatCurrency(principal)} required.
+                {guarantorCoverMissing && " Select another guarantor with enough available savings."}
+              </div>
+              {[selectedGuarantor, secondGuarantor].filter(Boolean).map((guarantor) => (
+                <div key={guarantor!.id} className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg border border-brand-card-border bg-brand-card-bg/50 p-3">
+                  <div className="flex items-center gap-2"><Users className="w-4 h-4" /><span>{guarantor!.employee_no}</span></div>
+                  <div className="flex items-center gap-2"><Users className="w-4 h-4" /><span>{guarantor!.first_name} {guarantor!.last_name}</span></div>
+                  <div className="flex items-center gap-2"><Phone className="w-4 h-4" /><span>Available cover: {formatCurrency(guarantor!.available_cover)}</span></div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
         {/* Loan Summary */}
@@ -510,6 +531,8 @@ export function LoanApplication({
                     termValidation ??
                     amountWarn ??
                     (capacityExhausted ? "Your borrowing capacity is exhausted. Repay existing loans to borrow again." : null) ??
+                    (guarantorMissing ? "Select a guarantor for the part of the loan not covered by your savings." : null) ??
+                    (guarantorCoverMissing ? "Your savings plus the selected guarantors' available savings must cover the requested amount." : null) ??
                     "Please fix the form errors."
                 );
                 return;
@@ -531,7 +554,7 @@ export function LoanApplication({
           <div className="bg-white rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-brand-text mb-4">Confirm Facility Application</h3>
             <p className="text-brand-text-secondary text-sm mb-4">
-              Once confirmed, the request will enter the approval workflow and be reviewed by the Relief Committee first.
+              Once confirmed, the request will enter the approval workflow and be reviewed by the Fund Manager first.
             </p>
             <div className="mb-4 rounded-lg border-2 border-brand-green bg-brand-green/10 p-4 text-center">
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-green">Monthly Payment</p>

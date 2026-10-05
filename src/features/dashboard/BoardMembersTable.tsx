@@ -50,7 +50,7 @@ export function BoardMembersTable() {
     'chairperson': 'Chairperson',
     'administrator': 'Administrator',
     'fund_manager': 'Fund Manager',
-    'union_rep': 'Union Representative',
+    'union_rep': 'Trustee',
   };
 
   const roleColors: Record<string, string> = {

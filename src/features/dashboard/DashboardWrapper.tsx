@@ -70,7 +70,7 @@ const FundManagerDashboard = lazy(() => import('./FundManagerDashboard').catch(e
 
 const UnionRepDashboard = lazy(() => import('./UnionRepDashboard').catch(e => {
   console.error('Failed to load UnionRepDashboard:', e);
-  return { default: () => <div>Error loading Union Rep Dashboard</div> };
+  return { default: () => <div>Error loading Trustee Dashboard</div> };
 }));
 
 export default function DashboardWrapper({ role, data, stats }: Props) {

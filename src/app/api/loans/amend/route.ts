@@ -46,6 +46,7 @@ async function handleAmend(body: any) {
   }
 
   const supabase = await createClient();
+  const admin = createAdminClient();
   const employee = await getLoggedInEmployee(supabase);
 
   if (!employee) {
@@ -128,8 +129,6 @@ async function handleAmend(body: any) {
   ]);
   const savingsBalance = (savingsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.balance ?? 0), 0);
   const memberLoans = (loansRes.data ?? []) as any[];
-  const activeLoanBalance = memberLoans.reduce((s: number, r: any) => s + committedLoanAmount(r), 0);
-
   // Borrowing cap applies to amendments too — exclude the loan being amended
   // since its new amount is what's being checked.
   const otherLoans = memberLoans.filter((l: any) => l.id !== loanId);
@@ -141,17 +140,32 @@ async function handleAmend(body: any) {
     );
   }
 
-  const requiresGuarantor = product.requires_guarantor && savingsBalance <= activeLoanBalance;
-
-  const existingGuarantors = guarantorsRes.data ?? [];
+  const requiresGuarantor = principal > savingsBalance;
+  const existingGuarantors = (guarantorsRes.data ?? []) as { id: string; guarantor_id: string; consent_status?: string }[];
   if (requiresGuarantor && existingGuarantors.length === 0) {
-    return NextResponse.json({ error: "This product requires a guarantor." }, { status: 400 });
+    return NextResponse.json({ error: "This amount exceeds your savings and requires at least one guarantor." }, { status: 400 });
+  }
+
+  if (requiresGuarantor) {
+    const guarantorIds = existingGuarantors.map((row: any) => row.guarantor_id);
+    const [guarantorSavingsRes, guarantorLoansRes] = await Promise.all([
+      admin.from("savings").select("employee_id, balance").eq("status", "active").in("employee_id", guarantorIds),
+      admin.from("loans").select("employee_id, outstanding_balance, amount_approved, amount_requested, status").in("employee_id", guarantorIds),
+    ]);
+    const guarantorCover = guarantorIds.reduce((total: number, id: string) => {
+      const savings = (guarantorSavingsRes.data ?? []).filter((row: any) => row.employee_id === id)
+        .reduce((sum: number, row: any) => sum + Number(row.balance ?? 0), 0);
+      const committed = (guarantorLoansRes.data ?? []).filter((row: any) => row.employee_id === id)
+        .reduce((sum: number, row: any) => sum + committedLoanAmount(row), 0);
+      return total + Math.max(0, savings - committed);
+    }, 0);
+    if (savingsBalance + guarantorCover < principal) {
+      return NextResponse.json({ error: "The existing guarantor cover is insufficient for the amended amount." }, { status: 400 });
+    }
   }
 
   const calcMethod = product.interest_calc_method ?? 'reducing_balance';
   const monthlyRepayment = calculateMonthlyRepayment(principal, Number(product.interest_rate), durationMonths, calcMethod);
-
-  const admin = createAdminClient();
 
   const updateRes = await (admin.from("loans") as any)
     .update({
@@ -170,12 +184,17 @@ async function handleAmend(body: any) {
       disbursed_by: null,
       disbursement_date: null,
       notes: null,
+      guarantor_id: requiresGuarantor ? existingGuarantors[0]?.guarantor_id ?? null : null,
     })
     .eq("id", loanId);
 
   if (updateRes.error) {
     console.error("[/api/loans/amend] loan update error:", updateRes.error);
     return NextResponse.json({ error: updateRes.error.message }, { status: 500 });
+  }
+
+  if (!requiresGuarantor && existingGuarantors.length > 0) {
+    await (admin.from("loan_guarantors") as any).delete().eq("loan_id", loanId);
   }
 
   // Determine where the amended application resumes BEFORE deleting the old
@@ -195,7 +214,7 @@ async function handleAmend(body: any) {
 
   let message: string;
 
-  if (!resumeStage && existingGuarantorRows.length > 0) {
+  if (requiresGuarantor && !resumeStage && existingGuarantorRows.length > 0) {
     // Guarantor consent was declined (or never collected) — the amended
     // application goes back to the guarantor first, not the board.
     const consentResetRes = await (admin.from("loan_guarantors") as any)
@@ -265,7 +284,7 @@ async function handleAmend(body: any) {
 
     message = resumeStage
       ? `Facility application amended and sent back to the ${labelForRole(resumeRole ?? "approver")} who rejected it.`
-      : "Facility application amended and resubmitted. The Relief Committee will review it first.";
+      : "Facility application amended and resubmitted. The Fund Manager will review it first.";
   }
 
   return NextResponse.json({

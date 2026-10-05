@@ -115,7 +115,7 @@ export async function POST(request: Request) {
         type: "system",
         title: action === "approved" ? "Guarantor Consent Approved" : "Guarantor Consent Rejected",
         message: action === "approved"
-          ? `Your guarantor has approved the request for loan ${guarantorRequest.loans.loan_ref}. It has been sent to the Relief Committee for review.`
+          ? `A guarantor has approved the request for loan ${guarantorRequest.loans.loan_ref}. It will be sent to the Fund Manager after all selected guarantors approve.`
           : `Your guarantor has rejected the request for loan ${guarantorRequest.loans.loan_ref}. ${notes ? `Reason: ${notes}. ` : ""}You can amend the application and resubmit it.`,
         entity_type: "loan",
         entity_id: guarantorRequest.loan_id,
@@ -130,11 +130,12 @@ export async function POST(request: Request) {
         .eq("loan_id", guarantorRequest.loan_id);
 
       const allGuarantors = allGuarantorsRes.data || [];
-      const hasOneApproved = allGuarantors.some((g: any) => g.consent_status === "approved");
+      const allApproved = allGuarantors.length > 0 &&
+        allGuarantors.every((g: any) => g.consent_status === "approved");
 
-      if (hasOneApproved) {
-        // At least one guarantor has consented — move the loan into the
-        // approval pipeline (stage 1 = union rep / Relief Committee).
+      if (allApproved) {
+        // Every selected guarantor has consented — move the loan into the
+        // approval pipeline (stage 1 = Fund Manager).
         const loanUpdateRes = await admin
           .from("loans")
           .update({ status: "pending" })
@@ -177,11 +178,11 @@ export async function POST(request: Request) {
             );
           }
 
-          // Notify union reps that a stage-1 approval is waiting
+          // Notify Fund Managers that a stage-1 approval is waiting
           const reviewersRes = await admin
             .from("profiles")
             .select("user_id")
-            .eq("role", "union_rep");
+            .eq("role", "fund_manager");
           for (const reviewer of (reviewersRes.data ?? []) as { user_id: string }[]) {
             await (admin.from("notifications") as any).insert({
               user_id: reviewer.user_id,
