@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLoggedInEmployee } from "@/lib/loans/employee";
 import { borrowingCapacity, committedLoanAmount } from "@/lib/loans/capacity";
 import { calculateMonthlyRepayment, formatCurrency, generateReference } from "@/utils/formatters";
+import { loanProductCode, memberAccountCode } from "@/lib/reports/gl-accounts";
 
 export async function POST(request: Request) {
   let body: any;
@@ -71,12 +72,14 @@ async function handleApply(body: any) {
 
   const productRes = await supabase
     .from("loan_products")
-    .select("id, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, is_active, requires_guarantor")
+    .select("id, name, account_code, interest_rate, interest_calc_method, min_amount, max_amount, min_term_months, max_term_months, is_active, requires_guarantor")
     .eq("id", loanProductId)
     .single();
 
   const product = productRes.data as {
     id: string;
+    name: string;
+    account_code: string | null;
     interest_rate: number;
     interest_calc_method: 'reducing_balance' | 'flat_rate';
     min_amount: number;
@@ -199,11 +202,19 @@ async function handleApply(body: any) {
     durationMonths,
     calcMethod
   );
+  const employeeNumberRes = await admin
+    .from("employees")
+    .select("employee_no")
+    .eq("id", employee.employeeId)
+    .single();
+  const employeeNo = employeeNumberRes.data?.employee_no ?? "";
   const loanRef = generateReference("LOAN");
+  const memberLedgerCode = memberAccountCode(loanProductCode(product), employeeNo);
 
   const loanRes = await (admin.from("loans") as any)
     .insert({
       loan_ref: loanRef,
+      member_account_code: memberLedgerCode,
       employee_id: employee.employeeId,
       loan_product_id: product.id,
       amount_requested: principal,

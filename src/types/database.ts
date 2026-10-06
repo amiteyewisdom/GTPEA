@@ -130,6 +130,7 @@ export interface Database {
         Row: {
           id: string;
           loan_ref: string;
+          member_account_code: string | null;
           employee_id: string;
           loan_product_id: string;
           amount_requested: number;
@@ -156,7 +157,7 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["loans"]["Row"], "id" | "created_at" | "updated_at">;
+        Insert: Omit<Database["public"]["Tables"]["loans"]["Row"], "id" | "created_at" | "updated_at" | "member_account_code"> & { member_account_code?: string | null };
         Update: Partial<Database["public"]["Tables"]["loans"]["Insert"]>;
       };
       loan_guarantors: {

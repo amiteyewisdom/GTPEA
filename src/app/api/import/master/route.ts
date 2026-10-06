@@ -3,6 +3,7 @@ import { canImport, getStaffUser } from "@/lib/api/staff-auth";
 import { logImportRun } from "@/lib/imports/log-import";
 import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from 'xlsx';
+import { GL, LOAN_PRODUCT_CODES, memberAccountCode } from "@/lib/reports/gl-accounts";
 
 export async function POST(request: Request) {
   const { user, role } = await getStaffUser();
@@ -332,7 +333,8 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
       const { error } = await supabase.from("savings").upsert(
         {
           employee_id: employee.id,
-          account_number: staffSavingAccountNumber || `SAV-${staffId}`,
+          account_number: memberAccountCode(GL.membersSavings, staffId) || staffSavingAccountNumber || `SAV-${staffId}`,
+          account_code: GL.membersSavings,
           balance: balance,
           type: "regular", // Use valid enum value instead of 'savings'
           notes: reference || "Savings",
@@ -407,7 +409,8 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
       const { error } = await supabase.from("savings").upsert(
         {
           employee_id: employee.id,
-          account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
+          account_number: memberAccountCode(LOAN_PRODUCT_CODES["Quick Cash"], staffId) || staffQuickCashAccountNumber || `QC-${staffId}`,
+          account_code: LOAN_PRODUCT_CODES["Quick Cash"],
           balance: balance,
           type: "special", // Use valid enum value instead of 'quick_cash'
           notes: reference || "Quick-Cash",
@@ -498,6 +501,7 @@ async function processGTPEAHirePurchase(supabase: any, csv: string, userId: stri
       const { error } = await supabase.from("loans").upsert(
         {
           loan_ref: `HP-${staffId}`,
+          member_account_code: memberAccountCode(LOAN_PRODUCT_CODES["Hire Purchase"], staffId),
           employee_id: employee.id,
           loan_product_id: hpProductId,
           amount_requested: balance,
@@ -588,6 +592,7 @@ async function processGTPEANormalLoans(supabase: any, csv: string, userId: strin
       const { error } = await supabase.from("loans").upsert(
         {
           loan_ref: `NL-${staffId}`,
+          member_account_code: memberAccountCode(LOAN_PRODUCT_CODES["Normal Loan"], staffId),
           employee_id: employee.id,
           loan_product_id: nlProductId,
           amount_requested: balance,
@@ -681,6 +686,7 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
       const { error } = await supabase.from("loans").upsert(
         {
           loan_ref: `LAND-${staffId}`,
+          member_account_code: memberAccountCode(LOAN_PRODUCT_CODES["Land Loan"], staffId),
           employee_id: employee.id,
           loan_product_id: landProductId,
           amount_requested: balance,

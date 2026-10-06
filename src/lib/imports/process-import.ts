@@ -1,5 +1,6 @@
 import { parseCsv } from "@/lib/csv";
 import type { AppSupabase } from "@/lib/supabase/types";
+import { GL, LOAN_PRODUCT_CODES, memberAccountCode } from "@/lib/reports/gl-accounts";
 
 export type ImportType = "employees" | "savings" | "loans" | "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands" | "master_excel_upload";
 
@@ -283,7 +284,8 @@ async function importGTPEASavings(
     const { error } = await supabase.from("savings").upsert(
       {
         employee_id: employee.id,
-        account_number: staffSavingAccountNumber || `SAV-${staffId}`,
+        account_number: memberAccountCode(GL.membersSavings, staffId) || staffSavingAccountNumber || `SAV-${staffId}`,
+        account_code: GL.membersSavings,
         balance: balance,
         type: "regular",
         status: "active",
@@ -360,7 +362,8 @@ async function importGTPEAQuickCash(
     const { error } = await supabase.from("savings").upsert(
       {
         employee_id: employee.id,
-        account_number: staffQuickCashAccountNumber || `QC-${staffId}`,
+        account_number: memberAccountCode(LOAN_PRODUCT_CODES["Quick Cash"], staffId) || staffQuickCashAccountNumber || `QC-${staffId}`,
+        account_code: LOAN_PRODUCT_CODES["Quick Cash"],
         balance: balance,
         type: "special",
         status: "active",
@@ -450,6 +453,7 @@ async function importGTPEAHirePurchase(
     const { error } = await supabase.from("loans").upsert(
       {
         loan_ref: `HP-${staffId}`,
+        member_account_code: memberAccountCode(LOAN_PRODUCT_CODES["Hire Purchase"], staffId),
         employee_id: employee.id,
         loan_product_id: hpProductId,
         amount_requested: balance,
@@ -541,6 +545,7 @@ async function importGTPEANormalLoans(
     const { error } = await supabase.from("loans").upsert(
       {
         loan_ref: `NL-${staffId}`,
+        member_account_code: memberAccountCode(LOAN_PRODUCT_CODES["Normal Loan"], staffId),
         employee_id: employee.id,
         loan_product_id: nlProductId,
         amount_requested: balance,
@@ -633,6 +638,7 @@ async function importGTPEALands(
     const { error } = await supabase.from("loans").upsert(
       {
         loan_ref: `LAND-${staffId}`,
+        member_account_code: memberAccountCode(LOAN_PRODUCT_CODES["Land Loan"], staffId),
         employee_id: employee.id,
         loan_product_id: landProductId,
         amount_requested: balance,

@@ -1,7 +1,7 @@
 // GTPEA chart of accounts, reconstructed from the system's own conventions:
 //  - loan_products.account_code (20260612000000_gtpea_corrections.sql) and the
-//    imported member account numbers, e.g. 62101001P0770 = GL code + staff ID
-//  - savings account prefixes (63101001 = members savings, 62131001 = quick cash)
+//    member account numbers, e.g. 62100770 = first four GL digits + four-digit staff ID
+//  - savings account prefixes (6310 = members savings, 6213 = quick cash)
 //  - consumable_items.account_code (61101001 food, 61101002 electrical)
 //  - report codes already in use: 11101001 interest income, 63101003 dividends
 //
@@ -50,6 +50,14 @@ export const ACTIVE_LOAN_STATUSES = ["active", "approved", "disbursed", "repayin
 
 /** Every status representing a loan that exists on the books (excludes pending/rejected). */
 export const RECORDED_LOAN_STATUSES = [...ACTIVE_LOAN_STATUSES, "completed", "paid"] as const;
+
+export function memberAccountCode(glCode: string, employeeNo: string): string | null {
+  const normalizedEmployeeNo = employeeNo.trim().toUpperCase();
+  const numericId = normalizedEmployeeNo.match(/^(\d{1,4})$/)?.[1];
+  const glPrefix = glCode.replace(/\D/g, "").slice(0, 4);
+  if (!numericId || glPrefix.length !== 4) return null;
+  return `${glPrefix}${numericId.padStart(4, "0")}`;
+}
 
 export function loanProductCode(
   product: { name?: string | null; account_code?: string | null } | null | undefined

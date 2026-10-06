@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { GL, LOAN_PRODUCT_CODES, memberAccountCode } from "@/lib/reports/gl-accounts";
 
 export async function POST(request: Request) {
   try {
@@ -68,12 +69,16 @@ export async function POST(request: Request) {
           continue;
         }
 
+        const savingsGl = record.type === "special" ? LOAN_PRODUCT_CODES["Quick Cash"] : GL.membersSavings;
+        const accountNumber = memberAccountCode(savingsGl, record.employee_no) || record.account_number || `SAV-${record.employee_no}`;
+
         // Check if savings account already exists for this employee
         const { data: existingSavings } = await admin
           .from("savings")
           .select("id")
           .eq("employee_id", employee.id)
-          .single();
+          .eq("type", record.type || "regular")
+          .maybeSingle();
 
         if (existingSavings) {
           // Update existing savings
@@ -83,6 +88,8 @@ export async function POST(request: Request) {
               balance: parseFloat(record.balance) || 0,
               monthly_contribution: parseFloat(record.monthly_contribution) || 0,
               interest_rate: parseFloat(record.interest_rate) || 0,
+              account_number: accountNumber,
+              account_code: savingsGl,
               updated_at: new Date().toISOString()
             })
             .eq("id", existingSavings.id);
@@ -104,7 +111,8 @@ export async function POST(request: Request) {
               balance: parseFloat(record.balance) || 0,
               monthly_contribution: parseFloat(record.monthly_contribution) || 0,
               interest_rate: parseFloat(record.interest_rate) || 0,
-              account_number: record.account_number || `SAV-${record.employee_no}`,
+              account_number: accountNumber,
+              account_code: savingsGl,
             });
 
           if (insertError) {

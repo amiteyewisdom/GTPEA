@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { memberAccountCode } from "@/lib/reports/gl-accounts";
 
 export async function POST(request: Request) {
   try {
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
         // Get default loan product
         const { data: loanProduct } = await admin
           .from("loan_products")
-          .select("id")
+          .select("id, account_code")
           .eq("is_active", true)
           .limit(1)
           .single();
@@ -81,6 +82,8 @@ export async function POST(request: Request) {
           errorCount++;
           continue;
         }
+
+        const memberLedgerCode = memberAccountCode(loanProduct.account_code || "62101001", record.employee_no);
 
         // Check if loan already exists by loan_ref
         const { data: existingLoan } = await admin
@@ -100,6 +103,7 @@ export async function POST(request: Request) {
               term_months: parseInt(record.term_months) || 12,
               purpose: record.purpose,
               status: record.status || 'pending',
+              member_account_code: memberLedgerCode,
               updated_at: new Date().toISOString()
             })
             .eq("id", existingLoan.id);
@@ -116,6 +120,7 @@ export async function POST(request: Request) {
             .from("loans")
             .insert({
               loan_ref: record.loan_ref,
+              member_account_code: memberLedgerCode,
               employee_id: employee.id,
               loan_product_id: loanProduct.id,
               amount_requested: parseFloat(record.amount_requested) || 0,

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { generateReference } from "@/utils/formatters";
+import { GL, memberAccountCode } from "@/lib/reports/gl-accounts";
 
 export async function POST() {
   const supabase = await createClient();
@@ -20,7 +20,7 @@ export async function POST() {
 
   let employeesQuery = supabase
     .from("employees")
-    .select("id, first_name, last_name, monthly_savings")
+    .select("id, employee_no, first_name, last_name, monthly_savings")
     .eq("status", "active");
 
   if (existingIds.length > 0) {
@@ -48,7 +48,8 @@ export async function POST() {
     monthly_contribution: Number(emp.monthly_savings) || 0,
     target_amount: null,
     maturity_date: null,
-    account_number: generateReference("SAV"),
+    account_number: memberAccountCode(GL.membersSavings, emp.employee_no) || `SAV-${emp.employee_no}`,
+    account_code: GL.membersSavings,
     opened_at: now,
     closed_at: null,
     notes: null,
