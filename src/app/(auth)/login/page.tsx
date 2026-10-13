@@ -100,10 +100,10 @@ export default function LoginPage() {
               src="/images/gtpea-logo.png"
               alt="GTPEA"
               style={{
-                width: "120px",
-                height: "120px",
+                width: "180px",
+                height: "180px",
                 objectFit: "contain",
-                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25))",
+                filter: "drop-shadow(0 4px 16px rgba(0, 0, 0, 0.3))",
               }}
             />
             <div>
@@ -419,8 +419,10 @@ export default function LoginPage() {
 
             <div style={{
               display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              alignItems: isDesktop ? "center" : "flex-start",
+              flexDirection: isDesktop ? "row" : "column",
+              gap: isDesktop ? "0" : "8px",
+              justifyContent: isDesktop ? "space-between" : "flex-start",
               fontSize: "14px",
             }}>
               <label style={{ display: "flex", alignItems: "center", gap: "8px", color: isDesktop ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.9)", cursor: "pointer", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)" }}>
