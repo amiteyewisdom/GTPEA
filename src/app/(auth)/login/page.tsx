@@ -241,32 +241,25 @@ export default function LoginPage() {
             alignItems: "center",
             marginBottom: isDesktop ? "24px" : "16px",
           }}>
-            <div style={{
-              width: isDesktop ? "56px" : "48px",
-              height: isDesktop ? "56px" : "48px",
-              backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.7)",
-              borderRadius: "12px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
-              marginBottom: isDesktop ? "12px" : "8px",
-            }}>
-              <img
-                src="/images/gtpea-logo.png"
-                alt="GTPEA"
-                style={{ width: "100%", height: "100%", objectFit: "contain", padding: "10px" }}
-              />
-            </div>
+            <img
+              src="/images/gtpea-logo.png"
+              alt="GTPEA"
+              style={{
+                width: isDesktop ? "180px" : "140px",
+                height: isDesktop ? "180px" : "140px",
+                objectFit: "contain",
+                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25))",
+                marginBottom: isDesktop ? "8px" : "4px",
+              }}
+            />
             <h2 style={{
               fontSize: isDesktop ? "24px" : "20px",
               fontWeight: "700",
-              color: isDesktop ? "#FFFFFF" : "#FFFFFF",
+              color: "#FFFFFF",
               margin: 0,
               textShadow: isDesktop ? "0 2px 4px rgba(0, 0, 0, 0.3)" : "0 2px 4px rgba(0, 0, 0, 0.5)",
             }}>
-              Welcome back
+              Welcome
             </h2>
           </div>
 

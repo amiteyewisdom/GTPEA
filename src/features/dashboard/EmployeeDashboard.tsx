@@ -44,7 +44,7 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
       <div className="relative overflow-hidden rounded-brand-lg bg-gradient-to-r from-brand-sidebar to-brand-primary border border-brand-card-border p-6 lg:p-12">
         <div className="relative z-10">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-brand-text mb-3">
-            Welcome Back, {data.firstName || 'User'}
+            Welcome, {data.firstName || 'User'}
           </h1>
           <p className="text-sm md:text-base lg:text-lg text-brand-text-secondary mb-6">
             Manage your savings, loans, and financial goals
