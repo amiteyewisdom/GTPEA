@@ -217,8 +217,10 @@ export default function LoginPage() {
         left: isDesktop ? "auto" : "0",
         transform: isDesktop ? "translateY(-50%)" : "none",
         width: isDesktop ? "440px" : "100%",
+        maxWidth: isDesktop ? "none" : "400px",
+        margin: isDesktop ? "0" : "24px auto 0",
         zIndex: 2,
-        padding: isDesktop ? "0" : "24px",
+        padding: isDesktop ? "0" : "16px",
       }}>
         <div style={{ 
           background: isDesktop ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.2)",
@@ -235,24 +237,38 @@ export default function LoginPage() {
             alignItems: "center",
             marginBottom: isDesktop ? "24px" : "16px",
           }}>
-            <div style={{
-              width: isDesktop ? "56px" : "48px",
-              height: isDesktop ? "56px" : "48px",
-              backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.7)",
-              borderRadius: "12px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
-              marginBottom: isDesktop ? "12px" : "8px",
-            }}>
+            {isDesktop ? (
+              <div style={{
+                width: "56px",
+                height: "56px",
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                borderRadius: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.3)",
+                marginBottom: "12px",
+              }}>
+                <img
+                  src="/images/gtpea-logo.png"
+                  alt="GTPEA"
+                  style={{ width: "100%", height: "100%", objectFit: "contain", padding: "10px" }}
+                />
+              </div>
+            ) : (
               <img
                 src="/images/gtpea-logo.png"
                 alt="GTPEA"
-                style={{ width: "100%", height: "100%", objectFit: "contain", padding: "10px" }}
+                style={{
+                  width: "100px",
+                  height: "100px",
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25))",
+                  marginBottom: "8px",
+                }}
               />
-            </div>
+            )}
             <h2 style={{
               fontSize: isDesktop ? "24px" : "20px",
               fontWeight: "700",
