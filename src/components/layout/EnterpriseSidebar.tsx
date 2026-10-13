@@ -56,7 +56,7 @@ export default function EnterpriseSidebar({
         <div className="flex h-16 items-center justify-between border-b border-brand-card-border px-4">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-3" onClick={onClose}>
             <img
-              src="/images/gtpea-logo.jpeg"
+              src="/images/gtpea-logo.png"
               alt="GTPEA Logo"
               className="h-16 w-16 object-contain"
             />

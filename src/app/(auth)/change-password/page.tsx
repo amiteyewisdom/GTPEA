@@ -134,7 +134,7 @@ export default function ChangePasswordPage() {
               boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
             }}>
               <img
-                src="/images/gtpea-logo.jpeg"
+                src="/images/gtpea-logo.png"
                 alt="GTPEA"
                 style={{ width: "100%", height: "100%", objectFit: "contain", padding: "8px" }}
               />
@@ -281,7 +281,7 @@ export default function ChangePasswordPage() {
               marginBottom: isDesktop ? "12px" : "8px",
             }}>
               <img
-                src="/images/gtpea-logo.jpeg"
+                src="/images/gtpea-logo.png"
                 alt="GTPEA"
                 style={{ width: "100%", height: "100%", objectFit: "contain", padding: "10px" }}
               />
