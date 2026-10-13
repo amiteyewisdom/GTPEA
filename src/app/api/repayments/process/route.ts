@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   // Get loan details
   const { data: loan, error: loanError } = await supabase
     .from("loans")
-    .select("id, employee_id, outstanding_balance, status, monthly_repayment, interest_rate")
+    .select("id, employee_id, outstanding_balance, amount_approved, status, monthly_repayment, interest_rate, interest_calc_method")
     .eq("id", loanId)
     .single();
 
@@ -47,16 +47,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Payment amount exceeds outstanding balance." }, { status: 400 });
   }
 
-  // Calculate interest and principal components
-  const interestRate = Number(loan.interest_rate) / 100 / 12; // Monthly interest rate
-  const interestComponent = Number(loan.outstanding_balance) * interestRate;
-  const principalComponent = amount - interestComponent;
-
-  if (principalComponent < 0) {
-    return NextResponse.json({ error: "Payment amount is less than interest due." }, { status: 400 });
-  }
-
-  // Find or create a pending repayment installment
+  // Find the next pending repayment installment (uses the pre-built schedule)
   let pendingRepayment: any;
   try {
     pendingRepayment = await getOrCreateNextRepaymentInstallment(loanId);
@@ -64,12 +55,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: err.message || "Unable to create repayment installment." }, { status: 400 });
   }
 
+  const installmentDue = Number(pendingRepayment.amount_due) || 1;
+  const installmentInterest = Number(pendingRepayment.interest_component) || 0;
+  const installmentPrincipal = Number(pendingRepayment.principal_component) || 0;
+  const alreadyPaid = Number(pendingRepayment.amount_paid) || 0;
+  const remainingOnInstallment = Math.max(0, installmentDue - alreadyPaid);
+
+  // Split the payment using the schedule's principal/interest ratio so
+  // flat-rate (hire purchase) loans keep their pre-calculated interest and
+  // do not benefit from paying early.
+  let interestComponent: number;
+  let principalComponent: number;
+
+  if (amount >= remainingOnInstallment || installmentDue <= 0) {
+    // Full installment payment: use the schedule's exact split
+    interestComponent = installmentInterest;
+    principalComponent = installmentPrincipal;
+  } else {
+    // Partial payment: apply the same interest/principal ratio as the schedule
+    const interestRatio = installmentInterest / installmentDue;
+    interestComponent = amount * interestRatio;
+    principalComponent = amount - interestComponent;
+  }
+
   // Update repayment record
-  const newAmountPaid = Number(pendingRepayment.amount_paid) + amount;
+  const newAmountPaid = alreadyPaid + amount;
   const newPrincipal = Number(pendingRepayment.principal_component) + principalComponent;
   const newInterest = Number(pendingRepayment.interest_component) + interestComponent;
 
-  const isFullyPaid = newAmountPaid >= Number(pendingRepayment.amount_due);
+  const isFullyPaid = newAmountPaid >= installmentDue;
   const repaymentStatus = isFullyPaid ? "paid" : "partial";
 
   const { error: updateRepaymentError } = await supabase
@@ -91,7 +105,7 @@ export async function POST(request: Request) {
   }
 
   // Update loan outstanding balance
-  const newOutstandingBalance = Number(loan.outstanding_balance) - principalComponent;
+  const newOutstandingBalance = Math.max(0, Number(loan.outstanding_balance) - principalComponent);
   const newLoanStatus = newOutstandingBalance <= 0 ? "completed" : "repaying";
 
   const { error: updateLoanError } = await supabase

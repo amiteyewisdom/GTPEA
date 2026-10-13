@@ -318,15 +318,18 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
     return acc;
   }, {});
 
-  const loansByEmployee = filteredLoans.reduce<Record<string, { total: number; outstanding: number; count: number }>>(
+  const loansByEmployee = filteredLoans.reduce<
+    Record<string, { total: number; outstanding: number; count: number; monthlyRepayment: number }>
+  >(
     (acc, loan) => {
-      const current = acc[loan.employee_id] || { total: 0, outstanding: 0, count: 0 };
+      const current = acc[loan.employee_id] || { total: 0, outstanding: 0, count: 0, monthlyRepayment: 0 };
       if (["active", "disbursed", "repaying", "completed", "Active"].includes(loan.status)) {
         current.total += Number(loan.amount_approved) || Number(loan.amount_disbursed) || 0;
         current.count += 1;
       }
       if (["active", "disbursed", "repaying", "Active"].includes(loan.status)) {
         current.outstanding += Number(loan.outstanding_balance) || Number(loan.amount_approved) || 0;
+        current.monthlyRepayment += Number(loan.monthly_repayment) || 0;
       }
       acc[loan.employee_id] = current;
       return acc;
@@ -567,7 +570,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
 
   const employeeSummaries = memberEmployees
     .map((employee) => {
-      const empLoans = loansByEmployee[employee.id] || { total: 0, outstanding: 0, count: 0 };
+      const empLoans = loansByEmployee[employee.id] || { total: 0, outstanding: 0, count: 0, monthlyRepayment: 0 };
       const savings = savingsByEmployee[employee.id] || 0;
       const dividends = dividendsByEmployee[employee.id] || 0;
       const withdrawals = withdrawalsByEmployee[employee.id] || 0;
@@ -612,7 +615,7 @@ export async function fetchDashboardStats(currentRole?: string | null): Promise<
       purpose: item.purpose,
       currentSavings: formatCurrency(savingsTotal),
       currentLoans: formatCurrency(outstanding),
-      monthlyRepayments: loan ? formatCurrency(Number(loan.monthly_repayment) || 0) : item.amount,
+      monthlyRepayments: formatCurrency(loansByEmployee[loan.employee_id]?.monthlyRepayment || 0),
       loanHistory: loan ? `${loansByEmployee[loan.employee_id]?.count || 0} prior loans` : "—",
       eligibilityScore: score,
       status:

@@ -114,7 +114,7 @@ export default function SignUpPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">GTPEA Finance</h1>
-            <p className="text-xs text-white/70">GTP Employees Association</p>
+            <p className="text-xs text-white/70">GTPEA</p>
           </div>
         </div>
 
@@ -168,7 +168,7 @@ export default function SignUpPage() {
         </div>
 
         <p className="relative z-10 text-xs text-white/60">
-          © {new Date().getFullYear()} GTP Employees Association. All rights reserved.
+          © {new Date().getFullYear()} GTPEA. All rights reserved.
         </p>
       </div>
 
@@ -183,7 +183,7 @@ export default function SignUpPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-brand-text">GTPEA Finance</h1>
-            <p className="text-sm text-brand-text-secondary mt-1">GTP Employees Association</p>
+            <p className="text-sm text-brand-text-secondary mt-1">GTPEA</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-brand-card-border p-8">

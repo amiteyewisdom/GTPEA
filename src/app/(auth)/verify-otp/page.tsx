@@ -172,7 +172,7 @@ export default function VerifyOtpPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          © {new Date().getFullYear()} GTP Employees Association
+          © {new Date().getFullYear()} GTPEA
         </p>
       </div>
     </main>

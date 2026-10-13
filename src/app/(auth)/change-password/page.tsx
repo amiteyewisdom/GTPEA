@@ -135,7 +135,7 @@ export default function ChangePasswordPage() {
             }}>
               <img
                 src="/images/gtpea-logo.jpeg"
-                alt="GTP Employees Association"
+                alt="GTPEA"
                 style={{ width: "100%", height: "100%", objectFit: "contain", padding: "8px" }}
               />
             </div>
@@ -144,7 +144,7 @@ export default function ChangePasswordPage() {
                 SAVINGS & LOAN
               </p>
               <p style={{ fontSize: "12px", color: "rgba(255, 255, 255, 0.8)", margin: 0 }}>
-                GTP Employees Association
+                GTPEA
               </p>
             </div>
           </div>
@@ -282,7 +282,7 @@ export default function ChangePasswordPage() {
             }}>
               <img
                 src="/images/gtpea-logo.jpeg"
-                alt="GTP Employees Association"
+                alt="GTPEA"
                 style={{ width: "100%", height: "100%", objectFit: "contain", padding: "10px" }}
               />
             </div>
