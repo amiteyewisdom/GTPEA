@@ -408,7 +408,7 @@ function AmortizationModal({ loan, onClose }: { loan: any; onClose: () => void }
     return generateAmortizationSchedule(
       principal,
       Number(loan.term_months) || 0,
-      Number(loan.interest_rate) * 100,
+      Number(loan.interest_rate),
       loan.disbursement_date ? new Date(loan.disbursement_date) : new Date(),
       loan.interest_calc_method || "reducing_balance"
     );

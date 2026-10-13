@@ -40,66 +40,42 @@ export interface AmortizationPayment {
 
 /**
  * Generate full amortization schedule.
- * method 'reducing_balance': interest recalculated each period on remaining principal.
- * method 'flat_rate': total interest = principal × (rate/100) × months, divided equally.
+ * Principal is repaid in equal installments. Interest is calculated on the
+ * outstanding principal each period (reducing balance), so the monthly total
+ * decreases over time. Flat rate applies the same monthly interest to the
+ * original principal every period.
+ * rate is the monthly decimal rate (e.g. 0.02 for 2% per month).
  */
 export function generateAmortizationSchedule(
   principal: number,
   durationMonths: number,
-  annualRate: number,
+  rate: number,
   startDate?: Date,
   method: 'reducing_balance' | 'flat_rate' = 'reducing_balance'
 ): AmortizationPayment[] {
   const schedule: AmortizationPayment[] = [];
   const start = startDate || new Date();
+  const principalPerPeriod = principal / durationMonths;
+  let balance = principal;
 
-  if (method === 'flat_rate') {
-    const monthlyRate = annualRate / 100;
-    const totalInterest = principal * monthlyRate * durationMonths;
-    const interestPerPeriod = totalInterest / durationMonths;
-    const principalPerPeriod = principal / durationMonths;
-    const totalPayment = principalPerPeriod + interestPerPeriod;
-    let balance = principal;
-
-    for (let i = 1; i <= durationMonths; i++) {
-      const openingBalance = balance;
-      balance = Math.max(0, balance - principalPerPeriod);
-      const paymentDate = addMonths(start, i);
-      schedule.push({
-        month: paymentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-        installment_no: i,
-        opening_balance: openingBalance,
-        principal: principalPerPeriod,
-        interest: interestPerPeriod,
-        total: totalPayment,
-        closing_balance: balance,
-      });
-    }
-  } else {
-    const monthlyRate = annualRate / 100;
-    const monthlyPayment =
-      monthlyRate === 0
-        ? principal / durationMonths
-        : (principal * monthlyRate * Math.pow(1 + monthlyRate, durationMonths)) /
-          (Math.pow(1 + monthlyRate, durationMonths) - 1);
-    let balance = principal;
-
-    for (let i = 1; i <= durationMonths; i++) {
-      const openingBalance = balance;
-      const interestPayment = balance * monthlyRate;
-      const principalPayment = monthlyPayment - interestPayment;
-      balance = Math.max(0, balance - principalPayment);
-      const paymentDate = addMonths(start, i);
-      schedule.push({
-        month: paymentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-        installment_no: i,
-        opening_balance: openingBalance,
-        principal: principalPayment,
-        interest: interestPayment,
-        total: monthlyPayment,
-        closing_balance: balance,
-      });
-    }
+  for (let i = 1; i <= durationMonths; i++) {
+    const openingBalance = balance;
+    const interestPayment = method === 'flat_rate'
+      ? principal * rate
+      : openingBalance * rate;
+    const principalPayment = Math.min(principalPerPeriod, openingBalance);
+    balance = Math.max(0, openingBalance - principalPayment);
+    const totalPayment = principalPayment + interestPayment;
+    const paymentDate = addMonths(start, i);
+    schedule.push({
+      month: paymentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      installment_no: i,
+      opening_balance: openingBalance,
+      principal: principalPayment,
+      interest: interestPayment,
+      total: totalPayment,
+      closing_balance: balance,
+    });
   }
 
   return schedule;
@@ -138,49 +114,49 @@ export function formatPercent(value: number, decimals = 1): string {
 }
 
 export function formatInterestRate(rate: number): string {
-  return `${rate.toFixed(2)}% p.a.`;
+  return `${(rate * 100).toFixed(2)}% per month`;
 }
 
 // ─── Loan Calculations ────────────────────────────────────────────────────────
 
 /**
- * Monthly repayment for reducing balance (standard annuity PMT formula).
- * annualRate is stored as a decimal in DB (e.g. 0.02 = 2%), passed here as-is.
+ * Monthly repayment figure.
+ * Principal is repaid in equal installments. Interest is charged on the
+ * outstanding balance each month (reducing balance), so the first-month
+ * payment is principal/tenure + principal*rate. Flat rate charges the same
+ * interest on the original principal every month.
+ * rate is the monthly decimal rate (e.g. 0.02 for 2% per month).
  */
 export function calculateMonthlyRepayment(
   principal: number,
-  annualRate: number,
+  rate: number,
   tenureMonths: number,
   method: 'reducing_balance' | 'flat_rate' = 'reducing_balance'
 ): number {
-  if (method === 'flat_rate') {
-    const totalInterest = principal * annualRate * tenureMonths;
-    return (principal + totalInterest) / tenureMonths;
-  }
-  if (annualRate === 0) return principal / tenureMonths;
-  const monthlyRate = annualRate;
-  return (
-    (principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths)) /
-    (Math.pow(1 + monthlyRate, tenureMonths) - 1)
-  );
+  const principalPerPeriod = principal / tenureMonths;
+  const interestPerPeriod = method === 'flat_rate'
+    ? principal * rate
+    : principal * rate;
+  return principalPerPeriod + interestPerPeriod;
 }
 
 export function calculateTotalRepayable(
   principal: number,
-  annualRate: number,
+  rate: number,
   tenureMonths: number,
   method: 'reducing_balance' | 'flat_rate' = 'reducing_balance'
 ): number {
-  return calculateMonthlyRepayment(principal, annualRate, tenureMonths, method) * tenureMonths;
+  const schedule = generateAmortizationSchedule(principal, tenureMonths, rate, undefined, method);
+  return schedule.reduce((sum, payment) => sum + payment.total, 0);
 }
 
 export function calculateTotalInterest(
   principal: number,
-  annualRate: number,
+  rate: number,
   tenureMonths: number,
   method: 'reducing_balance' | 'flat_rate' = 'reducing_balance'
 ): number {
-  return calculateTotalRepayable(principal, annualRate, tenureMonths, method) - principal;
+  return calculateTotalRepayable(principal, rate, tenureMonths, method) - principal;
 }
 
 // ─── String Helpers ───────────────────────────────────────────────────────────

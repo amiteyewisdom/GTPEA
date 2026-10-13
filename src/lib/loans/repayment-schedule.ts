@@ -27,14 +27,10 @@ export async function createRepaymentSchedule(input: RepaymentScheduleInput) {
   } = input;
 
   const count = Math.max(1, term_months || 1);
-  const baseMonthly = Math.max(0, Number(monthly_repayment) || 0);
-  const rate = Math.max(0, Number(interest_rate) || 0) / 100;
+  const rate = Math.max(0, Number(interest_rate) || 0);
   const start = new Date(start_date || new Date().toISOString());
-
   const isFlatRate = interest_calc_method === "flat_rate";
-  const totalFlatInterest = isFlatRate ? principal * rate * (count / 12) : 0;
-  const flatMonthlyInterest = isFlatRate ? totalFlatInterest / count : 0;
-  const flatMonthlyPrincipal = isFlatRate ? baseMonthly - flatMonthlyInterest : 0;
+  const principalPerPeriod = principal / count;
 
   let remainingBalance = principal;
   const installments = [];
@@ -43,28 +39,11 @@ export async function createRepaymentSchedule(input: RepaymentScheduleInput) {
     const dueDate = new Date(start);
     dueDate.setMonth(dueDate.getMonth() + (i - 1));
 
-    let amountDue = baseMonthly;
-    let interestComponent = 0;
-    let principalComponent = 0;
-
-    if (isFlatRate) {
-      interestComponent = flatMonthlyInterest;
-      principalComponent = flatMonthlyPrincipal;
-    } else {
-      // Reducing balance / amortization
-      const monthlyRate = rate / 12;
-      interestComponent = remainingBalance * monthlyRate;
-      principalComponent = amountDue - interestComponent;
-      if (principalComponent < 0) {
-        principalComponent = 0;
-        interestComponent = amountDue;
-      }
-      // Adjust last installment to clear remaining balance
-      if (i === count && remainingBalance > 0) {
-        amountDue = remainingBalance + interestComponent;
-      }
-    }
-
+    const interestComponent = isFlatRate
+      ? principal * rate
+      : remainingBalance * rate;
+    const principalComponent = Math.min(principalPerPeriod, remainingBalance);
+    const amountDue = principalComponent + interestComponent;
     remainingBalance = Math.max(0, remainingBalance - principalComponent);
 
     installments.push({

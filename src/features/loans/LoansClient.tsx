@@ -338,7 +338,7 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
                     {generateAmortizationSchedule(
                       selectedLoan.amount_requested,
                       selectedLoan.term_months,
-                      selectedLoan.interest_rate * 100,
+                      selectedLoan.interest_rate,
                       selectedLoan.disbursement_date ? new Date(selectedLoan.disbursement_date) : undefined,
                       selectedLoan.interest_calc_method ?? "reducing_balance"
                     ).map((payment, index) => (
