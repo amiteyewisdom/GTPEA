@@ -470,27 +470,6 @@ export default function LoginPage() {
           </form>
 
           <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            marginTop: isDesktop ? "20px" : "16px",
-            padding: isDesktop ? "12px" : "10px",
-            backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.12)" : "rgba(255, 255, 255, 0.15)",
-            borderRadius: "8px",
-            border: isDesktop ? "1px solid rgba(255, 255, 255, 0.25)" : "1px solid rgba(255, 255, 255, 0.3)",
-          }}>
-            <Shield style={{ width: "20px", height: "20px", color: isDesktop ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.9)" }} />
-            <div>
-              <p style={{ fontSize: "13px", fontWeight: "600", color: isDesktop ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.95)", margin: "0 0 2px 0", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)" }}>
-                Secure access
-              </p>
-              <p style={{ fontSize: "12px", color: isDesktop ? "rgba(255, 255, 255, 0.8)" : "rgba(255, 255, 255, 0.85)", margin: 0 }}>
-                Your information is protected with secure authentication and encrypted communication.
-              </p>
-            </div>
-          </div>
-
-          <div style={{
             marginTop: isDesktop ? "16px" : "12px",
             padding: isDesktop ? "12px" : "10px",
             backgroundColor: isDesktop ? "rgba(201, 164, 76, 0.15)" : "rgba(201, 164, 76, 0.2)",
