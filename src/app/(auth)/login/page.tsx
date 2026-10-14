@@ -100,10 +100,10 @@ export default function LoginPage() {
               src="/images/gtpea-logo.png"
               alt="GTPEA"
               style={{
-                width: "180px",
-                height: "180px",
+                width: "240px",
+                height: "240px",
                 objectFit: "contain",
-                filter: "drop-shadow(0 4px 16px rgba(0, 0, 0, 0.3))",
+                filter: "drop-shadow(0 4px 20px rgba(0, 0, 0, 0.35))",
               }}
             />
             <div>
@@ -237,38 +237,17 @@ export default function LoginPage() {
             alignItems: "center",
             marginBottom: isDesktop ? "24px" : "16px",
           }}>
-            {isDesktop ? (
-              <div style={{
-                width: "56px",
-                height: "56px",
-                backgroundColor: "rgba(255, 255, 255, 0.9)",
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-                border: "1px solid rgba(255, 255, 255, 0.3)",
-                marginBottom: "12px",
-              }}>
-                <img
-                  src="/images/gtpea-logo.png"
-                  alt="GTPEA"
-                  style={{ width: "100%", height: "100%", objectFit: "contain", padding: "10px" }}
-                />
-              </div>
-            ) : (
-              <img
-                src="/images/gtpea-logo.png"
-                alt="GTPEA"
-                style={{
-                  width: "100px",
-                  height: "100px",
-                  objectFit: "contain",
-                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25))",
-                  marginBottom: "8px",
-                }}
-              />
-            )}
+            <img
+              src="/images/gtpea-logo.png"
+              alt="GTPEA"
+              style={{
+                width: isDesktop ? "80px" : "100px",
+                height: isDesktop ? "80px" : "100px",
+                objectFit: "contain",
+                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25))",
+                marginBottom: isDesktop ? "12px" : "8px",
+              }}
+            />
             <h2 style={{
               fontSize: isDesktop ? "24px" : "20px",
               fontWeight: "700",
