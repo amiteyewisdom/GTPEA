@@ -175,12 +175,15 @@ export async function POST(request: Request) {
 
       // Send SMS using fetch
       const smsResponse = await fetch(url);
+      const raw = await smsResponse.text();
+      // Nalo returns HTTP 200 even on failure — check the body for the real
+      // status (success responses typically start with "1701").
+      console.log("[/api/auth/change-password] Nalo response:", smsResponse.status, raw);
 
-      if (!smsResponse.ok) {
-        console.error("[/api/auth/change-password] SMS API error:", smsResponse.statusText);
+      if (!smsResponse.ok || (!raw.includes("1701") && !raw.toLowerCase().includes("success"))) {
         return NextResponse.json(
-          { error: "Failed to send SMS. Please try again." },
-          { status: 500 }
+          { error: "Password changed, but the verification SMS failed to send. Try again from the verification page." },
+          { status: 502 }
         );
       }
 

@@ -160,10 +160,25 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({
+    // Mark the profile as OTP-verified for audit purposes
+    await (admin.from("profiles") as any)
+      .update({ otp_verified_at: new Date().toISOString() })
+      .eq("user_id", userId);
+
+    const response = NextResponse.json({
       success: true,
       message: "OTP verified successfully",
     });
+    // The proxy gates pages on this cookie — without it the user is bounced
+    // back to /verify-otp even after a successful verification.
+    response.cookies.set("gtpea_otp_verified", "1", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 12,
+    });
+    return response;
   } catch (err: any) {
     console.error("[/api/otp/verify] Error:", err);
     return NextResponse.json(
