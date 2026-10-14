@@ -156,11 +156,14 @@ async function getPreciseLocation(
       );
       const data = await response.json();
       const address = data.address || {};
-      const formatted = data.display_name || '';
-      const city = address.city || address.town || address.village || address.suburb || 'Unknown';
-      const region = address.state || address.region || address.county || '';
+      const area = address.neighbourhood || address.suburb || address.quarter || address.road || '';
+      const city = address.city || address.town || address.village || 'Unknown';
+      const region = address.state || address.region || '';
       const country = address.country || 'Unknown';
-      return { country, city, region, formattedAddress: formatted };
+      const formattedAddress = [area, city, region, country]
+        .filter((v, i, arr) => v && arr.indexOf(v) === i && v !== 'Unknown')
+        .join(', ');
+      return { country, city, region, formattedAddress };
     } catch (err) {
       console.warn('Reverse geocoding failed, falling back to IP:', err);
     }

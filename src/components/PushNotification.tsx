@@ -5,17 +5,20 @@ import { useEffect, useState } from "react";
 export default function PushNotification() {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [subscribed, setSubscribed] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     if (!("Notification" in window)) return;
     if (!("serviceWorker" in navigator)) return;
 
-    setPermission(Notification.permission);
+    const current = Notification.permission;
+    setPermission(current);
+    if (localStorage.getItem("push_prompted")) setDismissed(true);
 
     navigator.serviceWorker
       .register("/sw.js")
       .then(async (registration) => {
-        if (Notification.permission === "granted") {
+        if (current === "granted") {
           await subscribeToPush(registration);
         }
       })
@@ -23,14 +26,21 @@ export default function PushNotification() {
   }, []);
 
   const requestPermission = async () => {
+    setDismissed(true);
+    localStorage.setItem("push_prompted", "1");
     if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
 
-    const result = await Notification.requestPermission();
-    setPermission(result);
+    try {
+      const result = await Notification.requestPermission();
+      setPermission(result);
 
-    if (result === "granted") {
-      const registration = await navigator.serviceWorker.ready;
-      await subscribeToPush(registration);
+      if (result === "granted") {
+        const registration = await navigator.serviceWorker.ready;
+        await subscribeToPush(registration);
+      }
+    } catch {
+      // Some mobile browsers don't support the promise API
+      setPermission(Notification.permission);
     }
   };
 
@@ -75,14 +85,25 @@ export default function PushNotification() {
     return outputArray;
   }
 
+  if (dismissed) return null;
+
   if (permission === "default" || permission === "denied") {
     return (
-      <button
-        onClick={requestPermission}
-        className="fixed bottom-4 right-4 z-50 rounded-full bg-brand-green px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-brand-green-dark"
-      >
-        Enable notifications
-      </button>
+      <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full bg-brand-green px-4 py-2 shadow-lg">
+        <button
+          onClick={requestPermission}
+          className="text-sm font-medium text-white"
+        >
+          Enable notifications
+        </button>
+        <button
+          onClick={() => { setDismissed(true); localStorage.setItem("push_prompted", "1"); }}
+          className="text-white/70 hover:text-white"
+          aria-label="Dismiss"
+        >
+          ×
+        </button>
+      </div>
     );
   }
 

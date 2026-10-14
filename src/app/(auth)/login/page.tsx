@@ -107,10 +107,10 @@ export default function LoginPage() {
               }}
             />
             <div>
-              <p style={{ fontSize: "14px", fontWeight: "600", color: "#C9A44C", margin: 0, letterSpacing: "0.5px" }}>
-                SAVINGS & LOAN
+              <p style={{ fontSize: "20px", fontWeight: "700", color: "#4ADE80", margin: 0, letterSpacing: "0.5px", textShadow: "0 1px 4px rgba(0, 0, 0, 0.4)" }}>
+                SAVINGS & LOANS
               </p>
-              <p style={{ fontSize: "12px", color: "rgba(255, 255, 255, 0.8)", margin: 0 }}>
+              <p style={{ fontSize: "15px", fontWeight: "600", color: "#86EFAC", margin: 0 }}>
                 GTPEA
               </p>
             </div>
