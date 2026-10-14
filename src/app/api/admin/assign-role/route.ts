@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { DEFAULT_USER_PASSWORD } from "@/lib/imports/process-users";
 
 export async function POST(request: Request) {
   try {
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
     // If user doesn't exist, try to create them automatically
     if (!targetUser) {
       try {
-        const defaultPassword = "Gtpea@2026"; // Same as initial password
+        const defaultPassword = DEFAULT_USER_PASSWORD;
         const { data: newUser, error: createError } = await admin.auth.admin.createUser({
           email: employee.email,
           password: defaultPassword,

@@ -447,7 +447,7 @@ export default function LoginPage() {
               First-time login?
             </p>
             <p style={{ fontSize: "12px", color: isDesktop ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.95)", margin: 0, lineHeight: "1.4" }}>
-              Default password: <span style={{ fontWeight: "600", color: isDesktop ? "#C9A44C" : "#FFFFFF" }}>Gtpea@2026</span>
+              Default password: <span style={{ fontWeight: "600", color: isDesktop ? "#C9A44C" : "#FFFFFF" }}>{process.env.NEXT_PUBLIC_DEFAULT_USER_PASSWORD || "Gtpea@2026"}</span>
             </p>
             <p style={{ fontSize: "11px", color: isDesktop ? "rgba(255, 255, 255, 0.75)" : "rgba(255, 255, 255, 0.85)", margin: "4px 0 0 0" }}>
               You will be prompted to change your password and set up phone verification after login.

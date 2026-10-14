@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { DEFAULT_USER_PASSWORD } from "@/lib/imports/process-users";
 
 
 export async function POST(request: Request) {
@@ -133,7 +134,7 @@ export async function POST(request: Request) {
       try {
         const { data: newAuthData, error: createError } = await admin.auth.admin.createUser({
           email: authEmail,
-          password: "Gtpea@2026", // Universal default password
+          password: DEFAULT_USER_PASSWORD,
           email_confirm: true,
           user_metadata: {
             staff_id: loginId,
@@ -142,6 +143,14 @@ export async function POST(request: Request) {
             phone_number: phoneNumber
           }
         });
+
+        // Auth account already exists → the password was simply wrong.
+        if (createError && /already|exist|registered/i.test(createError.message)) {
+          return NextResponse.json(
+            { error: "Invalid Staff ID or password." },
+            { status: 401 }
+          );
+        }
 
         if (createError) {
           console.log('[/api/auth/login] Failed to create auth account:', createError.message);

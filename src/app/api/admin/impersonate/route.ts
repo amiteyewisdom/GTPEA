@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { canImpersonate, getStaffUser } from "@/lib/api/staff-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { randomBytes } from "crypto";
+import { DEFAULT_USER_PASSWORD } from "@/lib/imports/process-users";
 
 export async function POST(request: Request) {
   const { user, role } = await getStaffUser();
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     // If auth user doesn't exist, create them with a default password
     if (!authUser) {
       try {
-        const defaultPassword = "Gtpea@2026";
+        const defaultPassword = DEFAULT_USER_PASSWORD;
         const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
           email: employee.email,
           password: defaultPassword,
