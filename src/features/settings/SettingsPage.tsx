@@ -5,6 +5,7 @@ import GlassCard from '@/components/ui/GlassCard';
 import { Shield, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { UserRole } from '@/lib/role-menus';
+import { createClient } from '@/lib/supabase/client';
 
 interface SettingsPageProps {
   currentRole: UserRole;
@@ -46,19 +47,20 @@ function SecuritySettings() {
     }
   };
 
-  const handleRevokeSession = async (sessionId: string) => {
+  const handleRevokeOtherSessions = async () => {
     try {
-      const response = await fetch('/api/sessions/revoke', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId }),
-      });
+      const supabase = createClient();
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' });
+      if (signOutError) throw signOutError;
+
+      const response = await fetch('/api/sessions/revoke-others', { method: 'POST' });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not revoke session.');
-      toast.success('Session signed out');
+      if (!response.ok) throw new Error(data.error || 'Could not clear sessions.');
+
+      toast.success('All other devices signed out');
       await fetchSessions();
     } catch (err: any) {
-      toast.error('Could not revoke session', { description: err?.message });
+      toast.error('Could not sign out other devices', { description: err?.message });
     }
   };
 
@@ -91,7 +93,17 @@ function SecuritySettings() {
       </GlassCard>
 
       <GlassCard className="p-6">
-        <h2 className="text-xl font-semibold text-white mb-6">Active Sessions</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-white">Active Sessions</h2>
+          {sessions.some((s) => !s.is_current) && (
+            <button
+              onClick={handleRevokeOtherSessions}
+              className="inline-flex items-center gap-1.5 text-red-400 text-xs font-medium px-3 py-1.5 rounded-lg border border-red-400/30 hover:bg-red-400/10 transition-all"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Sign out other devices
+            </button>
+          )}
+        </div>
         {loading ? (
           <p className="text-brand-text-secondary text-sm">Loading sessions...</p>
         ) : error ? (
@@ -107,7 +119,6 @@ function SecuritySettings() {
                 location={session.formatted_address || `${session.location_city}${session.location_region ? `, ${session.location_region}` : ''}, ${session.location_country}`}
                 time={session.is_current ? 'Current session' : formatTimeAgo(session.created_at)}
                 current={session.is_current}
-                onRevoke={() => handleRevokeSession(session.id)}
               />
             ))}
           </div>
@@ -117,24 +128,17 @@ function SecuritySettings() {
   );
 }
 
-function SessionItem({ device, location, time, current, onRevoke }: any) {
+function SessionItem({ device, location, time, current }: any) {
   return (
     <div className="flex items-center justify-between p-4 rounded-lg bg-brand-card-bg border border-brand-card-border">
       <div>
         <p className="text-white font-medium">{device || 'Unknown device'}</p>
         <p className="text-brand-text-secondary text-sm">{location || 'Unknown location'} · {time}</p>
       </div>
-      {current ? (
+      {current && (
         <span className="text-brand-accent text-xs font-semibold px-3 py-1 rounded-full bg-brand-accent/10">
           This device
         </span>
-      ) : (
-        <button
-          onClick={onRevoke}
-          className="inline-flex items-center gap-1.5 text-red-400 text-xs font-medium px-3 py-1.5 rounded-lg border border-red-400/30 hover:bg-red-400/10 transition-all"
-        >
-          <LogOut className="w-3.5 h-3.5" /> Sign out
-        </button>
       )}
     </div>
   );

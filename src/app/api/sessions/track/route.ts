@@ -156,13 +156,12 @@ async function getPreciseLocation(
       );
       const data = await response.json();
       const address = data.address || {};
-      const area = address.neighbourhood || address.suburb || address.quarter || address.road || '';
       const city = address.city || address.town || address.village || 'Unknown';
       const region = address.state || address.region || '';
       const country = address.country || 'Unknown';
-      const formattedAddress = [area, city, region, country]
-        .filter((v, i, arr) => v && arr.indexOf(v) === i && v !== 'Unknown')
-        .join(', ');
+      // Concise: nearest road or area name + city, e.g. "Castle Road, Accra"
+      const spot = address.road || address.neighbourhood || address.suburb || address.quarter || '';
+      const formattedAddress = spot && spot !== city ? `${spot}, ${city}` : city;
       return { country, city, region, formattedAddress };
     } catch (err) {
       console.warn('Reverse geocoding failed, falling back to IP:', err);
