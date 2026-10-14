@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyUser } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLoggedInEmployee } from "@/lib/loans/employee";
 
@@ -110,16 +111,15 @@ export async function POST(request: Request) {
 
     // Notify the loan applicant about the guarantor's decision
     if (applicantUserId) {
-      await admin.from("notifications").insert({
-        user_id: applicantUserId,
-        type: "system",
-        title: action === "approved" ? "Guarantor Consent Approved" : "Guarantor Consent Rejected",
-        message: action === "approved"
+      await notifyUser(
+        applicantUserId,
+        "system",
+        action === "approved" ? "Guarantor Consent Approved" : "Guarantor Consent Rejected",
+        action === "approved"
           ? `A guarantor has approved the request for loan ${guarantorRequest.loans.loan_ref}. It will be sent to the Fund Manager after all selected guarantors approve.`
           : `Your guarantor has rejected the request for loan ${guarantorRequest.loans.loan_ref}. ${notes ? `Reason: ${notes}. ` : ""}You can amend the application and resubmit it.`,
-        entity_type: "loan",
-        entity_id: guarantorRequest.loan_id,
-      });
+        guarantorRequest.loan_id
+      );
     }
 
     // If action is approved, check if at least one guarantor has consented
@@ -184,14 +184,13 @@ export async function POST(request: Request) {
             .select("user_id")
             .eq("role", "fund_manager");
           for (const reviewer of (reviewersRes.data ?? []) as { user_id: string }[]) {
-            await (admin.from("notifications") as any).insert({
-              user_id: reviewer.user_id,
-              type: "approval_required",
-              title: "Loan application needs your review",
-              message: `Facility ${guarantorRequest.loans.loan_ref} needs your review at stage 1.`,
-              entity_type: "loan",
-              entity_id: guarantorRequest.loan_id,
-            });
+            await notifyUser(
+              reviewer.user_id,
+              "approval_required",
+              "Loan application needs your review",
+              `Facility ${guarantorRequest.loans.loan_ref} needs your review at stage 1.`,
+              guarantorRequest.loan_id
+            );
           }
         }
       }

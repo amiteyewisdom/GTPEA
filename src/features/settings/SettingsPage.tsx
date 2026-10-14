@@ -104,7 +104,7 @@ function SecuritySettings() {
               <SessionItem
                 key={session.id}
                 device={`${session.browser}${session.device_model ? ` on ${session.device_model}` : ''}`}
-                location={`${session.location_city}${session.location_region ? `, ${session.location_region}` : ''}, ${session.location_country}`}
+                location={session.formatted_address || `${session.location_city}${session.location_region ? `, ${session.location_region}` : ''}, ${session.location_country}`}
                 time={session.is_current ? 'Current session' : formatTimeAgo(session.created_at)}
                 current={session.is_current}
                 onRevoke={() => handleRevokeSession(session.id)}

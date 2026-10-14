@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
+import { notifyUser } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createRepaymentSchedule } from "@/lib/loans/repayment-schedule";
@@ -122,14 +123,13 @@ export async function POST(request: Request) {
       .eq("employee_id", loan.employee_id)
       .maybeSingle();
     if (applicantProfile?.user_id) {
-      await admin.from("notifications").insert({
-        user_id: applicantProfile.user_id,
-        type: "loan_disbursed",
-        title: "Loan Disbursed",
-        message: `Loan ${loan.loan_ref} has been recorded as disbursed. Repayment will begin via payroll deduction.`,
-        entity_type: "loan",
-        entity_id: loanId,
-      });
+      await notifyUser(
+        applicantProfile.user_id,
+        "loan_disbursed",
+        "Loan Disbursed",
+        `Loan ${loan.loan_ref} has been recorded as disbursed. Repayment will begin via payroll deduction.`,
+        loanId
+      );
     }
   } catch (notifErr) {
     console.error("Failed to send disbursement notification:", notifErr);

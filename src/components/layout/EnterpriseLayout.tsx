@@ -6,6 +6,8 @@ import EnterpriseTopbar from "./EnterpriseTopbar";
 import MobileBottomNav from "./MobileBottomNav";
 import { UserRole } from "@/lib/role-menus";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
+import SessionTracker from "@/components/SessionTracker";
+import PushNotification from "@/components/PushNotification";
 
 type EnterpriseLayoutProps = {
   children: React.ReactNode;
@@ -54,6 +56,8 @@ export default function EnterpriseLayout({
 
   return (
     <div className="min-h-dvh bg-brand-background">
+      <SessionTracker />
+      <PushNotification />
       <LayoutErrorBoundary componentName="EnterpriseSidebar">
         <EnterpriseSidebar
           currentRole={currentRole}

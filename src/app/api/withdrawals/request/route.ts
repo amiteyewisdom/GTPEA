@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyUser } from "@/lib/notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateReference } from "@/utils/formatters";
 import { getLoggedInEmployee } from "@/lib/loans/employee";
@@ -96,14 +97,13 @@ export async function POST(request: Request) {
   try {
     const fmRes = await (admin.from("profiles") as any).select("user_id").eq("role", "fund_manager");
     for (const fm of (fmRes.data ?? []) as { user_id: string }[]) {
-      await (admin.from("notifications") as any).insert({
-        user_id: fm.user_id,
-        type: "approval_required",
-        title: "Withdrawal needs your review",
-        message: `A savings withdrawal request (${requestRef}) needs your approval.`,
-        entity_type: "withdrawal",
-        entity_id: withdrawal.id,
-      });
+      await notifyUser(
+        fm.user_id,
+        "approval_required",
+        "Withdrawal needs your review",
+        `A savings withdrawal request (${requestRef}) needs your approval.`,
+        withdrawal.id
+      );
     }
   } catch (notifErr) {
     console.warn("[withdrawals/request] fund-manager notification failed (non-fatal):", notifErr);

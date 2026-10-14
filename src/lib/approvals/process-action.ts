@@ -5,6 +5,7 @@ import {
   roleForStage,
   successMessageAfterApproval,
 } from "@/lib/loans/workflow";
+import { notifyUser } from "@/lib/notifications";
 
 
 type ApprovalRecord = {
@@ -166,14 +167,13 @@ export async function processApprovalAction(input: {
       try {
         const fmRes = await (admin.from("profiles") as any).select("user_id").eq("role", "fund_manager");
         for (const fm of (fmRes.data ?? []) as { user_id: string }[]) {
-          await (admin.from("notifications") as any).insert({
-            user_id: fm.user_id,
-            type: "approval_required",
-            title: "Loan ready to disburse",
-            message: `Loan application fully approved and ready for disbursement.`,
-            entity_type: "loan",
-            entity_id: approval.entity_id,
-          });
+          await notifyUser(
+            fm.user_id,
+            "approval_required",
+            "Loan ready to disburse",
+            `Loan application fully approved and ready for disbursement.`,
+            approval.entity_id
+          );
         }
       } catch (fmErr) {
         console.warn("[processApprovalAction] fund-manager notification failed (non-fatal):", fmErr);
@@ -213,14 +213,13 @@ export async function processApprovalAction(input: {
       try {
         const fmRes = await (admin.from("profiles") as any).select("user_id").eq("role", "fund_manager");
         for (const fm of (fmRes.data ?? []) as { user_id: string }[]) {
-          await (admin.from("notifications") as any).insert({
-            user_id: fm.user_id,
-            type: "approval_required",
-            title: "Withdrawal ready to disburse",
-            message: `A savings withdrawal is approved and waiting for disbursement.`,
-            entity_type: "withdrawal",
-            entity_id: withdrawal.id,
-          });
+          await notifyUser(
+            fm.user_id,
+            "approval_required",
+            "Withdrawal ready to disburse",
+            `A savings withdrawal is approved and waiting for disbursement.`,
+            withdrawal.id
+          );
         }
       } catch (fmErr) {
         console.warn("[processApprovalAction] fund-manager notification failed (non-fatal):", fmErr);
@@ -231,35 +230,32 @@ export async function processApprovalAction(input: {
   const entityLabel = approval.entity_type === "loan" ? "Loan application" : approval.entity_type === "withdrawal" ? "Withdrawal" : "Request";
 
   try {
-    await (admin.from("notifications") as any).insert({
-      user_id: approval.submitted_by,
-      type: action === "approved" ? "approval_completed" : "approval_rejected",
-      title: `${entityLabel} ${action === "approved" ? "approved" : "rejected"}`,
-      message:
-        action === "approved" && !isFinalStage
-          ? `${entityLabel} moved to stage ${nextStage} (${labelForRole(roleForStage(nextStage, approval.entity_type) ?? "next reviewer")}).`
-          : action === "approved" && isFinalStage
-            ? approval.entity_type === "withdrawal"
-              ? `${entityLabel} approved — it is now queued for disbursement.`
-              : `${entityLabel} fully approved.`
-            : `${entityLabel} was rejected${reasonCode || notes ? ` — ${reasonCode || notes}` : ""}. You can amend the application and resubmit it.`,
-      entity_type: approval.entity_type,
-      entity_id: approval.entity_id,
-    });
+    await notifyUser(
+      approval.submitted_by,
+      action === "approved" ? "approval_completed" : "approval_rejected",
+      `${entityLabel} ${action === "approved" ? "approved" : "rejected"}`,
+      action === "approved" && !isFinalStage
+        ? `${entityLabel} moved to stage ${nextStage} (${labelForRole(roleForStage(nextStage, approval.entity_type) ?? "next reviewer")}).`
+        : action === "approved" && isFinalStage
+          ? approval.entity_type === "withdrawal"
+            ? `${entityLabel} approved — it is now queued for disbursement.`
+            : `${entityLabel} fully approved.`
+          : `${entityLabel} was rejected${reasonCode || notes ? ` — ${reasonCode || notes}` : ""}. You can amend the application and resubmit it.`,
+      approval.entity_id
+    );
 
     if (action === "approved" && !isFinalStage) {
       const nextRole = roleForStage(nextStage, approval.entity_type);
       if (nextRole) {
         const approversRes = await (admin.from("profiles") as any).select("user_id").eq("role", nextRole);
         for (const approver of (approversRes.data ?? []) as { user_id: string }[]) {
-          await (admin.from("notifications") as any).insert({
-            user_id: approver.user_id,
-            type: "approval_required",
-            title: `${entityLabel} needs your review`,
-            message: `A ${entityLabel.toLowerCase()} needs your review at stage ${nextStage}.`,
-            entity_type: approval.entity_type,
-            entity_id: approval.entity_id,
-          });
+          await notifyUser(
+            approver.user_id,
+            "approval_required",
+            `${entityLabel} needs your review`,
+            `A ${entityLabel.toLowerCase()} needs your review at stage ${nextStage}.`,
+            approval.entity_id
+          );
         }
       }
     }

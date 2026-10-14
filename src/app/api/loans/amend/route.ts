@@ -5,6 +5,7 @@ import { getLoggedInEmployee } from "@/lib/loans/employee";
 import { borrowingCapacity, committedLoanAmount } from "@/lib/loans/capacity";
 import { calculateMonthlyRepayment, formatCurrency } from "@/utils/formatters";
 import { labelForRole, roleForStage } from "@/lib/loans/workflow";
+import { notifyUser } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   let body: any;
@@ -236,14 +237,13 @@ async function handleAmend(body: any) {
         .eq("employee_id", g.guarantor_id)
         .maybeSingle();
       if (guarantorProfile?.user_id) {
-        await (admin.from("notifications") as any).insert({
-          user_id: guarantorProfile.user_id,
-          type: "approval_required",
-          title: "Guarantor Request",
-          message: `The applicant has amended facility ${loan.loan_ref} — please review and consent again.`,
-          entity_type: "loan",
-          entity_id: loanId,
-        });
+        await notifyUser(
+          guarantorProfile.user_id,
+          "approval_required",
+          "Guarantor Request",
+          `The applicant has amended facility ${loan.loan_ref} — please review and consent again.`,
+          loanId
+        );
       }
     }
 
@@ -271,14 +271,13 @@ async function handleAmend(body: any) {
     if (resumeRole) {
       const approversRes = await (admin.from("profiles") as any).select("user_id").eq("role", resumeRole);
       for (const approver of (approversRes.data ?? []) as { user_id: string }[]) {
-        await (admin.from("notifications") as any).insert({
-          user_id: approver.user_id,
-          type: "approval_required",
-          title: "Amended loan needs your review",
-          message: `An amended facility application needs your review at stage ${startStage}.`,
-          entity_type: "loan",
-          entity_id: loanId,
-        });
+        await notifyUser(
+          approver.user_id,
+          "approval_required",
+          "Amended loan needs your review",
+          `An amended facility application needs your review at stage ${startStage}.`,
+          loanId
+        );
       }
     }
 

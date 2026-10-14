@@ -14,16 +14,16 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { user_agent, ip_address } = body;
+    const { user_agent, ip_address, latitude, longitude, accuracy } = body;
 
-    console.log('Session track request:', { user_agent, ip_address });
+    console.log('Session track request:', { user_agent, ip_address, latitude, longitude, accuracy });
 
     // Parse user agent to get device info
     const deviceInfo = parseUserAgent(user_agent);
     console.log('Device info:', deviceInfo);
 
-    // Get location from IP (simplified - in production use a proper geolocation service)
-    const location = await getLocationFromIP(ip_address);
+    // Prefer precise browser geolocation; fall back to IP geolocation
+    const location = await getPreciseLocation(latitude, longitude, ip_address);
     console.log('Location:', location);
 
     // Mark all other sessions as not current
@@ -48,6 +48,10 @@ export async function POST(request: Request) {
         location_country: location.country,
         location_city: location.city,
         location_region: location.region,
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
+        location_accuracy: accuracy ?? null,
+        formatted_address: location.formattedAddress ?? null,
         is_current: true,
       })
       .select()
@@ -136,6 +140,38 @@ function parseUserAgent(userAgent: string) {
   }
 
   return { device, browser, os, deviceModel };
+}
+
+async function getPreciseLocation(
+  latitude?: number,
+  longitude?: number,
+  ip?: string
+): Promise<{ country: string; city: string; region: string; formattedAddress?: string }> {
+  // 1. Try reverse geocoding from browser coordinates
+  if (latitude != null && longitude != null) {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+        { headers: { 'User-Agent': 'GTPEA-Finance-Platform/1.0' } }
+      );
+      const data = await response.json();
+      const address = data.address || {};
+      const formatted = data.display_name || '';
+      const city = address.city || address.town || address.village || address.suburb || 'Unknown';
+      const region = address.state || address.region || address.county || '';
+      const country = address.country || 'Unknown';
+      return { country, city, region, formattedAddress: formatted };
+    } catch (err) {
+      console.warn('Reverse geocoding failed, falling back to IP:', err);
+    }
+  }
+
+  // 2. Fall back to IP geolocation
+  if (ip) {
+    return { ...await getLocationFromIP(ip) };
+  }
+
+  return { country: 'Unknown', city: 'Unknown', region: '' };
 }
 
 async function getLocationFromIP(ip: string) {

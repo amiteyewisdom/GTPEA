@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLoggedInEmployee } from "@/lib/loans/employee";
+import { notifyUser } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   try {
@@ -129,12 +130,12 @@ export async function POST(request: Request) {
     }
 
     if (userId) {
-      await admin.from("notifications").insert({
-        user_id: userId,
-        type: "system",
-        title: notificationTitle,
-        message: notificationMessage,
-      });
+      await notifyUser(
+        userId,
+        "system",
+        notificationTitle,
+        notificationMessage
+      );
     }
 
     return NextResponse.json({

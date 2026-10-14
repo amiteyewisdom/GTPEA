@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
+import { notifyUser } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -135,14 +136,13 @@ export async function POST(request: Request) {
       .eq("employee_id", withdrawal.employee_id)
       .maybeSingle();
     if (applicantProfile?.user_id) {
-      await admin.from("notifications").insert({
-        user_id: applicantProfile.user_id,
-        type: "withdrawal_disbursed",
-        title: "Withdrawal Paid Out",
-        message: `Withdrawal ${withdrawal.request_ref} has been disbursed. GH₵${amount.toLocaleString()} was deducted from your savings.`,
-        entity_type: "withdrawal",
-        entity_id: withdrawal.id,
-      });
+      await notifyUser(
+        applicantProfile.user_id,
+        "withdrawal_disbursed",
+        "Withdrawal Paid Out",
+        `Withdrawal ${withdrawal.request_ref} has been disbursed. GH₵${amount.toLocaleString()} was deducted from your savings.`,
+        withdrawal.id
+      );
     }
   } catch (notifErr) {
     console.error("Failed to send withdrawal disbursement notification:", notifErr);

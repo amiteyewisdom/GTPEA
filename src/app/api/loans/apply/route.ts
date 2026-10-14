@@ -6,6 +6,7 @@ import { getLoggedInEmployee } from "@/lib/loans/employee";
 import { borrowingCapacity, committedLoanAmount } from "@/lib/loans/capacity";
 import { calculateMonthlyRepayment, formatCurrency, generateReference } from "@/utils/formatters";
 import { loanProductCode, memberAccountCode } from "@/lib/reports/gl-accounts";
+import { notifyUser } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   let body: any;
@@ -269,14 +270,13 @@ async function handleApply(body: any) {
     // Stage 1 is Fund Manager review
     const reviewersRes = await (admin.from("profiles") as any).select("user_id").eq("role", "fund_manager");
     for (const reviewer of (reviewersRes.data ?? []) as { user_id: string }[]) {
-      await (admin.from("notifications") as any).insert({
-        user_id: reviewer.user_id,
-        type: "approval_required",
-        title: "Loan application needs your review",
-        message: `Facility ${loanRef} needs your review at stage 1.`,
-        entity_type: "loan",
-        entity_id: loanRes.data.id,
-      });
+      await notifyUser(
+        reviewer.user_id,
+        "approval_required",
+        "Loan application needs your review",
+        `Facility ${loanRef} needs your review at stage 1.`,
+        loanRes.data.id
+      );
     }
   }
 
@@ -317,14 +317,13 @@ async function handleApply(body: any) {
         .eq("employee_id", g.guarantor_id)
         .maybeSingle();
       if (guarantorProfile?.user_id) {
-        await (admin.from("notifications") as any).insert({
-          user_id: guarantorProfile.user_id,
-          type: "approval_required",
-          title: "Guarantor Request",
-          message: `You have been listed as a guarantor for facility ${loanRef}.`,
-          entity_type: "loan",
-          entity_id: loanRes.data.id,
-        });
+        await notifyUser(
+          guarantorProfile.user_id,
+          "approval_required",
+          "Guarantor Request",
+          `You have been listed as a guarantor for facility ${loanRef}.`,
+          loanRes.data.id
+        );
       }
     }
   }

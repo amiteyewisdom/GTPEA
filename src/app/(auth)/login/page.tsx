@@ -398,24 +398,10 @@ export default function LoginPage() {
 
             <div style={{
               display: "flex",
-              alignItems: isDesktop ? "center" : "flex-start",
-              flexDirection: isDesktop ? "row" : "column",
-              gap: isDesktop ? "0" : "8px",
+              alignItems: "center",
               justifyContent: isDesktop ? "space-between" : "flex-start",
               fontSize: "14px",
             }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px", color: isDesktop ? "rgba(255, 255, 255, 0.95)" : "rgba(255, 255, 255, 0.9)", cursor: "pointer", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)" }}>
-                <input
-                  type="checkbox"
-                  style={{
-                    width: "16px",
-                    height: "16px",
-                    accentColor: "#C9A44C",
-                    cursor: "pointer",
-                  }}
-                />
-                Remember me
-              </label>
               <span
                 style={{
                   color: isDesktop ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.8)",
