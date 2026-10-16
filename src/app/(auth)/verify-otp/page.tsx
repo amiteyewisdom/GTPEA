@@ -23,38 +23,19 @@ export default function VerifyOtpPage() {
       
       if (userData.user) {
         setUserId(userData.user.id);
-        
-        if (!userData.user.email) {
-          setError("User email not found. Please contact support.");
-          return;
-        }
-        
-        // Try to get phone number from employee record first
-        const { data: employeeData } = await (supabase
-          .from("employees") as any)
-          .select("phone_number")
-          .eq("email", userData.user.email)
-          .maybeSingle();
-        
-        if (employeeData && employeeData.phone_number) {
-          setPhoneNumber(employeeData.phone_number);
-          // Don't auto-send code since it's already sent from login
-          setInfo("Verification code sent to your phone.");
-          return;
-        }
-        
-        // If not an employee, get phone number from profiles
-        const { data: profileData } = await (supabase
-          .from("profiles") as any)
-          .select("phone")
-          .eq("user_id", userData.user.id)
-          .maybeSingle();
-        
-        if (profileData && profileData.phone) {
-          setPhoneNumber(profileData.phone);
-          // Don't auto-send code since it's already sent from login
-          setInfo("Verification code sent to your phone.");
-        } else {
+
+        // Resolve the phone server-side — the browser's direct table reads
+        // can silently return nothing under RLS.
+        try {
+          const res = await fetch("/api/otp/phone");
+          const data = await res.json();
+          if (res.ok && data.phone) {
+            setPhoneNumber(data.phone);
+            setInfo("Verification code sent to your phone.");
+          } else {
+            setError(data.error || "Phone number not found. Please contact support.");
+          }
+        } catch {
           setError("Phone number not found. Please contact support.");
         }
       } else {
