@@ -439,15 +439,15 @@ export default function LoginPage() {
           <div style={{
             marginTop: isDesktop ? "16px" : "12px",
             padding: isDesktop ? "12px" : "10px",
-            backgroundColor: isDesktop ? "rgba(201, 164, 76, 0.15)" : "rgba(201, 164, 76, 0.2)",
+            backgroundColor: isDesktop ? "rgba(74, 222, 128, 0.12)" : "rgba(74, 222, 128, 0.15)",
             borderRadius: "8px",
-            border: isDesktop ? "1px solid rgba(201, 164, 76, 0.3)" : "1px solid rgba(201, 164, 76, 0.4)",
+            border: isDesktop ? "1px solid rgba(74, 222, 128, 0.35)" : "1px solid rgba(74, 222, 128, 0.4)",
           }}>
-            <p style={{ fontSize: "13px", fontWeight: "600", color: isDesktop ? "#C9A44C" : "#FFFFFF", margin: "0 0 4px 0", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)" }}>
+            <p style={{ fontSize: "13px", fontWeight: "600", color: isDesktop ? "#4ADE80" : "#4ADE80", margin: "0 0 4px 0", textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)" }}>
               First-time login?
             </p>
             <p style={{ fontSize: "12px", color: isDesktop ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.95)", margin: 0, lineHeight: "1.4" }}>
-              Default password: <span style={{ fontWeight: "600", color: isDesktop ? "#C9A44C" : "#FFFFFF" }}>{process.env.NEXT_PUBLIC_DEFAULT_USER_PASSWORD || "Gtpea@2026"}</span>
+              Default password: <span style={{ fontWeight: "600", color: isDesktop ? "#4ADE80" : "#4ADE80" }}>{process.env.NEXT_PUBLIC_DEFAULT_USER_PASSWORD || "Gtpea@2026"}</span>
             </p>
             <p style={{ fontSize: "11px", color: isDesktop ? "rgba(255, 255, 255, 0.75)" : "rgba(255, 255, 255, 0.85)", margin: "4px 0 0 0" }}>
               You will be prompted to change your password and set up phone verification after login.
