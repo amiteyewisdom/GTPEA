@@ -77,218 +77,41 @@ export default function LoginPage() {
     }
   };
 
-  return (
-    <div style={{
-      width: "100%",
-      height: "100dvh",
-      position: "relative",
-      overflow: "hidden",
-      backgroundImage: isDesktop ? "url('/images/landing-bg.jpg')" : "url('/images/landing-bg-mobile.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center bottom",
-      backgroundRepeat: "no-repeat",
-    }}>
+  // Scale desktop sizing with the viewport so shorter/narrower screens (laptops,
+  // Windows display scaling) keep the same composition without overlap.
+  const fit = (min: number, vh: number, max: number, vw?: number) =>
+    `clamp(${min}px, ${vw ? `min(${vh}vh, ${vw}vw)` : `${vh}vh`}, ${max}px)`;
 
-      {!isDesktop && (
-        <>
-          {/* decorative green accents for the plain top area */}
-          <div style={{
-            position: "absolute",
-            top: "-60px",
-            left: "-60px",
-            width: "220px",
-            height: "220px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(22, 163, 74, 0.25) 0%, rgba(22, 163, 74, 0.08) 50%, transparent 70%)",
-            pointerEvents: "none",
-          }} />
-          <div style={{
-            position: "absolute",
-            top: "-40px",
-            right: "-50px",
-            width: "180px",
-            height: "180px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(201, 164, 76, 0.22) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }} />
-        </>
-      )}
-
-      {isDesktop && (
-        <>
-          {/* Header lockup — logo + association name */}
-          <div style={{
-            position: "absolute",
-            top: "24px",
-            left: "40px",
-            right: "48px",
-            display: "flex",
-            alignItems: "center",
-            gap: "24px",
-            zIndex: 2,
-          }}>
-            <img
-              src="/images/gtpea-logo.png"
-              alt="GTPEA"
-              style={{ width: "190px", height: "190px", objectFit: "contain" }}
-            />
-            <div style={{ borderLeft: "4px solid #166534", paddingLeft: "24px" }}>
-              <p style={{
-                fontSize: "40px",
-                fontWeight: "800",
-                color: "#166534",
-                margin: 0,
-                letterSpacing: "0.5px",
-                lineHeight: 1.1,
-              }}>
-                GTP EMPLOYEES<br />ASSOCIATION (GTPEA)
-              </p>
-            </div>
-          </div>
-
-          {/* Hero column */}
-          <div style={{
-            position: "absolute",
-            left: "48px",
-            top: 0,
-            bottom: 0,
-            width: "52%",
-            zIndex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}>
-            <div style={{ maxWidth: "680px", marginTop: "120px" }}>
-              <h1 style={{
-                fontSize: "58px",
-                fontWeight: "800",
-                lineHeight: "1.1",
-                margin: "0 0 16px 0",
-                color: "#14532D",
-                whiteSpace: "nowrap",
-              }}>
-                Grow Your Savings.<br />
-                <span style={{ color: "#84CC16" }}>Build Your Future.</span>
-              </h1>
-              <p style={{
-                fontSize: "18px",
-                color: "#4B5563",
-                lineHeight: "1.6",
-                margin: "0 0 32px 0",
-                maxWidth: "460px",
-              }}>
-                Securely manage your savings, loans and financial activities from one trusted platform.
-              </p>
-
-              <div style={{ display: "flex", gap: "28px" }}>
-                {[
-                  { icon: Shield, label: "SECURE", desc: "Protected financial information" },
-                  { icon: CheckCircle, label: "SIMPLE", desc: "Easy access to your records" },
-                  { icon: Zap, label: "SMART", desc: "Transparent loan management" },
-                ].map(({ icon: Icon, label, desc }) => (
-                  <div key={label} style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                    maxWidth: "180px",
-                    background: "rgba(255, 255, 255, 0.72)",
-                    backdropFilter: "blur(8px)",
-                    WebkitBackdropFilter: "blur(8px)",
-                    border: "1px solid rgba(255, 255, 255, 0.85)",
-                    borderRadius: "14px",
-                    padding: "14px 16px",
-                    boxShadow: "0 4px 16px rgba(22, 101, 52, 0.10)",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <div style={{
-                        width: "34px",
-                        height: "34px",
-                        borderRadius: "10px",
-                        backgroundColor: "#16A34A",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}>
-                        <Icon style={{ width: "18px", height: "18px", color: "#FFFFFF" }} />
-                      </div>
-                      <p style={{ fontSize: "14px", fontWeight: "800", color: "#14532D", margin: 0, letterSpacing: "0.5px" }}>
-                        {label}
-                      </p>
-                    </div>
-                    <p style={{ fontSize: "13px", fontWeight: 500, color: "#374151", margin: 0, lineHeight: 1.4 }}>
-                      {desc}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </>
-      )}
-
-      <div style={{
-        position: isDesktop ? "absolute" : "relative",
-        right: isDesktop ? "7%" : "auto",
-        top: isDesktop ? "50%" : "auto",
-        left: isDesktop ? "auto" : "0",
-        transform: isDesktop ? "translateY(-50%)" : "none",
-        width: isDesktop ? "440px" : "100%",
-        maxWidth: isDesktop ? "none" : "400px",
-        margin: isDesktop ? "0" : "0 auto",
-        zIndex: 2,
-        padding: isDesktop ? "0" : "16px 16px 32px",
-      }}>
-        {!isDesktop && (
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            textAlign: "center",
-            padding: "14px 0 12px",
-            marginBottom: "14px",
-          }}>
-            <img
-              src="/images/gtpea-logo.png"
-              alt="GTPEA"
-              style={{ width: "124px", height: "124px", objectFit: "contain", marginBottom: "10px", filter: "drop-shadow(0 4px 10px rgba(22, 101, 52, 0.25))" }}
-            />
-            <p style={{ fontSize: "18px", fontWeight: "800", color: "#166534", margin: 0, letterSpacing: "0.5px", lineHeight: 1.3 }}>
-              GTP EMPLOYEES ASSOCIATION<br />(GTPEA)
-            </p>
-          </div>
-        )}
+  const card = (
         <div style={{
           background: "rgba(255, 255, 255, 0.45)",
           backdropFilter: "blur(14px)",
           WebkitBackdropFilter: "blur(14px)",
           border: "1px solid rgba(255, 255, 255, 0.6)",
           borderRadius: "20px",
-          padding: isDesktop ? "32px" : "16px",
+          padding: isDesktop ? fit(18, 3.4, 32) : "16px",
           boxShadow: "0 12px 40px rgba(22, 101, 52, 0.15)",
         }}>
           <div style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            marginBottom: isDesktop ? "24px" : "16px",
+            marginBottom: isDesktop ? fit(12, 2.5, 24) : "16px",
           }}>
             {isDesktop && (
               <img
                 src="/images/gtpea-logo.png"
                 alt="GTPEA"
                 style={{
-                  width: "112px",
-                  height: "112px",
+                  width: fit(56, 11.5, 112),
+                  height: fit(56, 11.5, 112),
                   objectFit: "contain",
-                  marginBottom: "12px",
+                  marginBottom: fit(6, 1.2, 12),
                 }}
               />
             )}
             <h2 style={{
-              fontSize: isDesktop ? "24px" : "20px",
+              fontSize: isDesktop ? fit(20, 2.6, 24) : "20px",
               fontWeight: "700",
               color: "#14532D",
               margin: 0,
@@ -300,7 +123,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form style={{ display: "flex", flexDirection: "column", gap: isDesktop ? "16px" : "12px" }} onSubmit={handleSubmit}>
+          <form style={{ display: "flex", flexDirection: "column", gap: isDesktop ? fit(10, 1.7, 16) : "12px" }} onSubmit={handleSubmit}>
             {error && (
               <div style={{
                 borderRadius: "8px",
@@ -344,7 +167,7 @@ export default function LoginPage() {
                   autoComplete="username"
                   style={{
                     width: "100%",
-                    height: isDesktop ? "52px" : "48px",
+                    height: isDesktop ? fit(42, 5.5, 52) : "48px",
                     paddingLeft: isDesktop ? "46px" : "42px",
                     paddingRight: isDesktop ? "16px" : "14px",
                     border: "1px solid #D1D5DB",
@@ -396,7 +219,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   style={{
                     width: "100%",
-                    height: isDesktop ? "52px" : "48px",
+                    height: isDesktop ? fit(42, 5.5, 52) : "48px",
                     paddingLeft: isDesktop ? "46px" : "42px",
                     paddingRight: isDesktop ? "46px" : "42px",
                     border: "1px solid #D1D5DB",
@@ -457,7 +280,7 @@ export default function LoginPage() {
               disabled={loading}
               style={{
                 width: "100%",
-                height: isDesktop ? "52px" : "48px",
+                height: isDesktop ? fit(42, 5.5, 52) : "48px",
                 backgroundColor: "#16A34A",
                 color: "#FFFFFF",
                 fontWeight: "600",
@@ -476,8 +299,8 @@ export default function LoginPage() {
           </form>
 
           <div style={{
-            marginTop: isDesktop ? "16px" : "12px",
-            padding: isDesktop ? "12px" : "10px",
+            marginTop: isDesktop ? fit(10, 1.7, 16) : "12px",
+            padding: isDesktop ? fit(8, 1.3, 12) : "10px",
             backgroundColor: "#F0FDF4",
             borderRadius: "8px",
             border: "1px solid #BBF7D0",
@@ -494,8 +317,8 @@ export default function LoginPage() {
           </div>
 
           <div style={{
-            marginTop: isDesktop ? "20px" : "16px",
-            paddingTop: isDesktop ? "16px" : "12px",
+            marginTop: isDesktop ? fit(10, 2.1, 20) : "16px",
+            paddingTop: isDesktop ? fit(8, 1.7, 16) : "12px",
             textAlign: "center",
             borderTop: "1px solid rgba(255, 255, 255, 0.5)",
           }}>
@@ -504,7 +327,195 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
-      </div>
+  );
+
+  return (
+    <div style={{
+      width: "100%",
+      height: "100dvh",
+      position: "relative",
+      overflowX: "hidden",
+      overflowY: "auto",
+      backgroundImage: isDesktop ? "url('/images/landing-bg.jpg')" : "url('/images/landing-bg-mobile.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center bottom",
+      backgroundRepeat: "no-repeat",
+    }}>
+
+      {!isDesktop && (
+        <>
+          {/* decorative green accents for the plain top area */}
+          <div style={{
+            position: "absolute",
+            top: "-60px",
+            left: "-60px",
+            width: "220px",
+            height: "220px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(22, 163, 74, 0.25) 0%, rgba(22, 163, 74, 0.08) 50%, transparent 70%)",
+            pointerEvents: "none",
+          }} />
+          <div style={{
+            position: "absolute",
+            top: "-40px",
+            right: "-50px",
+            width: "180px",
+            height: "180px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(201, 164, 76, 0.22) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }} />
+        </>
+      )}
+
+      {isDesktop ? (
+        <div style={{
+          position: "relative",
+          zIndex: 1,
+          minHeight: "100%",
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          gap: "clamp(24px, 4vw, 72px)",
+          padding: `${fit(16, 2.6, 24)} 7% ${fit(16, 2.6, 24)} clamp(24px, 2.5vw, 40px)`,
+        }}>
+          <div style={{
+            flex: 1,
+            minWidth: 0,
+            alignSelf: "stretch",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+            {/* Header lockup — logo + association name */}
+            <div style={{ display: "flex", alignItems: "center", gap: fit(12, 2.5, 24) }}>
+              <img
+                src="/images/gtpea-logo.png"
+                alt="GTPEA"
+                style={{ width: fit(90, 20, 190, 12), height: fit(90, 20, 190, 12), objectFit: "contain", flexShrink: 0 }}
+              />
+              <div style={{ borderLeft: "4px solid #166534", paddingLeft: fit(12, 2.5, 24) }}>
+                <p style={{
+                  fontSize: fit(22, 4.25, 40, 2.6),
+                  fontWeight: "800",
+                  color: "#166534",
+                  margin: 0,
+                  letterSpacing: "0.5px",
+                  lineHeight: 1.1,
+                }}>
+                  GTP EMPLOYEES<br />ASSOCIATION (GTPEA)
+                </p>
+              </div>
+            </div>
+
+            {/* Hero column */}
+            <div style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              padding: `${fit(16, 4, 40)} 0 0 8px`,
+            }}>
+              <div style={{ maxWidth: "680px" }}>
+                <h1 style={{
+                  fontSize: fit(32, 6.2, 58, 3.8),
+                  fontWeight: "800",
+                  lineHeight: "1.1",
+                  margin: `0 0 ${fit(8, 1.7, 16)} 0`,
+                  color: "#14532D",
+                }}>
+                  Grow Your Savings.<br />
+                  <span style={{ color: "#84CC16" }}>Build Your Future.</span>
+                </h1>
+                <p style={{
+                  fontSize: fit(14, 1.9, 18),
+                  color: "#4B5563",
+                  lineHeight: "1.6",
+                  margin: `0 0 ${fit(14, 3.4, 32)} 0`,
+                  maxWidth: "460px",
+                }}>
+                  Securely manage your savings, loans and financial activities from one trusted platform.
+                </p>
+
+                <div style={{ display: "flex", gap: "clamp(12px, 1.5vw, 28px)" }}>
+                  {[
+                    { icon: Shield, label: "SECURE", desc: "Protected financial information" },
+                    { icon: CheckCircle, label: "SIMPLE", desc: "Easy access to your records" },
+                    { icon: Zap, label: "SMART", desc: "Transparent loan management" },
+                  ].map(({ icon: Icon, label, desc }) => (
+                    <div key={label} style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                      flex: "0 1 180px",
+                      minWidth: 0,
+                      background: "rgba(255, 255, 255, 0.72)",
+                      backdropFilter: "blur(8px)",
+                      WebkitBackdropFilter: "blur(8px)",
+                      border: "1px solid rgba(255, 255, 255, 0.85)",
+                      borderRadius: "14px",
+                      padding: `${fit(10, 1.5, 14)} clamp(10px, 1.1vw, 16px)`,
+                      boxShadow: "0 4px 16px rgba(22, 101, 52, 0.10)",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{
+                          width: "34px",
+                          height: "34px",
+                          borderRadius: "10px",
+                          backgroundColor: "#16A34A",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}>
+                          <Icon style={{ width: "18px", height: "18px", color: "#FFFFFF" }} />
+                        </div>
+                        <p style={{ fontSize: "14px", fontWeight: "800", color: "#14532D", margin: 0, letterSpacing: "0.5px" }}>
+                          {label}
+                        </p>
+                      </div>
+                      <p style={{ fontSize: "13px", fontWeight: 500, color: "#374151", margin: 0, lineHeight: 1.4 }}>
+                        {desc}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ width: "clamp(340px, 30vw, 440px)", flexShrink: 0 }}>
+            {card}
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: "400px",
+          margin: "0 auto",
+          zIndex: 2,
+          padding: "16px 16px 32px",
+        }}>
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            padding: "14px 0 12px",
+            marginBottom: "14px",
+          }}>
+            <img
+              src="/images/gtpea-logo.png"
+              alt="GTPEA"
+              style={{ width: "124px", height: "124px", objectFit: "contain", marginBottom: "10px", filter: "drop-shadow(0 4px 10px rgba(22, 101, 52, 0.25))" }}
+            />
+            <p style={{ fontSize: "18px", fontWeight: "800", color: "#166534", margin: 0, letterSpacing: "0.5px", lineHeight: 1.3 }}>
+              GTP EMPLOYEES ASSOCIATION<br />(GTPEA)
+            </p>
+          </div>
+          {card}
+        </div>
+      )}
     </div>
   );
 }
