@@ -94,11 +94,18 @@ export async function deleteEmployeeAccount(
   await (admin.from("ledger_entries") as any).delete().eq("employee_id", employeeId);
   await (admin.from("transactions") as any).delete().eq("employee_id", employeeId);
   await (admin.from("dividends") as any).delete().eq("employee_id", employeeId);
-  await (admin.from("impersonation_sessions") as any).delete().eq("target_employee_id", employeeId);
+
+  // Other employees may point to this person as their guarantor approver —
+  // clear those references or the employees delete violates the FK.
+  await (admin.from("employees") as any)
+    .update({ guarantor_approved_by: null })
+    .eq("guarantor_approved_by", employeeId);
+  await (admin.from("employees") as any)
+    .update({ blacklisted_by: null })
+    .eq("blacklisted_by", employeeId);
 
   if (profile?.user_id) {
     await (admin.from("notifications") as any).delete().eq("user_id", profile.user_id);
-    await (admin.from("impersonation_sessions") as any).delete().eq("target_user_id", profile.user_id);
     await (admin.from("profiles") as any).delete().eq("user_id", profile.user_id);
     // Deleting the auth user cascades to otp_codes, sessions,
     // push_subscriptions, and profiles (FK ON DELETE CASCADE).

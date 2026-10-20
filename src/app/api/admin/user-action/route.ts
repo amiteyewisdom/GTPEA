@@ -141,7 +141,6 @@ export async function POST(request: Request) {
             }
           } else {
             // Pure admin account with no employee record
-            await (admin.from("impersonation_sessions") as any).delete().eq("target_user_id", userId);
             await admin.from("profiles").delete().eq("user_id", userId);
             await admin.auth.admin.deleteUser(userId);
             await (admin.from("audit_logs") as any).insert({
