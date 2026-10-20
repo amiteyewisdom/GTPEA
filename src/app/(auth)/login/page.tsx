@@ -83,29 +83,11 @@ export default function LoginPage() {
       height: "100dvh",
       position: "relative",
       overflow: "hidden",
-      background: "linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 45%, #DCFCE7 100%)",
+      backgroundImage: "url('/images/landing-bg.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
     }}>
-      {/* decorative swooshes echoing the brand artwork */}
-      <div style={{
-        position: "absolute",
-        right: "-15%",
-        bottom: "-30%",
-        width: "70%",
-        height: "80%",
-        background: "radial-gradient(ellipse at center, rgba(34, 197, 94, 0.18) 0%, transparent 60%)",
-        transform: "rotate(-12deg)",
-        pointerEvents: "none",
-      }} />
-      <div style={{
-        position: "absolute",
-        left: "-10%",
-        bottom: "-25%",
-        width: "60%",
-        height: "60%",
-        background: "radial-gradient(ellipse at center, rgba(201, 164, 76, 0.12) 0%, transparent 60%)",
-        transform: "rotate(8deg)",
-        pointerEvents: "none",
-      }} />
 
       {isDesktop && (
         <>
@@ -210,24 +192,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Coin-stacks artwork bottom-right of hero */}
-            <img
-              src="/images/growth-coins.jpg"
-              alt=""
-              aria-hidden
-              style={{
-                position: "absolute",
-                right: "-6%",
-                bottom: 0,
-                width: "62%",
-                maxWidth: "560px",
-                borderRadius: "24px 0 0 0",
-                opacity: 0.95,
-                pointerEvents: "none",
-                maskImage: "linear-gradient(to right, transparent 0%, black 18%)",
-                WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 18%)",
-              }}
-            />
           </div>
         </>
       )}
