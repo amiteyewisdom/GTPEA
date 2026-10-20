@@ -33,11 +33,12 @@ export async function POST(request: Request) {
 
     console.log('[/api/auth/login] Looking up employee with:', loginId);
 
-    // Try to find in employees table
+    // Try to find in employees table — ilike keeps "P0770" and "0770" as
+    // distinct accounts while still accepting lowercase input ("p0770").
     const employeeResult = await admin
       .from("employees")
       .select("id, employee_no, phone_number, password_changed_at, email")
-      .eq("employee_no", loginId)
+      .ilike("employee_no", loginId)
       .single();
 
     employee = employeeResult.data;
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
       const { data: profile, error: profileError } = await admin
         .from("profiles")
         .select("user_id, employee_id, phone, role, full_name")
-        .eq("employee_id", loginId)
+        .ilike("employee_id", loginId)
         .single();
 
       if (profileError || !profile) {
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
       const { data: adminEmployee, error: adminEmployeeError } = await admin
         .from("employees")
         .select("id, employee_no, phone_number, password_changed_at, email")
-        .eq("employee_no", loginId)
+        .ilike("employee_no", loginId)
         .single();
 
       if (adminEmployeeError || !adminEmployee) {

@@ -12,6 +12,7 @@ export default function ChangePasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneLocked, setPhoneLocked] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,6 +29,21 @@ export default function ChangePasswordPage() {
       }
     };
     checkTestUser();
+
+    // Prefill the phone number if one is already attached to the account
+    const loadPhone = async () => {
+      try {
+        const res = await fetch("/api/otp/phone");
+        const data = await res.json();
+        if (res.ok && data.phone) {
+          setPhoneNumber(data.phone);
+          setPhoneLocked(true);
+        }
+      } catch {
+        // no stored phone — leave the field editable
+      }
+    };
+    loadPhone();
 
     const checkScreenSize = () => {
       setIsDesktop(window.innerWidth >= 1024);
@@ -488,6 +504,7 @@ export default function ChangePasswordPage() {
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   placeholder="024XXXXXXXX"
                   required
+                  readOnly={phoneLocked}
                   autoComplete="tel"
                   style={{
                     width: "100%",
@@ -499,9 +516,12 @@ export default function ChangePasswordPage() {
                     color: isDesktop ? "#0F172A" : "#FFFFFF",
                     fontSize: isDesktop ? "15px" : "14px",
                     backgroundColor: isDesktop ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.25)",
+                    opacity: phoneLocked ? 0.75 : 1,
+                    cursor: phoneLocked ? "not-allowed" : "text",
                     transition: "border-color 0.2s, box-shadow 0.2s",
                   }}
                   onFocus={(e) => {
+                    if (phoneLocked) return;
                     e.currentTarget.style.borderColor = "#C9A44C";
                     e.currentTarget.style.boxShadow = "0 0 0 3px rgba(201, 164, 76, 0.1)";
                   }}
@@ -517,7 +537,9 @@ export default function ChangePasswordPage() {
                 margin: "6px 0 0 0",
                 textShadow: isDesktop ? "0 1px 2px rgba(0, 0, 0, 0.3)" : "0 1px 2px rgba(0, 0, 0, 0.5)",
               }}>
-                Enter your mobile number for OTP verification
+                {phoneLocked
+                  ? "This is the registered number on your account — the OTP code will be sent here. Contact your administrator if it is wrong."
+                  : "Enter your mobile number for OTP verification"}
               </p>
             </div>
 
