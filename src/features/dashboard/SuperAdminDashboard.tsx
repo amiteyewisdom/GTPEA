@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import GlassCard from '@/components/ui/GlassCard';
 import { toast } from 'sonner';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
@@ -51,24 +52,6 @@ import {
   Pie,
   Cell
 } from 'recharts';
-
-function ConfigItem({ icon: Icon, title, description, status }: any) {
-  return (
-    <div className="p-4 rounded-lg bg-brand-hover hover:bg-brand-hover/80 transition-all cursor-pointer">
-      <div className="flex items-start gap-3 mb-2">
-        <Icon className="w-5 h-5 text-brand-accent flex-shrink-0 mt-0.5" />
-        <div className="flex-1">
-          <h4 className="text-brand-text text-sm font-medium">{title}</h4>
-          <p className="text-brand-text-secondary text-xs mt-1">{description}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-brand-green" />
-        <span className="text-brand-text-secondary text-xs">{status}</span>
-      </div>
-    </div>
-  );
-}
 
 function UserActionsDropdown({ userId, currentRole }: { userId: string; currentRole: string }) {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -442,12 +425,15 @@ function FinancialDataModal({ onClose }: { onClose: () => void }) {
 
       if (response.ok) {
         const data = await response.json();
-        alert(`Import completed: ${data.message}`);
+        toast.success(`Import completed: ${data.message}`);
         setFile(null);
+      } else {
+        const payload = await response.json().catch(() => null);
+        toast.error(payload?.error || 'Import failed. Please try again.');
       }
     } catch (error) {
       console.error('Failed to import:', error);
-      alert('Import failed. Please try again.');
+      toast.error('Import failed. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -470,10 +456,13 @@ function FinancialDataModal({ onClose }: { onClose: () => void }) {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+      } else {
+        const payload = await response.json().catch(() => null);
+        toast.error(payload?.error || 'Export failed. Please try again.');
       }
     } catch (error) {
       console.error('Failed to export:', error);
-      alert('Export failed. Please try again.');
+      toast.error('Export failed. Please try again.');
     }
   };
 
@@ -928,10 +917,13 @@ export default function SuperAdminDashboard({ stats }: { stats: DashboardStats }
               <Upload className="w-4 h-4" />
               Import Employees
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-brand-green text-white rounded-lg text-sm font-medium hover:bg-brand-green/90 transition-all">
+            <Link
+              href="/employees"
+              className="flex items-center gap-2 px-4 py-2 bg-brand-green text-white rounded-lg text-sm font-medium hover:bg-brand-green/90 transition-all"
+            >
               <UserPlus className="w-4 h-4" />
               Add User
-            </button>
+            </Link>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -1004,55 +996,6 @@ export default function SuperAdminDashboard({ stats }: { stats: DashboardStats }
           <Shield className="w-5 h-5 text-brand-accent" />
         </div>
         <BoardMembersTable />
-      </GlassCard>
-
-      {/* Section 8: System Configuration (Super Admin Only) */}
-      <GlassCard className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-semibold text-brand-text">System Configuration</h3>
-            <p className="text-brand-text-secondary text-sm">Platform settings and controls</p>
-          </div>
-          <Settings className="w-5 h-5 text-brand-accent" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <ConfigItem
-            icon={Shield}
-            title="Security Settings"
-            description="Password policies, 2FA, session limits"
-            status="Configured"
-          />
-          <ConfigItem
-            icon={Database}
-            title="Database Settings"
-            description="Backup schedules, retention policies"
-            status="Active"
-          />
-          <ConfigItem
-            icon={Key}
-            title="API Keys"
-            description="External service integrations"
-            status="Secure"
-          />
-          <ConfigItem
-            icon={Lock}
-            title="Access Control"
-            description="Role permissions, IP restrictions"
-            status="Enforced"
-          />
-          <ConfigItem
-            icon={AlertTriangle}
-            title="Alert Thresholds"
-            description="System monitoring and notifications"
-            status="Configured"
-          />
-          <ConfigItem
-            icon={Activity}
-            title="Audit Logging"
-            description="Activity tracking and compliance"
-            status="Enabled"
-          />
-        </div>
       </GlassCard>
 
       {/* Section 8: Emergency Controls (Super Admin Only) */}
@@ -1184,9 +1127,12 @@ function ApprovalRow({ type, requester, amount, status, time }: any) {
       </td>
       <td className="py-3 px-4 text-brand-text-secondary text-sm">{time}</td>
       <td className="py-3 px-4">
-        <button className="px-3 py-1.5 bg-brand-green/10 text-brand-green rounded-lg text-xs font-medium hover:bg-brand-green/20 transition-all">
+        <Link
+          href="/approvals"
+          className="inline-block px-3 py-1.5 bg-brand-green/10 text-brand-green rounded-lg text-xs font-medium hover:bg-brand-green/20 transition-all"
+        >
           Review
-        </button>
+        </Link>
       </td>
     </tr>
   );

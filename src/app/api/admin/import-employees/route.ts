@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parseCsv } from "@/lib/csv";
 
 export async function POST(request: Request) {
   try {
@@ -39,15 +40,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse CSV file
-    const text = await file.text();
-    const lines = text.split('\n').slice(1); // Skip header
-    const employees = lines
-      .filter(line => line.trim())
-      .map(line => {
-        const [employee_no, email, phone_number, first_name, last_name] = line.split(',').map(s => s.trim());
-        return { employee_no, email, phone_number, first_name, last_name };
-      });
+    // Parse CSV file — header-driven so quoted values and column order from
+    // exports/templates both work.
+    const rows = parseCsv(await file.text());
+    const employees = rows.map((r) => ({
+      employee_no: r["employee no"] || r["employee_no"] || r["staffid"] || r["staff id"],
+      email: r["email"],
+      phone_number: r["phone number"] || r["phone_number"] || r["phone"] || r["contact"],
+      first_name: r["first name"] || r["first_name"],
+      last_name: r["last name"] || r["last_name"],
+    })).filter((e) => e.employee_no);
 
     // Insert into pending_employees table
     const { error: insertError } = await admin

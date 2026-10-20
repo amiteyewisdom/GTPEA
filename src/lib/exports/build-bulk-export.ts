@@ -1,4 +1,5 @@
 import { buildReportCsv } from "@/lib/reports/build-report";
+import { fetchAllPages } from "@/lib/supabase/fetch-all";
 import type { AppSupabase } from "@/lib/supabase/types";
 
 export type ExportSheet = "Savings" | "Loans" | "Dividends" | "Withdrawals";
@@ -37,7 +38,7 @@ export async function buildBulkExport(
 }
 
 async function buildDividendsExport(supabase: AppSupabase) {
-  const { data } = await supabase
+  const { data, error } = await fetchAllPages(() => supabase
     .from("dividends")
     .select(`
       fiscal_year,
@@ -49,7 +50,9 @@ async function buildDividendsExport(supabase: AppSupabase) {
       employees (employee_no, first_name, last_name)
     `)
     .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
-    .order("fiscal_year", { ascending: false });
+    .order("fiscal_year", { ascending: false }) as any);
+
+  if (error) throw new Error(`Dividends export query failed: ${error.message}`);
 
   const headers = [
     "Employee No",
@@ -62,7 +65,9 @@ async function buildDividendsExport(supabase: AppSupabase) {
     "Reference",
   ];
 
-  const rows = (data ?? []).map((row: any) => {
+  const rows = (data ?? [])
+    .filter((row: any) => !["ADMIN001", "ADMIN002"].includes(row.employees?.employee_no))
+    .map((row: any) => {
     const employee = row.employees;
     const name = employee ? `${employee.first_name} ${employee.last_name}` : "";
     return [
@@ -82,7 +87,7 @@ async function buildDividendsExport(supabase: AppSupabase) {
 }
 
 async function buildWithdrawalsExport(supabase: AppSupabase) {
-  const { data } = await supabase
+  const { data, error } = await fetchAllPages(() => supabase
     .from("withdrawal_requests")
     .select(`
       request_ref,
@@ -95,7 +100,9 @@ async function buildWithdrawalsExport(supabase: AppSupabase) {
       savings (account_number, type)
     `)
     .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
-    .order("requested_at", { ascending: false });
+    .order("requested_at", { ascending: false }) as any);
+
+  if (error) throw new Error(`Withdrawals export query failed: ${error.message}`);
 
   const headers = [
     "Reference",
@@ -110,7 +117,9 @@ async function buildWithdrawalsExport(supabase: AppSupabase) {
     "Disbursement Date",
   ];
 
-  const rows = (data ?? []).map((row: any) => {
+  const rows = (data ?? [])
+    .filter((row: any) => !["ADMIN001", "ADMIN002"].includes(row.employees?.employee_no))
+    .map((row: any) => {
     const employee = row.employees;
     const name = employee ? `${employee.first_name} ${employee.last_name}` : "";
     return [

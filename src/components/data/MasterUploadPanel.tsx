@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import GlassCard from "@/components/ui/GlassCard";
 import { AlertCircle, CheckCircle, Upload, FileSpreadsheet, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 type MasterUploadResult = {
   employees: { imported: number; skipped: number; errors: string[] };
@@ -248,7 +249,7 @@ export default function MasterUploadPanel({ onComplete }: { onComplete?: () => v
                 onClick={() => {
                   const allErrors = Object.values(result.results).flatMap(r => r.errors);
                   navigator.clipboard.writeText(allErrors.join('\n'));
-                  alert('Errors copied to clipboard!');
+                  toast.success('Errors copied to clipboard');
                 }}
                 className="flex-1 rounded-lg bg-brand-accent px-4 py-2 font-medium text-brand-primary transition-all hover:bg-brand-accent/80"
               >

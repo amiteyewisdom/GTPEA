@@ -11,6 +11,7 @@ alter table public.system_settings enable row level security;
 
 -- Anyone (including unauthenticated callers, e.g. the login route and proxy)
 -- may read the flags. Only the service role can write — no write policies.
+drop policy if exists "system_settings_read_all" on public.system_settings;
 create policy "system_settings_read_all"
   on public.system_settings for select
   using (true);

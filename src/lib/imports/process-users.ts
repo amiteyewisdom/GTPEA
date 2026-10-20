@@ -137,15 +137,20 @@ export async function importUsers(fileText: string): Promise<UserImportResult> {
       continue;
     }
 
-    const { error: profileError } = await (adminClient.from("profiles") as any).insert({
-      user_id: authUser.user.id,
-      full_name: `${firstName} ${lastName}`,
-      role,
-      phone,
-      employee_id: employeeId,
-      is_active: isActive,
-      must_change_password: true,
-    });
+    // The handle_new_user trigger already creates a profile row when the auth
+    // user is created — upsert rather than insert or every import rolls back.
+    const { error: profileError } = await (adminClient.from("profiles") as any).upsert(
+      {
+        user_id: authUser.user.id,
+        full_name: `${firstName} ${lastName}`,
+        role,
+        phone,
+        employee_id: employeeId,
+        is_active: isActive,
+        must_change_password: true,
+      },
+      { onConflict: "user_id" }
+    );
 
     if (profileError) {
       // Roll back auth user creation on profile failure

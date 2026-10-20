@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { memberAccountCode } from "@/lib/reports/gl-accounts";
+import { parseCsv } from "@/lib/csv";
 
 export async function POST(request: Request) {
   try {
@@ -40,15 +41,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse CSV file
-    const text = await file.text();
-    const lines = text.split('\n').slice(1); // Skip header
-    const loanRecords = lines
-      .filter(line => line.trim())
-      .map(line => {
-        const [employee_no, loan_ref, amount_requested, amount_approved, interest_rate, term_months, purpose, status] = line.split(',').map(s => s.trim());
-        return { employee_no, loan_ref, amount_requested, amount_approved, interest_rate, term_months, purpose, status };
-      });
+    // Parse CSV file — header-driven so quoted values and export column order
+    // both work.
+    const loanRecords = parseCsv(await file.text()).map((r) => ({
+      employee_no: r["employee no"] || r["employee_no"] || r["staffid"] || r["staff id"],
+      loan_ref: r["loan ref"] || r["loan_ref"] || r["reference"],
+      amount_requested: (r["amount requested"] || r["amount_requested"] || "").replace(/,/g, ""),
+      amount_approved: (r["amount approved"] || r["amount_approved"] || "").replace(/,/g, ""),
+      interest_rate: r["interest rate"] || r["interest_rate"],
+      term_months: r["term months"] || r["term (months)"] || r["term_months"],
+      purpose: r["purpose"],
+      status: r["status"],
+    })).filter((r) => r.employee_no && r.loan_ref);
 
     let successCount = 0;
     let errorCount = 0;

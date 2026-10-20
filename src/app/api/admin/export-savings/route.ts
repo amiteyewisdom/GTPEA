@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildCsv } from "@/lib/csv";
+import { fetchAllPages } from "@/lib/supabase/fetch-all";
 
 export async function GET() {
   try {
@@ -30,7 +32,7 @@ export async function GET() {
     }
 
     // Fetch all savings with employee information, excluding test admin users
-    const { data: savings, error: savingsError } = await admin
+    const { data: savings, error: savingsError } = await fetchAllPages(() => admin
       .from("savings")
       .select(`
         *,
@@ -42,7 +44,7 @@ export async function GET() {
         )
       `)
       .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as any);
 
     if (savingsError) {
       console.error("[/api/admin/export-savings] Fetch error:", savingsError);
@@ -52,9 +54,14 @@ export async function GET() {
       );
     }
 
+    // Embed-level .not() only blanks the joined row — filter parents in JS.
+    const filteredSavings = (savings ?? []).filter(
+      (s: any) => !["ADMIN001", "ADMIN002"].includes(s.employees?.employee_no)
+    );
+
     // Convert to CSV
     const headers = ["Employee No", "First Name", "Last Name", "Email", "Type", "Balance", "Monthly Contribution", "Interest Rate", "Account Number", "Status", "Created At"];
-    const csvRows = savings?.map((s: any) => [
+    const csvRows = filteredSavings.map((s: any) => [
       s.employees?.employee_no || '',
       s.employees?.first_name || '',
       s.employees?.last_name || '',
@@ -66,12 +73,9 @@ export async function GET() {
       s.account_number || '',
       s.status || '',
       s.created_at || ''
-    ]) || [];
+    ]);
 
-    const csvContent = [
-      headers.join(','),
-      ...csvRows.map((row: any[]) => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
+    const csvContent = buildCsv(headers, csvRows);
 
     return new NextResponse(csvContent, {
       headers: {

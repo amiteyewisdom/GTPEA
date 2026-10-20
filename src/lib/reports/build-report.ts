@@ -1,4 +1,5 @@
 import { buildCsv } from "@/lib/csv";
+import { fetchAllPages } from "@/lib/supabase/fetch-all";
 import type { AppSupabase } from "@/lib/supabase/types";
 import {
   GL,
@@ -83,7 +84,7 @@ export async function buildReportCsv(supabase: AppSupabase, type: ReportType, op
 
 async function buildSavingsReport(supabase: AppSupabase) {
   const data = must(
-    await supabase
+    await fetchAllPages(() => supabase
       .from("savings")
       .select(`
       account_number,
@@ -95,7 +96,7 @@ async function buildSavingsReport(supabase: AppSupabase) {
       employees (employee_no, first_name, last_name, department)
     `)
       .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
-      .order("opened_at", { ascending: false }),
+      .order("opened_at", { ascending: false }) as any),
     "Savings"
   );
 
@@ -112,7 +113,9 @@ async function buildSavingsReport(supabase: AppSupabase) {
     "Opened At",
   ];
 
-  const rows = data.map((row: any) => {
+  const rows = (data ?? [])
+    .filter((row: any) => !["ADMIN001", "ADMIN002"].includes(row.employees?.employee_no))
+    .map((row: any) => {
     const employee = row.employees;
     const name = employee ? `${employee.first_name} ${employee.last_name}` : "";
     return [
@@ -133,7 +136,7 @@ async function buildSavingsReport(supabase: AppSupabase) {
 }
 
 async function buildLoansReport(supabase: AppSupabase) {
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllPages(() => supabase
     .from("loans")
     .select(`
       loan_ref,
@@ -148,11 +151,11 @@ async function buildLoansReport(supabase: AppSupabase) {
       purpose,
       disbursement_date,
       created_at,
-      employees (employee_no, first_name, last_name),
+      employees!loans_employee_id_fkey (employee_no, first_name, last_name),
       loan_products (name)
     `)
     .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false }) as any);
 
   if (error) throw new Error(`Loans report query failed: ${error.message}`);
 
@@ -174,7 +177,9 @@ async function buildLoansReport(supabase: AppSupabase) {
     "Created At",
   ];
 
-  const rows = (data ?? []).map((row: any) => {
+  const rows = (data ?? [])
+    .filter((row: any) => !["ADMIN001", "ADMIN002"].includes(row.employees?.employee_no))
+    .map((row: any) => {
     const employee = row.employees;
     const name = employee ? `${employee.first_name} ${employee.last_name}` : "";
     return [
@@ -200,7 +205,7 @@ async function buildLoansReport(supabase: AppSupabase) {
 }
 
 async function buildRepaymentsReport(supabase: AppSupabase) {
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllPages(() => supabase
     .from("repayments")
     .select(`
       installment_no,
@@ -213,7 +218,7 @@ async function buildRepaymentsReport(supabase: AppSupabase) {
       employees (employee_no, first_name, last_name)
     `)
     .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
-    .order("due_date", { ascending: true });
+    .order("due_date", { ascending: true }) as any);
 
   if (error) throw new Error(`Repayments report query failed: ${error.message}`);
 
@@ -229,7 +234,9 @@ async function buildRepaymentsReport(supabase: AppSupabase) {
     "Status",
   ];
 
-  const rows = (data ?? []).map((row: any) => {
+  const rows = (data ?? [])
+    .filter((row: any) => !["ADMIN001", "ADMIN002"].includes(row.employees?.employee_no))
+    .map((row: any) => {
     const employee = row.employees;
     const name = employee ? `${employee.first_name} ${employee.last_name}` : "";
     return [
@@ -249,11 +256,11 @@ async function buildRepaymentsReport(supabase: AppSupabase) {
 }
 
 async function buildEmployeesReport(supabase: AppSupabase) {
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllPages(() => supabase
     .from("employees")
     .select("employee_no, first_name, last_name, email, phone, department, position, status, date_joined, salary")
     .not("employee_no", "in", "(ADMIN001,ADMIN002)")
-    .order("employee_no", { ascending: true });
+    .order("employee_no", { ascending: true }) as any);
 
   if (error) throw new Error(`Employees report query failed: ${error.message}`);
 
@@ -287,7 +294,7 @@ async function buildEmployeesReport(supabase: AppSupabase) {
 }
 
 async function buildDefaultsReport(supabase: AppSupabase) {
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllPages(() => supabase
     .from("loans")
     .select(`
       loan_ref,
@@ -299,17 +306,18 @@ async function buildDefaultsReport(supabase: AppSupabase) {
       term_months,
       status,
       disbursement_date,
-      employees (employee_no, first_name, last_name, department)
+      employees!loans_employee_id_fkey (employee_no, first_name, last_name, department)
     `)
     .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
-    .order("outstanding_balance", { ascending: false });
+    .order("outstanding_balance", { ascending: false }) as any);
 
   if (error) throw new Error(`Defaults report query failed: ${error.message}`);
 
   // Filter in JS — the deployed loan_status enum may not include
   // 'disbursed'/'repaying', which would make a DB-level .in() error out.
   const atRisk = (data ?? []).filter((l: any) =>
-    ["defaulted", "active", "approved", "disbursed", "repaying"].includes(l.status)
+    ["defaulted", "active", "approved", "disbursed", "repaying"].includes(l.status) &&
+    !["ADMIN001", "ADMIN002"].includes(l.employees?.employee_no)
   );
 
   const headers = [
@@ -355,7 +363,7 @@ async function buildDefaultsReport(supabase: AppSupabase) {
 }
 
 async function buildApprovalsReport(supabase: AppSupabase) {
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllPages(() => supabase
     .from("approvals")
     .select(`
       entity_type,
@@ -374,7 +382,7 @@ async function buildApprovalsReport(supabase: AppSupabase) {
         actioned_by
       )
     `)
-    .order("submitted_at", { ascending: false });
+    .order("submitted_at", { ascending: false }) as any);
 
   if (error) throw new Error(`Approvals report query failed: ${error.message}`);
 
@@ -443,18 +451,18 @@ async function buildProfitLossReport(supabase: AppSupabase) {
   const [transactionsRes, repaymentsRes, expensesRes, dividendsRes, savingsRes] = await Promise.all([
     // No enum filter — the deployed transaction_type enum differs from schema.sql;
     // filter the income types in JS so this works either way.
-    supabase
+    fetchAllPages(() => supabase
       .from("transactions")
       .select("type, amount, created_at")
-      .gte("created_at", yearStart),
-    supabase
+      .gte("created_at", yearStart) as any),
+    fetchAllPages(() => supabase
       .from("repayments")
       .select("interest_component, paid_date, status")
       .eq("status", "paid")
-      .gte("paid_date", yearStart),
-    supabase.from("expenses").select("title, category, amount, expense_date").gte("expense_date", yearStart.slice(0, 10)),
-    supabase.from("dividends").select("dividend_amount, fiscal_year").eq("fiscal_year", year),
-    supabase.from("savings").select("balance").eq("status", "active"),
+      .gte("paid_date", yearStart) as any),
+    fetchAllPages(() => supabase.from("expenses").select("title, category, amount, expense_date").gte("expense_date", yearStart.slice(0, 10)) as any),
+    fetchAllPages(() => supabase.from("dividends").select("dividend_amount, fiscal_year").eq("fiscal_year", year) as any),
+    fetchAllPages(() => supabase.from("savings").select("balance").eq("status", "active") as any),
   ]);
 
   for (const [res, label] of [
@@ -527,14 +535,14 @@ async function buildProfitLossReport(supabase: AppSupabase) {
 
 async function buildBalanceSheetReport(supabase: AppSupabase) {
   const [savingsRes, loansRes, dividendsRes, repaymentsRes, transactionsRes, expensesRes] = await Promise.all([
-    supabase.from("savings").select("balance, account_number, status").eq("status", "active"),
-    supabase
+    fetchAllPages(() => supabase.from("savings").select("balance, account_number, status").eq("status", "active") as any),
+    fetchAllPages(() => supabase
       .from("loans")
-      .select("outstanding_balance, status, loan_products(name, account_code)"),
-    supabase.from("dividends").select("dividend_amount, credited_at"),
-    supabase.from("repayments").select("interest_component").eq("status", "paid"),
-    supabase.from("transactions").select("type, amount"),
-    supabase.from("expenses").select("amount"),
+      .select("outstanding_balance, status, loan_products(name, account_code)") as any),
+    fetchAllPages(() => supabase.from("dividends").select("dividend_amount, credited_at") as any),
+    fetchAllPages(() => supabase.from("repayments").select("interest_component").eq("status", "paid") as any),
+    fetchAllPages(() => supabase.from("transactions").select("type, amount") as any),
+    fetchAllPages(() => supabase.from("expenses").select("amount") as any),
   ]);
 
   for (const [res, label] of [
@@ -626,14 +634,14 @@ async function buildBalanceSheetReport(supabase: AppSupabase) {
 
 async function buildTrialBalanceReport(supabase: AppSupabase) {
   const [savingsRes, loansRes, repaymentRes, dividendRes, transactionRes, expensesRes] = await Promise.all([
-    supabase.from("savings").select("balance, account_number").eq("status", "active"),
-    supabase
+    fetchAllPages(() => supabase.from("savings").select("balance, account_number").eq("status", "active") as any),
+    fetchAllPages(() => supabase
       .from("loans")
-      .select("outstanding_balance, status, loan_products(name, account_code)"),
-    supabase.from("repayments").select("interest_component").eq("status", "paid"),
-    supabase.from("dividends").select("dividend_amount").not("credited_at", "is", null),
-    supabase.from("transactions").select("type, amount"),
-    supabase.from("expenses").select("amount"),
+      .select("outstanding_balance, status, loan_products(name, account_code)") as any),
+    fetchAllPages(() => supabase.from("repayments").select("interest_component").eq("status", "paid") as any),
+    fetchAllPages(() => supabase.from("dividends").select("dividend_amount").not("credited_at", "is", null) as any),
+    fetchAllPages(() => supabase.from("transactions").select("type, amount") as any),
+    fetchAllPages(() => supabase.from("expenses").select("amount") as any),
   ]);
 
   for (const [res, label] of [
@@ -711,23 +719,25 @@ async function buildTrialBalanceReport(supabase: AppSupabase) {
 }
 
 async function buildBankPaymentReport(supabase: AppSupabase) {
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllPages(() => supabase
     .from("loans")
     .select(`
       loan_ref,
       amount_disbursed,
       disbursement_date,
       status,
-      employees (employee_no, first_name, last_name, bank_name, bank_account_no)
+      employees!loans_employee_id_fkey (employee_no, first_name, last_name, bank_name, bank_account_no)
     `)
     .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
-    .order("disbursement_date", { ascending: false });
+    .order("disbursement_date", { ascending: false }) as any);
 
   if (error) throw new Error(`Bank payment report query failed: ${error.message}`);
 
   // Filter in JS — the deployed loan_status enum may not include
   // 'disbursed'/'repaying', which would make a DB-level .in() error out.
-  const disbursedLoans = (data ?? []).filter((l: any) => isActiveLoanStatus(l.status));
+  const disbursedLoans = (data ?? []).filter((l: any) =>
+    isActiveLoanStatus(l.status) && !["ADMIN001", "ADMIN002"].includes(l.employees?.employee_no)
+  );
 
   const headers = [
     "Employee No",
@@ -763,12 +773,12 @@ async function buildPayrollReport(supabase: AppSupabase, options?: ReportOptions
   const month = options?.month ?? now.getMonth() + 1;
   const sortBy = options?.sortBy ?? "name";
 
-  const { data: employees, error: employeesError } = await supabase
+  const { data: employees, error: employeesError } = await fetchAllPages(() => supabase
     .from("employees")
     .select("id, employee_no, first_name, last_name, department, salary")
     .not("employee_no", "in", "(ADMIN001,ADMIN002)")
     .eq("status", "active")
-    .order("employee_no", { ascending: true });
+    .order("employee_no", { ascending: true }) as any);
 
   if (employeesError) throw new Error(`Employees query failed: ${employeesError.message}`);
 
@@ -778,18 +788,18 @@ async function buildPayrollReport(supabase: AppSupabase, options?: ReportOptions
   // loans created inside the selected month.
   const [savingsRes, loansRes] = await Promise.all([
     empIds.length > 0
-      ? supabase
+      ? fetchAllPages(() => supabase
           .from("savings_contributions")
           .select("employee_id, amount")
           .eq("period_year", year)
           .eq("period_month", month)
-          .in("employee_id", empIds)
+          .in("employee_id", empIds) as any)
       : Promise.resolve({ data: [], error: null }),
     empIds.length > 0
-      ? supabase
+      ? fetchAllPages(() => supabase
           .from("loans")
           .select("employee_id, monthly_repayment, outstanding_balance, status")
-          .in("employee_id", empIds)
+          .in("employee_id", empIds) as any)
       : Promise.resolve({ data: [], error: null }),
   ]);
 

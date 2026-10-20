@@ -4,6 +4,8 @@ import { logImportRun } from "@/lib/imports/log-import";
 import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from 'xlsx';
 import { GL, LOAN_PRODUCT_CODES, memberAccountCode } from "@/lib/reports/gl-accounts";
+import { normalizeDepartment } from "@/lib/imports/process-import";
+import { parseCsv } from "@/lib/csv";
 
 export async function POST(request: Request) {
   const { user, role } = await getStaffUser();
@@ -125,7 +127,6 @@ export async function POST(request: Request) {
     }
 
     // 5. Process Normal Loans
-    /*
     try {
       const normalLoansSheet = workbook.Sheets['Normal Loans New'];
       if (!normalLoansSheet) {
@@ -142,10 +143,8 @@ export async function POST(request: Request) {
       console.error('[Master] Normal Loans processing error:', error);
       results.normalLoans = { imported: 0, skipped: 0, errors: [`Normal Loans processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
     }
-    */
 
     // 6. Process Lands
-    /*
     try {
       const landsSheet = workbook.Sheets['Lands New'];
       if (!landsSheet) {
@@ -162,7 +161,6 @@ export async function POST(request: Request) {
       console.error('[Master] Lands processing error:', error);
       results.lands = { imported: 0, skipped: 0, errors: [`Lands processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`] };
     }
-    */
 
     // Log the import
     const totalImported = Object.values(results).reduce((sum, r) => sum + r.imported, 0);
@@ -215,7 +213,7 @@ async function processGTPEAEmployees(supabase: any, csv: string, userId: string)
 
         const staffId = (row["staffid"] || row["StaffID"])?.trim();
         const fullName = row["fullname"] || row["FullName"];
-        const department = row["department"] || row["Department"] || "operations";
+        const department = normalizeDepartment(row["department"] || row["Department"] || "operations");
         const staffAccountNumber = row["staffaccountnumber"] || row["StaffAccountNumber"];
         const phoneNumber = row["phonenumber"] || row["PhoneNumber"];
 
@@ -297,7 +295,7 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
     try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const staffSavingAccountNumber = row["staffsavingaccountnumber"] || row["StaffSavingAccountNumber"];
-      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const balance = parseFloat((row["balance"] || row["Balance"] || "0").replace(/,/g, ''));
       const reference = row["reference"] || row["Reference"];
 
       if (!staffId || !Number.isFinite(balance)) {
@@ -373,7 +371,7 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
     try {
       const staffId = (row["staffid"] || row["StaffID"])?.trim();
       const staffQuickCashAccountNumber = row["staffquickcashaccountnumber"] || row["StaffQuickCashAccountNumber"];
-      const balance = parseFloat(row["balance"] || row["Balance"] || "0");
+      const balance = parseFloat((row["balance"] || row["Balance"] || "0").replace(/,/g, ''));
       const reference = row["reference"] || row["Reference"];
 
       if (!staffId || !Number.isFinite(balance)) {
@@ -718,63 +716,4 @@ async function processGTPEALands(supabase: any, csv: string, userId: string) {
     console.log('[Lands] Sample errors:', errors.slice(0, 5));
   }
   return { imported, skipped, errors };
-}
-
-// CSV parsing helper
-function parseCsv(text: string): Record<string, string>[] {
-  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter((line) => line.trim());
-  if (lines.length < 2) return [];
-
-  const headers = parseCsvLine(lines[0]).map(normalizeHeader);
-  const rows: Record<string, string>[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCsvLine(lines[i]);
-    if (values.every((v) => !v.trim())) continue;
-
-    const row: Record<string, string> = {};
-    headers.forEach((header, index) => {
-      row[header] = values[index]?.trim() ?? "";
-    });
-    rows.push(row);
-  }
-
-  return rows;
-}
-
-function parseCsvLine(line: string): string[] {
-  const values: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const next = line[i + 1];
-
-    if (char === '"' && inQuotes && next === '"') {
-      current += '"';
-      i++;
-      continue;
-    }
-
-    if (char === '"') {
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (char === "," && !inQuotes) {
-      values.push(current);
-      current = "";
-      continue;
-    }
-
-    current += char;
-  }
-
-  values.push(current);
-  return values;
-}
-
-function normalizeHeader(header: string): string {
-  return header.trim().toLowerCase().replace(/\s+/g, " ");
 }

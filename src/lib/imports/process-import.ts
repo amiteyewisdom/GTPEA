@@ -8,7 +8,7 @@ const VALID_DEPARTMENTS = ["management", "finance", "operations", "hr", "it", "s
 
 type Department = (typeof VALID_DEPARTMENTS)[number];
 
-function normalizeDepartment(input: string): Department {
+export function normalizeDepartment(input: string): Department {
   const raw = input.trim().toLowerCase().replace(/[&\/_-]/g, " ");
 
   const aliases: Record<string, string[]> = {

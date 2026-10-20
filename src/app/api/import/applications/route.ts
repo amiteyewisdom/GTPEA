@@ -26,7 +26,22 @@ export async function POST(request: Request) {
     }
 
     const adminSupabase = createAdminClient();
-    const rows = parseCsv(await file.text());
+    // The export format has single-cell section banners ("LOAN APPLICATIONS",
+    // "WITHDRAWAL REQUESTS") before each header row — split into sections and
+    // parse each independently so exported files re-import cleanly.
+    const rawText = await file.text();
+    const chunks: string[] = [];
+    let current: string[] = [];
+    for (const line of rawText.replace(/\r\n?/g, "\n").split("\n")) {
+      if (line.trim() && !line.includes(",")) {
+        if (current.length) chunks.push(current.join("\n"));
+        current = [];
+        continue;
+      }
+      current.push(line);
+    }
+    if (current.length) chunks.push(current.join("\n"));
+    const rows = chunks.flatMap((chunk) => parseCsv(chunk));
     if (rows.length === 0) {
       return NextResponse.json({ error: "The CSV file has no data rows." }, { status: 400 });
     }

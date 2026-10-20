@@ -5,7 +5,10 @@ import { processImport, type ImportType } from "@/lib/imports/process-import";
 import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from 'xlsx';
 
-const IMPORT_TYPES = ["employees", "savings", "loans", "gtpea-employees", "gtpea-savings", "gtpea-quick-cash", "gtpea-hire-purchase", "gtpea-normal-loans", "gtpea-lands", "master_excel_upload"] as const;
+// Only the GTPEA-specific types are implemented by processImport — the
+// generic "employees"/"savings"/"loans"/"master_excel_upload" entries used to
+// be accepted and then silently wrote nothing.
+const IMPORT_TYPES = ["gtpea-employees", "gtpea-savings", "gtpea-quick-cash", "gtpea-hire-purchase", "gtpea-normal-loans", "gtpea-lands"] as const;
 
 export async function POST(request: Request) {
   const { user, role } = await getStaffUser();
@@ -34,15 +37,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid file type. Please upload a CSV or Excel file." }, { status: 400 });
     }
 
-    if (!IMPORT_TYPES.includes(type)) {
-      return NextResponse.json({ error: "Unknown import type." }, { status: 400 });
+    if (!(IMPORT_TYPES as readonly string[]).includes(type)) {
+      return NextResponse.json({ error: "Unknown or unsupported import type." }, { status: 400 });
     }
 
     const adminSupabase = createAdminClient();
     let text: string;
 
-    // Handle Excel files (.xlsx, .xls)
-    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+    // Handle Excel files (.xlsx, .xls) — match the lowercased extension so
+    // ".XLSX" isn't treated as text.
+    if (fileExtension === '.xlsx' || fileExtension === '.xls') {
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
       const sheetName = workbook.SheetNames[0];

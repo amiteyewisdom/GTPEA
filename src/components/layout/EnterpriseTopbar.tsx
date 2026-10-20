@@ -71,11 +71,40 @@ export default function EnterpriseTopbar({
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{ employees: any[]; loans: any[]; savings: any[] } | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const roleLabel = formatRoleLabel(userRole);
+  const isApprover = APPROVER_ROLES.includes(userRole);
+
+  // Debounced global search
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        setSearchResults(res.ok ? await res.json() : null);
+      } catch {
+        setSearchResults(null);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const hasResults = !!searchResults && (searchResults.employees.length + searchResults.loans.length + searchResults.savings.length > 0);
+
+  const goSearch = (href: string) => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults(null);
+    router.push(href);
+  };
   const userInitial = userName.charAt(0).toUpperCase() || "U";
 
   const loadNotifications = async () => {
@@ -101,6 +130,7 @@ export default function EnterpriseTopbar({
       if (!containerRef.current?.contains(event.target as Node)) {
         setShowUserMenu(false);
         setShowNotifications(false);
+        setSearchOpen(false);
       }
     }
 
@@ -152,9 +182,82 @@ export default function EnterpriseTopbar({
             type="search"
             placeholder="Search employees, loans, savings..."
             value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setSearchOpen(true);
+            }}
+            onFocus={() => setSearchOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setSearchOpen(false);
+            }}
             className="w-full rounded-brand border border-brand-card-border py-2.5 pl-12 pr-4 text-sm text-brand-text placeholder-brand-text-secondary focus:border-brand-green/50 focus:outline-none focus:ring-1 focus:ring-brand-green/50"
           />
+
+          {searchOpen && searchQuery.trim().length >= 2 && (
+            <div className="absolute left-0 right-0 top-full mt-2 max-h-96 overflow-y-auto rounded-brand-lg border border-brand-card-border bg-white shadow-xl">
+              {!hasResults ? (
+                <p className="px-4 py-6 text-center text-sm text-brand-text-secondary">
+                  No matches found.
+                </p>
+              ) : (
+                <>
+                  {searchResults!.employees.length > 0 && (
+                    <div>
+                      <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-brand-text-secondary">Employees</p>
+                      {searchResults!.employees.map((e) => (
+                        <button
+                          key={e.id}
+                          type="button"
+                          onClick={() => goSearch(isApprover ? `/employees` : `/savings-history`)}
+                          className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-brand-hover"
+                        >
+                          <span className="text-sm text-brand-text">{e.first_name} {e.last_name}</span>
+                          <span className="text-xs text-brand-text-secondary">{e.employee_no}{e.department ? ` · ${e.department}` : ""}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {searchResults!.loans.length > 0 && (
+                    <div>
+                      <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-brand-text-secondary">Loans</p>
+                      {searchResults!.loans.map((l) => (
+                        <button
+                          key={l.id}
+                          type="button"
+                          onClick={() => goSearch(isApprover ? `/loans` : `/my-loans`)}
+                          className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-brand-hover"
+                        >
+                          <span className="text-sm text-brand-text">{l.loan_ref}</span>
+                          <span className="text-xs text-brand-text-secondary">
+                            {l.employees ? `${l.employees.first_name} ${l.employees.last_name}` : l.status}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {searchResults!.savings.length > 0 && (
+                    <div>
+                      <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-brand-text-secondary">Savings Accounts</p>
+                      {searchResults!.savings.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => goSearch(isApprover ? `/savings` : `/savings-history`)}
+                          className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-brand-hover"
+                        >
+                          <span className="text-sm text-brand-text">{s.account_number}</span>
+                          <span className="text-xs text-brand-text-secondary">
+                            {s.employees ? `${s.employees.first_name} ${s.employees.last_name}` : s.type}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="h-2" />
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

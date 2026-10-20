@@ -6,6 +6,7 @@ import GlassCard from "@/components/ui/GlassCard";
 import DataImportPanel from "@/components/data/DataImportPanel";
 import MasterUploadPanel from "@/components/data/MasterUploadPanel";
 import { AlertCircle, CheckCircle, FileText, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import type { ImportHistoryItem } from "@/lib/imports/log-import";
 
 type DataImportsClientProps = {
@@ -45,7 +46,7 @@ export default function DataImportsClient({ initialHistory }: DataImportsClientP
       router.refresh();
     } catch (error) {
       console.error("Failed to clear history:", error);
-      alert(error instanceof Error ? error.message : "Failed to clear history");
+      toast.error(error instanceof Error ? error.message : "Failed to clear history");
     } finally {
       setClearing(false);
     }

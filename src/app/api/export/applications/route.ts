@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+import { fetchAllPages } from "@/lib/supabase/fetch-all";
+
+function csvCell(value: unknown): string {
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "all"; // all, loans, withdrawals
@@ -36,10 +43,11 @@ export async function GET(request: Request) {
   let filename = "";
 
   if (type === "all" || type === "loans") {
-    const { data: loans } = await supabase
+    const { data: loans } = await fetchAllPages(() => supabase
       .from("loans")
       .select(`
         loan_ref,
+        employee_id,
         amount_requested,
         amount_approved,
         amount_disbursed,
@@ -52,10 +60,10 @@ export async function GET(request: Request) {
         created_at,
         disbursement_date,
         expected_completion_date,
-        employees (first_name, last_name, employee_no),
+        employees!loans_employee_id_fkey (first_name, last_name, employee_no),
         loan_products (name)
       `)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as any);
 
     // Filter out admin loans if not super_admin
     const filteredLoans = (role !== "super_admin" && adminEmployeeIds.length > 0)
@@ -70,8 +78,14 @@ export async function GET(request: Request) {
         const employee = loan.employees ? `${loan.employees.first_name} ${loan.employees.last_name}` : "N/A";
         const employeeNo = loan.employees?.employee_no || "N/A";
         const product = loan.loan_products?.name || "N/A";
-        
-        csvContent += `${loan.loan_ref},"${employee}",${employeeNo},"${product}",${loan.amount_requested},${loan.amount_approved || 0},${loan.amount_disbursed || 0},${loan.outstanding_balance},${loan.interest_rate},${loan.term_months},${loan.monthly_repayment},${loan.status},"${loan.purpose || ''}",${loan.created_at},${loan.disbursement_date || ''},${loan.expected_completion_date || ''}\n`;
+
+        csvContent += [
+          loan.loan_ref, employee, employeeNo, product,
+          loan.amount_requested, loan.amount_approved || 0, loan.amount_disbursed || 0,
+          loan.outstanding_balance, loan.interest_rate, loan.term_months, loan.monthly_repayment,
+          loan.status, loan.purpose || '', loan.created_at, loan.disbursement_date || '',
+          loan.expected_completion_date || '',
+        ].map(csvCell).join(',') + "\n";
       }
       
       csvContent += "\n";
@@ -79,10 +93,11 @@ export async function GET(request: Request) {
   }
 
   if (type === "all" || type === "withdrawals") {
-    let withdrawalsQuery = supabase
+    const { data: withdrawals } = await fetchAllPages(() => supabase
       .from("withdrawal_requests")
       .select(`
         request_ref,
+        employee_id,
         amount,
         reason,
         status,
@@ -91,9 +106,7 @@ export async function GET(request: Request) {
         employees (first_name, last_name, employee_no),
         savings (account_number, type)
       `)
-      .order("requested_at", { ascending: false });
-
-    const { data: withdrawals } = await withdrawalsQuery;
+      .order("requested_at", { ascending: false }) as any);
 
     // Filter out admin withdrawals if not super_admin
     const filteredWithdrawals = (role !== "super_admin" && adminEmployeeIds.length > 0)
@@ -110,7 +123,11 @@ export async function GET(request: Request) {
         const accountNumber = withdrawal.savings?.account_number || "N/A";
         const accountType = withdrawal.savings?.type || "N/A";
         
-        csvContent += `${withdrawal.request_ref},"${employee}",${employeeNo},${accountNumber},"${accountType}",${withdrawal.amount},"${withdrawal.reason || ''}",${withdrawal.status},${withdrawal.requested_at},${withdrawal.disbursement_date || ''}\n`;
+        csvContent += [
+          withdrawal.request_ref, employee, employeeNo, accountNumber, accountType,
+          withdrawal.amount, withdrawal.reason || '', withdrawal.status,
+          withdrawal.requested_at, withdrawal.disbursement_date || '',
+        ].map(csvCell).join(',') + "\n";
       }
     }
   }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 export function useLogout() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export function useLogout() {
 
       if (error) {
         setIsLoggingOut(false);
-        window.alert("Could not log out. Please try again.");
+        toast.error("Could not log out. Please try again.");
         return;
       }
 
@@ -31,7 +32,7 @@ export function useLogout() {
       router.refresh();
     } catch {
       setIsLoggingOut(false);
-      window.alert("Could not log out. Please try again.");
+      toast.error("Could not log out. Please try again.");
     }
   }
 

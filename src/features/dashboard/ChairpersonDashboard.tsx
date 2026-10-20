@@ -28,6 +28,11 @@ import {
 } from 'recharts';
 
 export default function ChairpersonDashboard({ stats }: { stats: DashboardStats }) {
+  const [employeeSearch, setEmployeeSearch] = React.useState("");
+  const filteredSummaries = stats.employeeSummaries.filter((e: any) =>
+    !employeeSearch.trim() || e.name?.toLowerCase().includes(employeeSearch.trim().toLowerCase())
+  );
+
   const solvencyRatio = stats.totalSavings
     ? Math.round((stats.fundBalance / stats.totalSavings) * 100)
     : 0;
@@ -206,6 +211,8 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
               <input
                 type="text"
                 placeholder="Search employees..."
+                value={employeeSearch}
+                onChange={(e) => setEmployeeSearch(e.target.value)}
                 className="pl-10 pr-4 py-2 bg-brand-card-bg border border-brand-card-border rounded-lg text-brand-text placeholder-brand-text-secondary focus:outline-none focus:border-brand-accent text-sm"
               />
               <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-secondary" />
@@ -224,7 +231,7 @@ export default function ChairpersonDashboard({ stats }: { stats: DashboardStats 
               </tr>
             </thead>
             <tbody>
-              {stats.employeeSummaries.length > 0 ? stats.employeeSummaries.map((employee) => (
+              {filteredSummaries.length > 0 ? filteredSummaries.map((employee: any) => (
                 <EmployeeRow
                   key={employee.id}
                   name={employee.name}

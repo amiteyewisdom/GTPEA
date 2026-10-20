@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildCsv } from "@/lib/csv";
+import { fetchAllPages } from "@/lib/supabase/fetch-all";
 
 export async function GET() {
   try {
@@ -30,11 +32,11 @@ export async function GET() {
     }
 
     // Fetch all loans with employee information, excluding test admin users
-    const { data: loans, error: loansError } = await admin
+    const { data: loans, error: loansError } = await fetchAllPages(() => admin
       .from("loans")
       .select(`
         *,
-        employees (
+        employees!loans_employee_id_fkey (
           employee_no,
           first_name,
           last_name,
@@ -42,7 +44,7 @@ export async function GET() {
         )
       `)
       .not("employees.employee_no", "in", "(ADMIN001,ADMIN002)")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }) as any);
 
     if (loansError) {
       console.error("[/api/admin/export-loans] Fetch error:", loansError);
@@ -52,9 +54,14 @@ export async function GET() {
       );
     }
 
+    // Embed-level .not() only blanks the joined row — filter parents in JS.
+    const filteredLoans = (loans ?? []).filter(
+      (l: any) => !["ADMIN001", "ADMIN002"].includes(l.employees?.employee_no)
+    );
+
     // Convert to CSV
     const headers = ["Employee No", "First Name", "Last Name", "Email", "Loan Ref", "Amount Requested", "Amount Approved", "Interest Rate", "Term Months", "Purpose", "Status", "Created At"];
-    const csvRows = loans?.map((l: any) => [
+    const csvRows = filteredLoans.map((l: any) => [
       l.employees?.employee_no || '',
       l.employees?.first_name || '',
       l.employees?.last_name || '',
@@ -67,12 +74,9 @@ export async function GET() {
       l.purpose || '',
       l.status || '',
       l.created_at || ''
-    ]) || [];
+    ]);
 
-    const csvContent = [
-      headers.join(','),
-      ...csvRows.map((row: any[]) => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
+    const csvContent = buildCsv(headers, csvRows);
 
     return new NextResponse(csvContent, {
       headers: {
