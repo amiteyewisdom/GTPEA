@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { deleteEmployeeAccount } from "@/lib/api/delete-account";
 
 export async function POST(request: Request) {
   try {
@@ -121,14 +122,37 @@ export async function POST(request: Request) {
         });
 
       case "delete":
-        // Delete from profiles
-        await admin.from("profiles").delete().eq("user_id", userId);
-        
-        // Delete from employees (if exists)
-        await admin.from("employees").delete().eq("email", (await admin.auth.admin.getUserById(userId)).data.user?.email);
-        
-        // Delete from auth
-        await admin.auth.admin.deleteUser(userId);
+        {
+          const { data: targetAuth } = await admin.auth.admin.getUserById(userId);
+          const targetEmail = targetAuth.user?.email ?? null;
+
+          // If the account is linked to an employee, run the full cascade
+          // (financial records, approvals, profile, auth user, employee row).
+          const { data: linkedEmployee } = await (admin
+            .from("employees") as any)
+            .select("id")
+            .eq("email", targetEmail)
+            .maybeSingle();
+
+          if (linkedEmployee) {
+            const result = await deleteEmployeeAccount(admin, linkedEmployee.id, user.id);
+            if (result.error) {
+              return NextResponse.json({ error: result.error }, { status: result.status });
+            }
+          } else {
+            // Pure admin account with no employee record
+            await (admin.from("impersonation_sessions") as any).delete().eq("target_user_id", userId);
+            await admin.from("profiles").delete().eq("user_id", userId);
+            await admin.auth.admin.deleteUser(userId);
+            await (admin.from("audit_logs") as any).insert({
+              action: "USER_DELETED",
+              entity_type: "user",
+              entity_id: userId,
+              performed_by: user.id,
+              details: { email: targetEmail },
+            });
+          }
+        }
 
         return NextResponse.json({
           success: true,
