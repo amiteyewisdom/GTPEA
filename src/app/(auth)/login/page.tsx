@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -83,49 +83,66 @@ export default function LoginPage() {
       height: "100dvh",
       position: "relative",
       overflow: "hidden",
-      backgroundImage: "url('/images/landing-bg.jpg')",
+      backgroundImage: isDesktop ? "url('/images/landing-bg.jpg')" : "url('/images/landing-bg-mobile.jpg')",
       backgroundSize: "cover",
-      backgroundPosition: "center",
+      backgroundPosition: "center bottom",
       backgroundRepeat: "no-repeat",
     }}>
+
+      {!isDesktop && (
+        <>
+          {/* decorative green accents for the plain top area */}
+          <div style={{
+            position: "absolute",
+            top: "-60px",
+            left: "-60px",
+            width: "220px",
+            height: "220px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(22, 163, 74, 0.25) 0%, rgba(22, 163, 74, 0.08) 50%, transparent 70%)",
+            pointerEvents: "none",
+          }} />
+          <div style={{
+            position: "absolute",
+            top: "-40px",
+            right: "-50px",
+            width: "180px",
+            height: "180px",
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(201, 164, 76, 0.22) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }} />
+        </>
+      )}
 
       {isDesktop && (
         <>
           {/* Header lockup — logo + association name */}
           <div style={{
             position: "absolute",
-            top: "28px",
-            left: "48px",
+            top: "24px",
+            left: "40px",
             right: "48px",
             display: "flex",
             alignItems: "center",
-            gap: "20px",
+            gap: "24px",
             zIndex: 2,
           }}>
             <img
               src="/images/gtpea-logo.png"
               alt="GTPEA"
-              style={{ width: "84px", height: "84px", objectFit: "contain" }}
+              style={{ width: "190px", height: "190px", objectFit: "contain" }}
             />
-            <div style={{ borderLeft: "3px solid #16A34A", paddingLeft: "20px" }}>
+            <div style={{ borderLeft: "4px solid #166534", paddingLeft: "24px" }}>
               <p style={{
-                fontSize: "26px",
+                fontSize: "40px",
                 fontWeight: "800",
                 color: "#166534",
                 margin: 0,
                 letterSpacing: "0.5px",
-                lineHeight: 1.15,
+                lineHeight: 1.1,
               }}>
-                GTP EMPLOYEES ASSOCIATION
-              </p>
-              <p style={{
-                fontSize: "18px",
-                fontWeight: "700",
-                color: "#16A34A",
-                margin: "2px 0 0 0",
-                letterSpacing: "2px",
-              }}>
-                (GTPEA)
+                GTP EMPLOYEES<br />ASSOCIATION (GTPEA)
               </p>
             </div>
           </div>
@@ -142,13 +159,14 @@ export default function LoginPage() {
             flexDirection: "column",
             justifyContent: "center",
           }}>
-            <div style={{ maxWidth: "560px", marginTop: "60px" }}>
+            <div style={{ maxWidth: "680px", marginTop: "120px" }}>
               <h1 style={{
                 fontSize: "58px",
                 fontWeight: "800",
                 lineHeight: "1.1",
                 margin: "0 0 16px 0",
                 color: "#14532D",
+                whiteSpace: "nowrap",
               }}>
                 Grow Your Savings.<br />
                 <span style={{ color: "#84CC16" }}>Build Your Future.</span>
@@ -169,22 +187,37 @@ export default function LoginPage() {
                   { icon: CheckCircle, label: "SIMPLE", desc: "Easy access to your records" },
                   { icon: Zap, label: "SMART", desc: "Transparent loan management" },
                 ].map(({ icon: Icon, label, desc }) => (
-                  <div key={label} style={{ display: "flex", flexDirection: "column", gap: "8px", maxWidth: "160px" }}>
-                    <div style={{
-                      width: "44px",
-                      height: "44px",
-                      borderRadius: "12px",
-                      backgroundColor: "#DCFCE7",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
-                      <Icon style={{ width: "22px", height: "22px", color: "#16A34A" }} />
+                  <div key={label} style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    maxWidth: "180px",
+                    background: "rgba(255, 255, 255, 0.72)",
+                    backdropFilter: "blur(8px)",
+                    WebkitBackdropFilter: "blur(8px)",
+                    border: "1px solid rgba(255, 255, 255, 0.85)",
+                    borderRadius: "14px",
+                    padding: "14px 16px",
+                    boxShadow: "0 4px 16px rgba(22, 101, 52, 0.10)",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div style={{
+                        width: "34px",
+                        height: "34px",
+                        borderRadius: "10px",
+                        backgroundColor: "#16A34A",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}>
+                        <Icon style={{ width: "18px", height: "18px", color: "#FFFFFF" }} />
+                      </div>
+                      <p style={{ fontSize: "14px", fontWeight: "800", color: "#14532D", margin: 0, letterSpacing: "0.5px" }}>
+                        {label}
+                      </p>
                     </div>
-                    <p style={{ fontSize: "13px", fontWeight: "700", color: "#166534", margin: 0, letterSpacing: "0.5px" }}>
-                      {label}
-                    </p>
-                    <p style={{ fontSize: "12px", color: "#6B7280", margin: 0, lineHeight: 1.4 }}>
+                    <p style={{ fontSize: "13px", fontWeight: 500, color: "#374151", margin: 0, lineHeight: 1.4 }}>
                       {desc}
                     </p>
                   </div>
@@ -206,7 +239,7 @@ export default function LoginPage() {
         maxWidth: isDesktop ? "none" : "400px",
         margin: isDesktop ? "0" : "0 auto",
         zIndex: 2,
-        padding: isDesktop ? "0" : "16px",
+        padding: isDesktop ? "0" : "16px 16px 32px",
       }}>
         {!isDesktop && (
           <div style={{
@@ -214,31 +247,27 @@ export default function LoginPage() {
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-            padding: "20px 0 4px",
+            padding: "14px 0 12px",
+            marginBottom: "14px",
           }}>
             <img
               src="/images/gtpea-logo.png"
               alt="GTPEA"
-              style={{ width: "72px", height: "72px", objectFit: "contain", marginBottom: "8px" }}
+              style={{ width: "124px", height: "124px", objectFit: "contain", marginBottom: "10px", filter: "drop-shadow(0 4px 10px rgba(22, 101, 52, 0.25))" }}
             />
-            <p style={{ fontSize: "15px", fontWeight: "800", color: "#166534", margin: 0, letterSpacing: "0.5px" }}>
-              GTP EMPLOYEES ASSOCIATION (GTPEA)
-            </p>
-            <h1 style={{ fontSize: "30px", fontWeight: "800", color: "#14532D", margin: "12px 0 4px", lineHeight: 1.15 }}>
-              Grow Your Savings.<br />
-              <span style={{ color: "#84CC16" }}>Build Your Future.</span>
-            </h1>
-            <p style={{ fontSize: "13px", color: "#6B7280", margin: "0 0 8px" }}>
-              Securely manage your savings, loans and financial activities from one trusted platform.
+            <p style={{ fontSize: "18px", fontWeight: "800", color: "#166534", margin: 0, letterSpacing: "0.5px", lineHeight: 1.3 }}>
+              GTP EMPLOYEES ASSOCIATION<br />(GTPEA)
             </p>
           </div>
         )}
         <div style={{
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
+          background: "rgba(255, 255, 255, 0.45)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          border: "1px solid rgba(255, 255, 255, 0.6)",
           borderRadius: "20px",
-          padding: isDesktop ? "32px" : "20px",
-          boxShadow: "0 12px 40px rgba(22, 101, 52, 0.12), 0 2px 8px rgba(0, 0, 0, 0.05)",
+          padding: isDesktop ? "32px" : "16px",
+          boxShadow: "0 12px 40px rgba(22, 101, 52, 0.15)",
         }}>
           <div style={{
             display: "flex",
@@ -251,8 +280,8 @@ export default function LoginPage() {
                 src="/images/gtpea-logo.png"
                 alt="GTPEA"
                 style={{
-                  width: "72px",
-                  height: "72px",
+                  width: "112px",
+                  height: "112px",
                   objectFit: "contain",
                   marginBottom: "12px",
                 }}
@@ -322,7 +351,7 @@ export default function LoginPage() {
                     borderRadius: "8px",
                     color: "#111827",
                     fontSize: isDesktop ? "15px" : "14px",
-                    backgroundColor: "#F9FAFB",
+                    backgroundColor: "rgba(255, 255, 255, 0.75)",
                     transition: "border-color 0.2s, box-shadow 0.2s",
                   }}
                   onFocus={(e) => {
@@ -374,7 +403,7 @@ export default function LoginPage() {
                     borderRadius: "8px",
                     color: "#111827",
                     fontSize: isDesktop ? "15px" : "14px",
-                    backgroundColor: "#F9FAFB",
+                    backgroundColor: "rgba(255, 255, 255, 0.75)",
                     transition: "border-color 0.2s, box-shadow 0.2s",
                   }}
                   onFocus={(e) => {
@@ -468,9 +497,9 @@ export default function LoginPage() {
             marginTop: isDesktop ? "20px" : "16px",
             paddingTop: isDesktop ? "16px" : "12px",
             textAlign: "center",
-            borderTop: "1px solid #E5E7EB",
+            borderTop: "1px solid rgba(255, 255, 255, 0.5)",
           }}>
-            <p style={{ fontSize: "12px", color: "#9CA3AF", margin: 0 }}>
+            <p style={{ fontSize: "12px", color: "#374151", fontWeight: 600, margin: 0 }}>
               © {new Date().getFullYear()} GTP Employees Association
             </p>
           </div>
