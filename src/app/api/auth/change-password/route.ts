@@ -50,40 +50,55 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if phone number is already used by another employee
-    const { data: existingEmployee } = await admin
-      .from("employees")
-      .select("id, email")
-      .eq("phone_number", phoneNumber)
-      .neq("email", user.email)
+    // If the account already has a registered phone, it wins — the OTP must
+    // go to the number on record, not whatever was submitted. A locked form
+    // field is UI-only; enforcing it here closes an account-takeover path
+    // where an attacker swaps in their own number to receive the OTP.
+    let registeredPhone: string | null = null;
+    const { data: ownEmployee } = await (admin.from("employees") as any)
+      .select("phone, phone_number")
+      .eq("email", user.email)
       .maybeSingle();
+    registeredPhone = ownEmployee?.phone_number || ownEmployee?.phone || null;
+    const effectivePhone = registeredPhone || phoneNumber;
 
-    if (existingEmployee) {
-      return NextResponse.json(
-        { error: "This phone number is already registered to another account." },
-        { status: 400 }
-      );
-    }
+    // Check if phone number is already used by another employee (skipped when
+    // reusing the registered number — it already belongs to this account)
+    if (effectivePhone !== registeredPhone) {
+      const { data: existingEmployee } = await admin
+        .from("employees")
+        .select("id, email")
+        .eq("phone_number", effectivePhone)
+        .neq("email", user.email)
+        .maybeSingle();
 
-    // Check if phone number is already used in profiles
-    const { data: existingProfile } = await admin
-      .from("profiles")
-      .select("user_id")
-      .eq("phone", phoneNumber)
-      .neq("user_id", user.id)
-      .maybeSingle();
+      if (existingEmployee) {
+        return NextResponse.json(
+          { error: "This phone number is already registered to another account." },
+          { status: 400 }
+        );
+      }
 
-    if (existingProfile) {
-      return NextResponse.json(
-        { error: "This phone number is already registered to another account." },
-        { status: 400 }
-      );
+      // Check if phone number is already used in profiles
+      const { data: existingProfile } = await admin
+        .from("profiles")
+        .select("user_id")
+        .eq("phone", effectivePhone)
+        .neq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        return NextResponse.json(
+          { error: "This phone number is already registered to another account." },
+          { status: 400 }
+        );
+      }
     }
 
     // Update employee record with phone number and mark first login as complete
-    const updateData = { 
-      phone: phoneNumber,
-      phone_number: phoneNumber,
+    const updateData = {
+      phone: effectivePhone,
+      phone_number: effectivePhone,
       is_first_login: false,
       password_changed_at: new Date().toISOString()
     };
@@ -105,7 +120,7 @@ export async function POST(request: Request) {
     // to /change-password on every request after an admin account reset.
     const { error: profileError } = await admin
       .from("profiles")
-      .update({ phone: phoneNumber, must_change_password: false })
+      .update({ phone: effectivePhone, must_change_password: false, otp_verified_at: null })
       .eq("user_id", user.id);
 
     if (profileError) {
@@ -125,7 +140,7 @@ export async function POST(request: Request) {
         .from("otp_codes")
         .upsert({
           user_id: user.id,
-          phone_number: formatPhoneNumber(phoneNumber),
+          phone_number: formatPhoneNumber(effectivePhone),
           code: otp,
           expires_at: expiresAt.toISOString(),
           is_used: false,
@@ -153,7 +168,7 @@ export async function POST(request: Request) {
       }
 
       // Format phone number to international format (Ghana: +233)
-      let formattedPhone = formatPhoneNumber(phoneNumber);
+      let formattedPhone = formatPhoneNumber(effectivePhone);
       if (formattedPhone.startsWith("0")) {
         formattedPhone = "233" + formattedPhone.substring(1);
       } else if (!formattedPhone.startsWith("233")) {

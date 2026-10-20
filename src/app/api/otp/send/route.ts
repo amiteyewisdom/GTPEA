@@ -3,30 +3,87 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateOTP, getOTPExpiration, formatPhoneNumber } from "@/utils/otp";
 
+// Sends an OTP to the logged-in user's REGISTERED phone. The phone number and
+// user id are resolved server-side — trusting them from the request body let
+// anyone trigger SMS to arbitrary numbers or codes for arbitrary users.
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { phoneNumber, userId } = body;
+    const supabase = await createClient();
+    const admin = createAdminClient();
 
-    if (!phoneNumber || !userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Please sign in." }, { status: 401 });
+    }
+
+    // Resolve the registered phone server-side (employee -> profile fallback)
+    let phoneNumber: string | null = null;
+    if (user.email) {
+      const { data: emp } = await (admin.from("employees") as any)
+        .select("phone, phone_number")
+        .eq("email", user.email)
+        .maybeSingle();
+      phoneNumber = emp?.phone_number || emp?.phone || null;
+
+      if (!phoneNumber && user.email.includes("@staff.gtpea.local")) {
+        const staffId = user.email.split("@")[0];
+        const { data: empByNo } = await (admin.from("employees") as any)
+          .select("phone, phone_number")
+          .ilike("employee_no", staffId)
+          .maybeSingle();
+        phoneNumber = empByNo?.phone_number || empByNo?.phone || null;
+      }
+    }
+    if (!phoneNumber) {
+      const { data: profile } = await (admin.from("profiles") as any)
+        .select("phone")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      phoneNumber = profile?.phone || null;
+    }
+
+    if (!phoneNumber) {
       return NextResponse.json(
-        { error: "Phone number and user ID are required." },
+        { error: "No registered phone number on this account. Please contact support." },
         { status: 400 }
       );
     }
 
-    const supabase = await createClient();
-    const admin = createAdminClient();
+    // Resend throttling — no new code within 60s, max 5 sends per hour
+    const { data: recent } = await admin
+      .from("otp_codes")
+      .select("created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    const now = Date.now();
+    if (recent?.length) {
+      const latest = new Date(recent[0].created_at).getTime();
+      if (now - latest < 60_000) {
+        return NextResponse.json(
+          { error: "A code was just sent. Please wait a minute before requesting another." },
+          { status: 429 }
+        );
+      }
+      const hourAgo = now - 60 * 60 * 1000;
+      const sentThisHour = recent.filter((r: any) => new Date(r.created_at).getTime() > hourAgo).length;
+      if (sentThisHour >= 5) {
+        return NextResponse.json(
+          { error: "Too many code requests. Please try again later or contact support." },
+          { status: 429 }
+        );
+      }
+    }
 
     // Generate OTP
     const otp = generateOTP();
     const expiresAt = getOTPExpiration(5); // 5 minutes expiration
 
-    // Store OTP in database (create or update otp_codes table)
     const { error: otpError } = await admin
       .from("otp_codes")
-      .upsert({
-        user_id: userId,
+      .insert({
+        user_id: user.id,
         phone_number: formatPhoneNumber(phoneNumber),
         code: otp,
         expires_at: expiresAt.toISOString(),
@@ -62,7 +119,6 @@ export async function POST(request: Request) {
       formattedPhone = "233" + formattedPhone;
     }
 
-    // Build URL with query parameters for Nalo SMS
     const baseUrl = "https://sms.nalosolutions.com/smsbackend/clientapi/Resl_Nalo/send-message/";
     const params = new URLSearchParams({
       key: authKey,
@@ -75,11 +131,8 @@ export async function POST(request: Request) {
 
     const url = `${baseUrl}?${params.toString()}`;
 
-    // Send SMS using fetch
     const smsResponse = await fetch(url);
     const raw = await smsResponse.text();
-    // Nalo returns HTTP 200 even on failure — the body carries the real
-    // status (success responses typically start with "1701").
     console.log("[/api/otp/send] Nalo response:", smsResponse.status, raw);
 
     if (!smsResponse.ok || (!raw.includes("1701") && !raw.toLowerCase().includes("success"))) {

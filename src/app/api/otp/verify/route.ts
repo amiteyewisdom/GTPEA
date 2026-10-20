@@ -5,14 +5,23 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, code } = body;
+    const { code } = body;
 
-    if (!userId || !code) {
+    if (!code) {
       return NextResponse.json(
-        { error: "User ID and OTP code are required." },
+        { error: "OTP code is required." },
         { status: 400 }
       );
     }
+
+    // The user comes from the session — the request body's userId used to be
+    // trusted, which let anyone verify codes against arbitrary accounts.
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Please sign in." }, { status: 401 });
+    }
+    const userId = user.id;
 
     const admin = createAdminClient();
 
@@ -43,8 +52,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify the code
+    // Verify the code — capped at 5 attempts per code when the attempts
+    // column is present (see migration 20261021000000_otp_attempts.sql).
     if (otpData.code !== code) {
+      if (typeof otpData.attempts === "number") {
+        const attempts = otpData.attempts + 1;
+        const exhausted = attempts >= 5;
+        await admin
+          .from("otp_codes")
+          .update({ attempts, ...(exhausted ? { is_used: true } : {}) })
+          .eq("id", otpData.id);
+        if (exhausted) {
+          return NextResponse.json(
+            { error: "Too many incorrect attempts. Please request a new code." },
+            { status: 400 }
+          );
+        }
+      }
       return NextResponse.json(
         { error: "Invalid OTP code. Please try again." },
         { status: 400 }

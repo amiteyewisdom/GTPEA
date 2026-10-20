@@ -13,7 +13,6 @@ export default function VerifyOtpPage() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [userId, setUserId] = useState("");
 
   useEffect(() => {
     // Get user info from session
@@ -22,8 +21,6 @@ export default function VerifyOtpPage() {
       const { data: userData } = await supabase.auth.getUser();
       
       if (userData.user) {
-        setUserId(userData.user.id);
-
         // Resolve the phone server-side — the browser's direct table reads
         // can silently return nothing under RLS.
         try {
@@ -48,11 +45,6 @@ export default function VerifyOtpPage() {
   }, []);
 
   async function sendCode() {
-    if (!phoneNumber || !userId) {
-      setError("Missing required information. Please try logging in again.");
-      return;
-    }
-
     setResending(true);
     setError("");
     setInfo("");
@@ -60,7 +52,7 @@ export default function VerifyOtpPage() {
       const response = await fetch("/api/otp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber, userId }),
+        body: JSON.stringify({}),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not send verification code.");
@@ -81,7 +73,7 @@ export default function VerifyOtpPage() {
       const response = await fetch("/api/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, code }),
+        body: JSON.stringify({ code }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Verification failed.");

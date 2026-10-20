@@ -41,7 +41,7 @@ export default async function proxy(request: NextRequest) {
   if (user && !isApi && !isChangePassword && !isVerifyOtp) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('must_change_password, phone')
+      .select('must_change_password, phone, otp_verified_at')
       .eq('user_id', user.id)
       .single();
 
@@ -49,10 +49,12 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/change-password', request.url));
     }
 
-    const otpVerified = request.cookies.get('gtpea_otp_verified')?.value === '1';
+    // OTP enforcement is server-side — a forgeable cookie used to stand in for
+    // this check. otp_verified_at is set by /api/otp/verify and cleared on
+    // account reset / password change.
     const otpEnabled = process.env.ENABLE_OTP_LOGIN !== 'false';
 
-    if (otpEnabled && !otpVerified && (profile as any)?.phone) {
+    if (otpEnabled && (profile as any)?.phone && !(profile as any)?.otp_verified_at) {
       return NextResponse.redirect(new URL('/verify-otp', request.url));
     }
   }

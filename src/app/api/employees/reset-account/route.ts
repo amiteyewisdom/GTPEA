@@ -66,13 +66,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: authError.message }, { status: 500 });
     }
 
-    // Return the employee record to its initial setup state — clear both phone
-    // columns (the setup flow writes both) and mark first login again.
+    // Return the employee record to its initial setup state. The registered
+    // phone is KEPT — clearing it would let whoever completes setup first
+    // register their own number and receive the OTP, which is an account
+    // takeover path. If the phone itself is wrong, clear it separately.
     const { error: phoneError } = await (adminClient
       .from("employees") as any)
       .update({
-        phone: null,
-        phone_number: null,
         password_changed_at: null,
         is_first_login: true,
       })
@@ -82,11 +82,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: phoneError.message }, { status: 500 });
     }
 
-    // Set must_change_password in profiles and clear the stored phone so the
-    // proxy forces the default-password → change-password → add-phone flow.
+    // Force the password change and re-verification of the OTP against the
+    // registered number on next login.
     const { error: profileUpdateError } = await (adminClient
       .from("profiles") as any)
-      .update({ must_change_password: true, phone: null })
+      .update({ must_change_password: true, otp_verified_at: null })
       .eq("user_id", profile.user_id);
 
     if (profileUpdateError) {
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({
-      message: "Employee account reset successfully. They will need to set up their phone number and change their password on next login.",
+      message: "Employee account reset successfully. They will set a new password and verify a code sent to their registered phone on next login.",
     });
   } catch (error) {
     return NextResponse.json(
