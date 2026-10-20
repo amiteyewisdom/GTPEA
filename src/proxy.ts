@@ -1,6 +1,28 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// system_settings rarely changes — cache briefly per worker so every
+// navigation doesn't pay a remote round-trip just to read two booleans.
+// Toggling a flag takes up to TTL to reach in-flight sessions; the login
+// route still checks live.
+const SETTINGS_TTL_MS = 30_000;
+let settingsCache: { locked: boolean; maintenance: boolean; at: number } | null = null;
+
+async function getControlFlags(supabase: any) {
+  if (settingsCache && Date.now() - settingsCache.at < SETTINGS_TTL_MS) {
+    return settingsCache;
+  }
+  const { data: settings } = await supabase
+    .from("system_settings")
+    .select("key, value");
+  settingsCache = {
+    locked: !!settings?.some((s: any) => s.key === "logins_locked" && s.value === true),
+    maintenance: !!settings?.some((s: any) => s.key === "maintenance_mode" && s.value === true),
+    at: Date.now(),
+  };
+  return settingsCache;
+}
+
 export default async function proxy(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -41,11 +63,7 @@ export default async function proxy(request: NextRequest) {
   if (user && !isApi) {
     // Emergency controls — everyone except the super admin is signed out
     // while the system is locked or under maintenance.
-    const { data: settings } = await supabase
-      .from('system_settings')
-      .select('key, value');
-    const locked = settings?.some((s: any) => s.key === 'logins_locked' && s.value === true);
-    const maintenance = settings?.some((s: any) => s.key === 'maintenance_mode' && s.value === true);
+    const { locked, maintenance } = await getControlFlags(supabase);
 
     if (locked || maintenance) {
       const { data: roleProfile } = await supabase

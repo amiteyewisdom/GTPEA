@@ -12,7 +12,8 @@ import {
   ArrowRight,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Info
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { APPROVAL_STAGES, employeeStageLabel } from '@/lib/loans/workflow';
@@ -63,6 +64,17 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
         {/* Decorative Elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-brand-accent/10 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-1/2 w-48 h-48 bg-brand-success/10 rounded-full blur-3xl" />
+      </div>
+
+      {/* Data currency notice */}
+      <div className="flex items-start gap-3 rounded-brand-lg border border-brand-warning/40 bg-brand-warning/10 p-4">
+        <Info className="w-5 h-5 text-brand-warning flex-shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-brand-text">Your records are being updated</p>
+          <p className="text-sm text-brand-text-secondary mt-0.5">
+            The balances and transactions shown reflect your account as at <span className="font-medium text-brand-text">June</span>. Records for subsequent months are being processed and your account will be updated shortly.
+          </p>
+        </div>
       </div>
 
       {/* Balance Cards */}

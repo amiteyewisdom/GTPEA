@@ -709,7 +709,7 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   full_name: string;
   employee_id: string | null;
   phone?: string | null;
-}) {
+}, userEmail?: string | null) {
   const supabase = await createClient();
   const admin = await createAdminClient(); // Use admin client to bypass RLS
   let employeeUuid = profile.employee_id;
@@ -728,11 +728,10 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   }
 
   // Last resort: look up employee by matching email to user email
-  if (!employeeUuid) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.email) {
-      console.log('[fetchEmployeeDashboardData] Attempting email lookup with email:', user.email);
-      const byEmail = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("email", user.email).maybeSingle();
+  if (!employeeUuid && userEmail) {
+    {
+      console.log('[fetchEmployeeDashboardData] Attempting email lookup with email:', userEmail);
+      const byEmail = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("email", userEmail).maybeSingle();
       employeeUuid = (byEmail.data as any)?.id ?? null;
       if (byEmail.data) {
         console.log('[fetchEmployeeDashboardData] Found employee by email');
@@ -767,18 +766,18 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
     console.log('[fetchEmployeeDashboardData] Phone variants to try:', phoneVariants);
     
     let byPhone: any = null;
-    // Try both phone_number and phone fields
+    // Try both phone_number and phone fields — one `or` query per field
+    // instead of a sequential query per variant.
     const phoneFields = ['phone_number', 'phone'];
-    
+    const uniqueVariants = Array.from(new Set(phoneVariants));
+
     for (const phoneField of phoneFields) {
-      for (const phoneVariant of phoneVariants) {
-        byPhone = await supabase.from("employees").select("id, first_name, last_name, full_name").eq(phoneField, phoneVariant).maybeSingle();
-        if (byPhone.data) {
-          console.log('[fetchEmployeeDashboardData] Found employee with field:', phoneField, 'and variant:', phoneVariant);
-          break;
-        }
+      const orFilter = uniqueVariants.map((v) => `${phoneField}.eq."${v}"`).join(",");
+      byPhone = await supabase.from("employees").select("id, first_name, last_name, full_name").or(orFilter).maybeSingle();
+      if (byPhone.data) {
+        console.log('[fetchEmployeeDashboardData] Found employee with field:', phoneField);
+        break;
       }
-      if (byPhone.data) break;
     }
     
     employeeUuid = byPhone?.data?.id ?? null;
@@ -805,10 +804,9 @@ export async function fetchEmployeeDashboardData(userId: string, profile: {
   // employees has no user_id column — there is no further fallback.
 
   // Additional fallback: try to extract staff ID from email and look up by employee_no
-  if (!employeeUuid) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user?.email && user.email.includes('@staff.gtpea.local')) {
-      const staffId = user.email.split('@')[0];
+  if (!employeeUuid && userEmail) {
+    if (userEmail.includes('@staff.gtpea.local')) {
+      const staffId = userEmail.split('@')[0];
       console.log('[fetchEmployeeDashboardData] Attempting to find employee by staff_id:', staffId);
       const byStaffId = await supabase.from("employees").select("id, first_name, last_name, full_name").eq("employee_no", staffId).maybeSingle();
       if (byStaffId.data) {
