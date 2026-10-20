@@ -67,6 +67,7 @@ export default function LoginPage() {
       width: "100vw",
       height: "100vh",
       position: "relative",
+      overflow: "hidden",
       backgroundImage: "url('/images/credit-union-bg.jpeg')",
       backgroundSize: "cover",
       backgroundPosition: "center",
@@ -88,7 +89,7 @@ export default function LoginPage() {
           zIndex: 1,
           display: "flex",
           flexDirection: "column",
-          padding: "48px",
+          padding: "36px 48px",
         }}>
           <div style={{
             display: "flex",
@@ -118,11 +119,11 @@ export default function LoginPage() {
 
           <div style={{ maxWidth: "480px" }}>
             <h1 style={{
-              fontSize: "48px",
+              fontSize: "44px",
               fontWeight: "700",
               color: "#FFFFFF",
               lineHeight: "1.2",
-              marginBottom: "16px",
+              marginBottom: "12px",
             }}>
               Grow Your Savings.<br />
               Build Your Future.
@@ -131,12 +132,12 @@ export default function LoginPage() {
               fontSize: "16px",
               color: "rgba(255, 255, 255, 0.85)",
               lineHeight: "1.6",
-              marginBottom: "48px",
+              marginBottom: "28px",
             }}>
               Securely manage your savings, loans and financial activities from one trusted platform.
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
                 <div style={{
                   width: "40px",
