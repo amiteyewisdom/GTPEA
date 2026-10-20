@@ -92,10 +92,12 @@ export async function deleteEmployeeAccount(
   await (admin.from("statement_requests") as any).delete().eq("employee_id", employeeId);
   await (admin.from("payroll_logs") as any).delete().eq("employee_id", employeeId);
   await (admin.from("ledger_entries") as any).delete().eq("employee_id", employeeId);
-  await (admin.from("notifications") as any).delete().eq("employee_id", employeeId);
+  await (admin.from("transactions") as any).delete().eq("employee_id", employeeId);
+  await (admin.from("dividends") as any).delete().eq("employee_id", employeeId);
   await (admin.from("impersonation_sessions") as any).delete().eq("target_employee_id", employeeId);
 
   if (profile?.user_id) {
+    await (admin.from("notifications") as any).delete().eq("user_id", profile.user_id);
     await (admin.from("impersonation_sessions") as any).delete().eq("target_user_id", profile.user_id);
     await (admin.from("profiles") as any).delete().eq("user_id", profile.user_id);
     // Deleting the auth user cascades to otp_codes, sessions,
