@@ -21,6 +21,21 @@ export default function LoginPage() {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
+  // The page renders its own full-viewport canvas — prevent the document
+  // itself from ever scrolling.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, []);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
@@ -64,8 +79,8 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      width: "100vw",
-      height: "100vh",
+      width: "100%",
+      height: "100dvh",
       position: "relative",
       overflow: "hidden",
       backgroundImage: "url('/images/credit-union-bg.jpeg')",
