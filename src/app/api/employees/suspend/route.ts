@@ -58,6 +58,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
+  // Keep the linked profile + auth account in sync so the suspension actually
+  // blocks login — an employees.status flag alone does nothing to auth.
+  let { data: linkedProfile } = await (admin.from("profiles") as any)
+    .select("user_id")
+    .eq("employee_id", employee.id)
+    .maybeSingle();
+  if (!linkedProfile) {
+    const fb = await (admin.from("profiles") as any)
+      .select("user_id")
+      .eq("employee_id", employee.employee_no)
+      .maybeSingle();
+    linkedProfile = fb.data;
+  }
+  if (linkedProfile?.user_id) {
+    await (admin.from("profiles") as any)
+      .update({
+        is_suspended: action === "suspend",
+        suspended_at: action === "suspend" ? new Date().toISOString() : null,
+      })
+      .eq("user_id", linkedProfile.user_id);
+    await admin.auth.admin.updateUserById(linkedProfile.user_id, {
+      ban_duration: action === "suspend" ? "876000h" : "none",
+    } as any);
+  }
+
   await (admin.from("audit_logs") as any).insert({
     action: action === "suspend" ? "ACCOUNT_SUSPENDED" : "ACCOUNT_UNSUSPENDED",
     entity_type: "employee",

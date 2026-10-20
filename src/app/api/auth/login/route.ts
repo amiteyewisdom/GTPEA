@@ -114,6 +114,19 @@ export async function POST(request: Request) {
       }
     }
 
+    // Block suspended accounts before any password work
+    const { data: suspProfile } = await (admin.from("profiles") as any)
+      .select("is_suspended")
+      .or(`employee_id.eq.${employee.id},employee_id.eq.${employee.employee_no}`)
+      .eq("is_suspended", true)
+      .maybeSingle();
+    if (suspProfile) {
+      return NextResponse.json(
+        { error: "Your account has been suspended. Please contact your administrator." },
+        { status: 403 }
+      );
+    }
+
     phoneNumber = employee.phone_number;
     isFirstLogin = !employee.password_changed_at;
     authEmail = employee.email || `${loginId.toLowerCase()}@staff.gtpea.local`;

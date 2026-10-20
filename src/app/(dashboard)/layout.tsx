@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Profile } from "@/types/database";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import EnterpriseLayout from "@/components/layout/EnterpriseLayout";
 import { UserRole } from "@/lib/role-menus";
 
@@ -72,7 +73,15 @@ export default async function DashboardLayout({
     }
     
     const profile = profileRes.data as Profile | null;
-    const role = profile?.role ?? "employee";
+    const baseRole = profile?.role ?? "employee";
+
+    // Board members who are also staff can flip between their board interface
+    // and employee interface — gtpea_view cookie picks the effective role.
+    const canSwitch = baseRole !== "employee" && !!profile?.employee_id;
+    const view = (await cookies()).get("gtpea_view")?.value;
+    const currentView: "board" | "employee" =
+      canSwitch && view === "employee" ? "employee" : "board";
+    const role = currentView === "employee" ? "employee" : baseRole;
 
     // For employees, get their name from employees table if profile doesn't have it
     let userName = profile?.full_name ?? user.email ?? "User";
@@ -97,6 +106,9 @@ export default async function DashboardLayout({
         userName={userName}
         avatarUrl={profile?.avatar_url}
         pendingCount={pendingCount}
+        baseRole={baseRole}
+        canSwitch={canSwitch}
+        currentView={currentView}
       >
         {children}
       </EnterpriseLayout>

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { UserRole } from "@/lib/role-menus";
 import { fetchDashboardStats, fetchEmployeeDashboardData } from "@/lib/dashboard/fetch-stats";
@@ -26,7 +27,10 @@ export default async function DashboardRouter() {
 
   if (!profile) redirect("/login");
 
-  const role = profile.role as UserRole;
+  const baseRole = profile.role as UserRole;
+  const canSwitch = baseRole !== "employee" && !!profile.employee_id;
+  const view = (await cookies()).get("gtpea_view")?.value;
+  const role: UserRole = canSwitch && view === "employee" ? "employee" : baseRole;
 
   console.log('[Dashboard] User role:', role, 'Full profile:', profile);
 

@@ -27,15 +27,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: profile } = await (supabase
+    const { data: profile } = await (admin
       .from("profiles") as any)
       .select("role")
       .eq("user_id", user.id)
       .single();
 
-    if (profile?.role !== "super_admin") {
+    const requesterRole = profile?.role;
+    const isRevoke = role === "employee";
+
+    // Assigning a board role is super_admin-only; either super_admin or
+    // administrator may revoke a role back to plain employee.
+    if (requesterRole !== "super_admin" && !(isRevoke && requesterRole === "administrator")) {
       return NextResponse.json(
-        { error: "Only super admins can assign roles." },
+        { error: isRevoke ? "Only admins can revoke roles." : "Only super admins can assign roles." },
         { status: 403 }
       );
     }
@@ -142,10 +147,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // Update the role (and keep employee_id linked) in profiles table.
-    // Use the requester's session client: the guard_profiles_protected_columns trigger
-    // authorises the change via auth.uid() (verified super_admin above), and RLS allows it.
-    const { data: updatedProfiles, error: updateError } = await (supabase
+    // Update the role (and keep employee_id linked) via the admin client —
+    // RLS only lets users update their own profile, so the requester's client
+    // silently updated 0 rows and assignment looked like it did nothing. The
+    // guard trigger explicitly allows service_role.
+    const { data: updatedProfiles, error: updateError } = await (admin
       .from("profiles") as any)
       .update({ role, employee_id: employee.id })
       .eq("user_id", targetUser.id)

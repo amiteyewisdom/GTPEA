@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { formatRoleLabel } from "@/lib/navigation";
 import { createClient } from "@/lib/supabase/client";
 import LogoutButton from "./LogoutButton";
+import ViewSwitcher from "./ViewSwitcher";
 
 type EnterpriseTopbarProps = {
   userName?: string;
@@ -15,6 +16,9 @@ type EnterpriseTopbarProps = {
   userRole?: string;
   onMenuClick?: () => void;
   sidebarWidth?: string;
+  baseRole?: string;
+  canSwitch?: boolean;
+  currentView?: "board" | "employee";
 };
 
 type NotificationRow = {
@@ -59,6 +63,9 @@ export default function EnterpriseTopbar({
   userRole = "",
   onMenuClick,
   sidebarWidth = "17.5rem",
+  baseRole,
+  canSwitch = false,
+  currentView = "board",
 }: EnterpriseTopbarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -151,6 +158,7 @@ export default function EnterpriseTopbar({
         </div>
 
         <div className="flex items-center gap-2">
+          {canSwitch && baseRole && <ViewSwitcher baseRole={baseRole} currentView={currentView} />}
           <div className="relative">
             <button
               type="button"

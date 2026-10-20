@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Shield } from "lucide-react";
+import { toast } from "sonner";
 
 export function BoardMembersTable() {
   const [boardMembers, setBoardMembers] = React.useState<any[]>([]);
@@ -37,12 +38,13 @@ export function BoardMembersTable() {
         body: JSON.stringify({ employeeId: employeeNo, role: 'employee' }),
       });
       if (response.ok) {
+        toast.success('Role revoked — back to employee access');
         fetchData();
       } else {
-        alert('Failed to remove role');
+        toast.error('Failed to remove role');
       }
     } catch (error) {
-      alert('Failed to remove role');
+      toast.error('Failed to remove role');
     }
   };
 

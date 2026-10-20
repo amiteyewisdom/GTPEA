@@ -15,6 +15,9 @@ type EnterpriseLayoutProps = {
   userName?: string;
   avatarUrl?: string | null;
   pendingCount?: number;
+  baseRole?: string;
+  canSwitch?: boolean;
+  currentView?: "board" | "employee";
 };
 
 class LayoutErrorBoundary extends Component<{ children: ReactNode; componentName: string }, { hasError: boolean; error?: Error }> {
@@ -50,6 +53,9 @@ export default function EnterpriseLayout({
   userName = "User",
   avatarUrl,
   pendingCount = 0,
+  baseRole,
+  canSwitch = false,
+  currentView = "board",
 }: EnterpriseLayoutProps) {
   const { isOpen, isCollapsed, open, close, toggleCollapse } = useSidebarState();
   const sidebarWidth = isCollapsed ? "5rem" : "17.5rem";
@@ -82,6 +88,9 @@ export default function EnterpriseLayout({
             userRole={currentRole}
             onMenuClick={open}
             sidebarWidth={sidebarWidth}
+            baseRole={baseRole}
+            canSwitch={canSwitch}
+            currentView={currentView}
           />
         </LayoutErrorBoundary>
 

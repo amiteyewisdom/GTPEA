@@ -61,8 +61,15 @@ export async function POST(request: Request) {
           );
         }
 
-        // Sign out the suspended user
-        await admin.auth.admin.deleteUser(userId);
+        // Keep the linked employee record's status in sync
+        await admin
+          .from("employees")
+          .update({ status: "suspended" })
+          .eq("email", (await admin.auth.admin.getUserById(userId)).data.user?.email ?? "");
+
+        // Ban the auth user — blocks login without deleting the account.
+        // (This used to deleteUser(), which destroyed the account for good.)
+        await admin.auth.admin.updateUserById(userId, { ban_duration: "876000h" } as any);
 
         return NextResponse.json({
           success: true,
@@ -81,6 +88,14 @@ export async function POST(request: Request) {
             { status: 500 }
           );
         }
+
+        await admin
+          .from("employees")
+          .update({ status: "active" })
+          .eq("email", (await admin.auth.admin.getUserById(userId)).data.user?.email ?? "");
+
+        // Lift the auth ban
+        await admin.auth.admin.updateUserById(userId, { ban_duration: "none" } as any);
 
         return NextResponse.json({
           success: true,

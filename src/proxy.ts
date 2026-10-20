@@ -41,9 +41,15 @@ export default async function proxy(request: NextRequest) {
   if (user && !isApi && !isChangePassword && !isVerifyOtp) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('must_change_password, phone, otp_verified_at')
+      .select('must_change_password, phone, otp_verified_at, is_suspended')
       .eq('user_id', user.id)
       .single();
+
+    // Suspended accounts are signed out on their next request
+    if ((profile as any)?.is_suspended) {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
 
     if ((profile as any)?.must_change_password) {
       return NextResponse.redirect(new URL('/change-password', request.url));
