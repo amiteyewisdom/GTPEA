@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Download, MoreVertical, X, ShieldOff, ShieldCheck, Shield, RotateCcw, Trash2 } from "lucide-react";
+import { Search, Plus, Download, MoreVertical, X, ShieldOff, ShieldCheck, Shield, RotateCcw, Trash2, LogIn } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import GlassCard from "@/components/ui/GlassCard";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useDownload } from "@/hooks/use-download";
@@ -110,6 +111,35 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
       toast.error(error instanceof Error ? error.message : "Failed to reset account.");
     } finally {
       setResetAccountLoading(false);
+    }
+  };
+
+  const [impersonateLoading, setImpersonateLoading] = useState<string | null>(null);
+  const handleLoginAs = async (emp: Employee) => {
+    setImpersonateLoading(emp.id);
+    try {
+      const response = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId: emp.id }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Could not log in as this user.");
+
+      // Exchange the magic-link token for a real session as the target user
+      const supabase = createClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: payload.tokenHash,
+        type: "magiclink",
+      });
+      if (verifyError) throw new Error(verifyError.message);
+
+      sessionStorage.setItem("gtpea_impersonated_name", payload.employee_name);
+      sessionStorage.setItem("gtpea_impersonated_email", payload.employee_email);
+      window.location.href = "/dashboard";
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not log in as this user.");
+      setImpersonateLoading(null);
     }
   };
 
@@ -526,6 +556,20 @@ export function EmployeesClient({ employees, total }: EmployeesClientProps) {
                                 >
                                   <Shield className="w-4 h-4" />
                                   Assign Board Role
+                                </button>
+                              )}
+                              {isSuperAdmin && (
+                                <button
+                                  onClick={() => {
+                                    handleLoginAs(emp);
+                                    setOpenMenuId(null);
+                                    setMenuPosition(null);
+                                  }}
+                                  disabled={impersonateLoading === emp.id}
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors border-b border-brand-card-border disabled:opacity-50"
+                                >
+                                  <LogIn className="w-4 h-4" />
+                                  {impersonateLoading === emp.id ? "Signing in..." : "Login as"}
                                 </button>
                               )}
                               {isAdmin && (

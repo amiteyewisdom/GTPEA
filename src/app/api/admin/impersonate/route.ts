@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { canImpersonate, getStaffUser } from "@/lib/api/staff-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { randomBytes } from "crypto";
 import { DEFAULT_USER_PASSWORD } from "@/lib/imports/process-users";
 
 export async function POST(request: Request) {
@@ -110,25 +109,33 @@ export async function POST(request: Request) {
       metadata: { impersonated_email: employee.email },
     });
 
-    // Generate an impersonation token (read-only mode)
-    const impersonationToken = randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-    
-    await adminSupabase.from("impersonation_sessions").insert({
-      admin_user_id: user.id,
-      target_user_id: authUser.id,
-      target_employee_id: employeeId,
-      session_token: impersonationToken,
-      expires_at: expiresAt,
-      metadata: { mode: "read_only" },
+    // Generate a real magic-link login token for the target user. The client
+    // exchanges it via supabase.auth.verifyOtp → a genuine session as that
+    // user (the old "token" only painted a banner over the admin's session).
+    const { data: linkData, error: linkError } = await adminSupabase.auth.admin.generateLink({
+      type: "magiclink",
+      email: employee.email,
     });
+
+    if (linkError || !linkData?.properties?.hashed_token) {
+      return NextResponse.json(
+        { error: "Failed to create login session for this user." },
+        { status: 500 }
+      );
+    }
+
+    // Don't leave an unverified account stuck on the OTP screen for the admin
+    await adminSupabase
+      .from("profiles")
+      .update({ otp_verified_at: new Date().toISOString() } as any)
+      .eq("user_id", authUser.id)
+      .is("otp_verified_at", null);
 
     return NextResponse.json({
       success: true,
-      impersonationToken,
+      tokenHash: linkData.properties.hashed_token,
       employee_email: employee.email,
       employee_name: `${employee.first_name} ${employee.last_name}`,
-      mode: "read_only",
     });
   } catch (error) {
     return NextResponse.json(
