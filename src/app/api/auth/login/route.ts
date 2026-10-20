@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DEFAULT_USER_PASSWORD } from "@/lib/imports/process-users";
+import { getSystemFlags } from "@/lib/api/system-settings";
 
 
 export async function POST(request: Request) {
@@ -130,6 +131,27 @@ export async function POST(request: Request) {
     phoneNumber = employee.phone_number;
     isFirstLogin = !employee.password_changed_at;
     authEmail = employee.email || `${loginId.toLowerCase()}@staff.gtpea.local`;
+
+    // Emergency controls — block logins while the system is locked or under
+    // maintenance. Super admin is exempt so they can still get in to unlock.
+    const flags = await getSystemFlags(admin);
+    if (flags.logins_locked || flags.maintenance_mode) {
+      const { data: roleProfile } = await (admin.from("profiles") as any)
+        .select("role")
+        .or(`employee_id.eq.${employee.id},employee_id.eq.${employee.employee_no},email.eq.${authEmail}`)
+        .maybeSingle();
+
+      if (roleProfile?.role !== "super_admin") {
+        return NextResponse.json(
+          {
+            error: flags.logins_locked
+              ? "The system is currently locked. Please contact the administrator."
+              : "The system is under maintenance. Please try again later.",
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     console.log('[/api/auth/login] Attempting auth with email:', authEmail);
 

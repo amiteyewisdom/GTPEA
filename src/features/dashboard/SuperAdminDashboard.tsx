@@ -2,6 +2,7 @@
 
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
+import { toast } from 'sonner';
 import DashboardStatCard from '@/components/ui/DashboardStatCard';
 import { BoardMembersTable } from './BoardMembersTable';
 import {
@@ -160,21 +161,6 @@ function UserActionsDropdown({ userId, currentRole }: { userId: string; currentR
         </div>
       )}
     </>
-  );
-}
-
-function EmergencyButton({ icon: Icon, title, description, variant }: any) {
-  const variantStyles = {
-    danger: 'bg-brand-danger/10 text-brand-danger hover:bg-brand-danger/20 border-brand-danger/30',
-    warning: 'bg-brand-warning/10 text-brand-warning hover:bg-brand-warning/20 border-brand-warning/30',
-  };
-
-  return (
-    <button className={`p-4 rounded-lg border transition-all ${variantStyles[variant as keyof typeof variantStyles]}`}>
-      <Icon className="w-5 h-5 mb-2" />
-      <h4 className="text-sm font-medium">{title}</h4>
-      <p className="text-xs mt-1 opacity-80">{description}</p>
-    </button>
   );
 }
 
@@ -1078,34 +1064,74 @@ export default function SuperAdminDashboard({ stats }: { stats: DashboardStats }
           </div>
           <AlertTriangle className="w-5 h-5 text-brand-danger" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <EmergencyButton
-            icon={Lock}
-            title="Lock System"
-            description="Prevent all logins"
-            variant="danger"
-          />
-          <EmergencyButton
-            icon={Database}
-            title="Emergency Backup"
-            description="Force database backup"
-            variant="warning"
-          />
-          <EmergencyButton
-            icon={Shield}
-            title="Enable Maintenance"
-            description="Put system in maintenance mode"
-            variant="warning"
-          />
-          <EmergencyButton
-            icon={Trash2}
-            title="Clear Sessions"
-            description="Force logout all users"
-            variant="danger"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <EmergencyControl flag="logins_locked" icon={Lock} title="Lock System" description="Prevent all logins" variant="danger" />
+          <EmergencyControl flag="maintenance_mode" icon={Shield} title="Maintenance Mode" description="Sign out all non-admin users" variant="warning" />
         </div>
       </GlassCard>
     </div>
+  );
+}
+
+function EmergencyControl({ flag, icon: Icon, title, description, variant }: any) {
+  const [enabled, setEnabled] = React.useState<boolean | null>(null);
+  const [busy, setBusy] = React.useState(false);
+
+  React.useEffect(() => {
+    fetch('/api/admin/system-controls')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((flags) => flags && setEnabled(flags[flag] === true))
+      .catch(() => setEnabled(false));
+  }, [flag]);
+
+  const toggle = async () => {
+    if (enabled === null || busy) return;
+    setBusy(true);
+    try {
+      const response = await fetch('/api/admin/system-controls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: flag, enabled: !enabled }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || 'Action failed.');
+      setEnabled(payload.enabled);
+      toast.success(payload.enabled ? `${title} enabled` : `${title} disabled`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Action failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const variantStyles = {
+    danger: 'bg-brand-danger/10 text-brand-danger hover:bg-brand-danger/20 border-brand-danger/30',
+    warning: 'bg-brand-warning/10 text-brand-warning hover:bg-brand-warning/20 border-brand-warning/30',
+  };
+  const activeStyles = {
+    danger: 'bg-brand-danger text-white border-brand-danger',
+    warning: 'bg-brand-warning text-white border-brand-warning',
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={busy || enabled === null}
+      className={`p-4 rounded-lg border transition-all text-left disabled:opacity-60 ${
+        enabled ? activeStyles[variant as keyof typeof activeStyles] : variantStyles[variant as keyof typeof variantStyles]
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <Icon className="w-5 h-5 mb-2" />
+        {enabled !== null && (
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${enabled ? 'bg-white/20' : 'bg-black/10'}`}>
+            {enabled ? 'ON' : 'OFF'}
+          </span>
+        )}
+      </div>
+      <h4 className="text-sm font-medium">{title}</h4>
+      <p className="text-xs mt-1 opacity-80">{busy ? 'Working…' : description}</p>
+    </button>
   );
 }
 

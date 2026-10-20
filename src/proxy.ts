@@ -38,6 +38,29 @@ export default async function proxy(request: NextRequest) {
   if (!user && !isPublic && !isApi) return NextResponse.redirect(new URL('/login', request.url));
   if (user && (pathname === '/login' || pathname === '/signup')) return NextResponse.redirect(new URL('/dashboard', request.url));
 
+  if (user && !isApi) {
+    // Emergency controls — everyone except the super admin is signed out
+    // while the system is locked or under maintenance.
+    const { data: settings } = await supabase
+      .from('system_settings')
+      .select('key, value');
+    const locked = settings?.some((s: any) => s.key === 'logins_locked' && s.value === true);
+    const maintenance = settings?.some((s: any) => s.key === 'maintenance_mode' && s.value === true);
+
+    if (locked || maintenance) {
+      const { data: roleProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if ((roleProfile as any)?.role !== 'super_admin') {
+        await supabase.auth.signOut();
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+    }
+  }
+
   if (user && !isApi && !isChangePassword && !isVerifyOtp) {
     const { data: profile } = await supabase
       .from('profiles')
