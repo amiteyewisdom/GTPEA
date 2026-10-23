@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download, Upload, Plus, Calendar, Landmark, TrendingDown, AlertTriangle, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Download, Upload, Plus, Calendar, Landmark, TrendingDown, AlertTriangle, X, ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { KPICard } from "@/components/ui/KPICard";
 import { formatCurrency, formatDate, generateAmortizationSchedule } from "@/utils/formatters";
@@ -111,6 +111,33 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
     } catch (error) {
       console.error('Export error:', error);
     }
+  };
+
+  const handleCopyMemberSummary = async (loan: LoanRow) => {
+    const emp = loan.employees;
+    if (!emp) {
+      toast.error("No member details on this loan");
+      return;
+    }
+    const memberLoans = loans.filter((l) => l.employees?.employee_no === emp.employee_no);
+    const totalOutstanding = memberLoans.reduce((s, l) => s + Math.max(0, Number(l.outstanding_balance) || 0), 0);
+    const lines = [
+      `${emp.first_name} ${emp.last_name} (${emp.employee_no})`,
+      "",
+      `${memberLoans.length} loan${memberLoans.length === 1 ? "" : "s"} on record`,
+      "",
+      ...memberLoans.flatMap((l, i) => [
+        `${i + 1}. ${l.loan_products?.name ?? "Loan"} — ${l.loan_ref}`,
+        `Amount: ${formatCurrency(Number(l.amount_approved) || Number(l.amount_requested) || 0)}`,
+        `Term: ${l.term_months} months | ${formatCurrency(l.monthly_repayment)}/mo`,
+        `Outstanding: ${formatCurrency(Number(l.outstanding_balance) || 0)}`,
+        `Status: ${l.status}`,
+        "",
+      ]),
+      `Total outstanding: ${formatCurrency(totalOutstanding)}`,
+    ];
+    await navigator.clipboard.writeText(lines.join("\n"));
+    toast.success(`Copied loan summary for ${emp.first_name} ${emp.last_name}`);
   };
 
   const handleImport = async () => {
@@ -273,6 +300,13 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
                       </td>
                       <td className="px-4 py-3"><StatusChip status={loan.status} /></td>
                       <td className="px-4 py-3 text-right">
+                        <button
+                          title="Copy member loan summary"
+                          onClick={() => handleCopyMemberSummary(loan)}
+                          className="rounded-lg p-1.5 text-indigo-500 hover:bg-indigo-50 transition-colors"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
                         <button
                           title="View amortization schedule"
                           onClick={() => setSelectedLoan(loan)}
