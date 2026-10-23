@@ -67,14 +67,11 @@ export default function EmployeeDashboard({ data }: { data: DashboardData }) {
       </div>
 
       {/* Data currency notice */}
-      <div className="flex items-start gap-3 rounded-brand-lg border border-brand-warning/40 bg-brand-warning/10 p-4">
-        <Info className="w-5 h-5 text-brand-warning flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-semibold text-brand-text">Your records are being updated</p>
-          <p className="text-sm text-brand-text-secondary mt-0.5">
-            The balances and transactions shown reflect your account as at <span className="font-medium text-brand-text">June</span>. Records for subsequent months are being processed and your account will be updated shortly.
-          </p>
-        </div>
+      <div className="flex items-center gap-3 rounded-brand-lg border-2 border-amber-400 bg-amber-100 p-4 shadow-sm">
+        <Info className="h-6 w-6 flex-shrink-0 text-amber-500" />
+        <p className="text-base font-bold text-amber-700 md:text-lg">
+          All records — Savings and Loans — are being updated and will reflect soon on your dashboard.
+        </p>
       </div>
 
       {/* Balance Cards */}
