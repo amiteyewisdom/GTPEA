@@ -60,7 +60,7 @@ export function KPICard({
         </div>
       </div>
 
-      <p className="mb-1 truncate text-2xl font-bold tracking-tight text-brand-text xl:text-3xl" title={String(value)}>{value}</p>
+      <p className="mb-1 min-w-0 text-2xl font-bold tabular-nums tracking-tight text-brand-text xl:text-3xl" title={String(value)}>{value}</p>
 
       <div className="flex flex-wrap items-center gap-2">
         {trend && trendValue && (

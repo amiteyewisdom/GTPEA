@@ -175,7 +175,7 @@ export function LoansClient({ loans, loanProducts, total, totalDisbursed, totalO
   return (
     <div className="flex flex-col gap-6">
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 2xl:grid-cols-5">
         <KPICard title="Total Loans" value={total} icon={Landmark} accent="primary" subtitle="All records" />
         <KPICard title="Active Loans" value={activeLoans.length} icon={Landmark} accent="success" subtitle="Approved / disbursed / repaying" />
         <KPICard title="Active Balances" value={formatCurrency(activeLoansBalance)} icon={TrendingDown} accent="accent" subtitle="Outstanding on active loans" />
