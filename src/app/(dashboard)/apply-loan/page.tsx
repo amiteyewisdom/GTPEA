@@ -5,6 +5,7 @@ import { getLoggedInEmployee } from "@/lib/loans/employee";
 import { borrowingCapacity, committedLoanAmount } from "@/lib/loans/capacity";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Apply for a Facility" };
@@ -15,7 +16,9 @@ export default async function ApplyLoanPage() {
 
   const employee = await getLoggedInEmployee(supabase);
 
-  if (!employee || employee.role !== "employee") {
+  const view = (await cookies()).get("gtpea_view")?.value;
+  const effectiveRole = view === "employee" ? "employee" : employee?.role;
+  if (!employee || effectiveRole !== "employee") {
     redirect("/dashboard");
   }
 

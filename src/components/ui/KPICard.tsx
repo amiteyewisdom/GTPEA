@@ -54,13 +54,13 @@ export function KPICard({
   return (
     <div className={`relative overflow-hidden rounded-brand border bg-white p-5 shadow-sm transition-shadow hover:shadow-md ${cls.border}`}>
       <div className="mb-3 flex items-start justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-text-secondary">{title}</p>
+        <p className="min-w-0 truncate text-xs font-semibold uppercase tracking-wide text-brand-text-secondary">{title}</p>
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${cls.iconBg}`}>
           <Icon className={`h-4.5 w-4.5 ${cls.icon}`} size={18} />
         </div>
       </div>
 
-      <p className="mb-1 text-3xl font-bold tracking-tight text-brand-text">{value}</p>
+      <p className="mb-1 truncate text-2xl font-bold tracking-tight text-brand-text xl:text-3xl" title={String(value)}>{value}</p>
 
       <div className="flex flex-wrap items-center gap-2">
         {trend && trendValue && (
