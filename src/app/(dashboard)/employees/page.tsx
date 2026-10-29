@@ -7,12 +7,14 @@ export const metadata: Metadata = { title: "Employees" };
 export default async function EmployeesPage() {
   const supabase = await createClient();
 
-  // Show all staff except those linked to system admin profiles. Board roles
-  // (fund_manager, chairperson, union_rep, chairman) are still staff.
+  // Show all staff except those linked to super admin profiles. Board roles
+  // (fund_manager, chairperson, union_rep, administrator) are still staff —
+  // "administrator" is an assignable board role, so only super_admin is
+  // treated as a system account here.
   const { data: nonEmployeeProfiles } = await supabase
     .from("profiles")
     .select("employee_id")
-    .in("role", ["super_admin", "administrator"])
+    .eq("role", "super_admin")
     .not("employee_id", "is", null);
 
   const excludedIds = new Set(
