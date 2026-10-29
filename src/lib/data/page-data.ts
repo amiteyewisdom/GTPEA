@@ -200,12 +200,12 @@ export async function fetchSavingsHistoryData() {
 
   if (!employeeUuid) {
     console.log("[fetchSavingsHistoryData] No employeeUuid found, returning empty data");
-    return { totalSavings: 0, thisMonth: 0, contributions: [] as any[] };
+    return { totalSavings: 0, thisMonth: 0, contributions: [] as any[], savingsAccountId: null, monthlyContribution: 0 };
   }
 
   const now = new Date();
   const [savingsRes, contributionsRes] = await Promise.all([
-    admin.from("savings").select("balance").eq("employee_id", employeeUuid),
+    admin.from("savings").select("id, balance, monthly_contribution, status").eq("employee_id", employeeUuid),
     admin
       .from("savings_contributions")
       .select("id, amount, contribution_type, period_year, period_month, reference, created_at, narration")
@@ -233,10 +233,14 @@ export async function fetchSavingsHistoryData() {
 
   console.log("[fetchSavingsHistoryData] Returning:", { totalSavings, thisMonth, contributionsCount: contributions.length });
 
+  const activeAccount = ((savingsRes.data ?? []) as any[]).find((s) => s.status === "active");
+
   return {
     totalSavings,
     thisMonth,
     contributions,
+    savingsAccountId: activeAccount?.id ?? null,
+    monthlyContribution: Number(activeAccount?.monthly_contribution ?? 0),
   };
 }
 

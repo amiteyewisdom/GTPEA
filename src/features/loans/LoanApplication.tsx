@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { addMonths, format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { BadgeCent, Calendar, AlertCircle, CheckCircle, Info, Users, Phone, Shield } from "lucide-react";
+import { BadgeCent, Calendar, AlertCircle, CheckCircle, Info, Users, Shield } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
 import {
   formatCurrency,
@@ -458,7 +458,7 @@ export function LoanApplication({
                   <option value="">{guarantorEmployees.length ? "Select first guarantor" : "No eligible guarantors available"}</option>
                   {guarantorEmployees.filter((emp) => emp.id !== secondGuarantorId).map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name} ({emp.employee_no}) — cover {formatCurrency(emp.available_cover)}
+                      {emp.first_name} {emp.last_name} ({emp.employee_no})
                     </option>
                   ))}
                 </select>
@@ -470,20 +470,21 @@ export function LoanApplication({
                   <option value="">Second guarantor (if needed)</option>
                   {guarantorEmployees.filter((emp) => emp.id !== guarantorId).map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name} ({emp.employee_no}) — cover {formatCurrency(emp.available_cover)}
+                      {emp.first_name} {emp.last_name} ({emp.employee_no})
                     </option>
                   ))}
                 </select>
               </div>
               <div className={`rounded-lg border p-3 text-sm ${guarantorCoverMissing ? "border-red-200 bg-red-50 text-red-700" : "border-brand-green/30 bg-brand-green/10 text-brand-green"}`}>
-                Combined cover: {formatCurrency(combinedCover)} of {formatCurrency(principal)} required.
-                {guarantorCoverMissing && " Select another guarantor with enough available savings."}
+                {guarantorCoverMissing
+                  ? "The selected guarantors do not have enough cover for this request. Select another guarantor."
+                  : "The selected guarantors provide enough cover for this request."}
               </div>
               {[selectedGuarantor, secondGuarantor].filter(Boolean).map((guarantor) => (
                 <div key={guarantor!.id} className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg border border-brand-card-border bg-brand-card-bg/50 p-3">
                   <div className="flex items-center gap-2"><Users className="w-4 h-4" /><span>{guarantor!.employee_no}</span></div>
                   <div className="flex items-center gap-2"><Users className="w-4 h-4" /><span>{guarantor!.first_name} {guarantor!.last_name}</span></div>
-                  <div className="flex items-center gap-2"><Phone className="w-4 h-4" /><span>Available cover: {formatCurrency(guarantor!.available_cover)}</span></div>
+                  <div className="flex items-center gap-2"><Shield className="w-4 h-4" /><span>Eligible guarantor</span></div>
                 </div>
               ))}
             </>

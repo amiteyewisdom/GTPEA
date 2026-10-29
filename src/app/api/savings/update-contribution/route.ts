@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyUser } from "@/lib/notifications";
 
 function isSavingsLockPeriod(): boolean {
   const month = new Date().getMonth() + 1;
@@ -62,6 +63,43 @@ export async function POST(request: Request) {
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  // Keep employees.monthly_savings in sync — it seeds monthly_contribution when
+  // accounts are created and is used elsewhere as the member's pledge amount.
+  await (admin.from("employees") as any)
+    .update({ monthly_savings: newMonthlyContribution })
+    .eq("id", (savings as any).employee_id);
+
+  const { data: employee } = await admin
+    .from("employees")
+    .select("first_name, last_name, employee_no")
+    .eq("id", (savings as any).employee_id)
+    .single();
+
+  const employeeName = employee
+    ? `${(employee as any).first_name} ${(employee as any).last_name} (${(employee as any).employee_no})`
+    : "A member";
+
+  // Notify all fund managers so the change is reflected in the next payroll export.
+  try {
+    const { data: fundManagers } = await (admin.from("profiles") as any)
+      .select("user_id")
+      .eq("role", "fund_manager");
+
+    for (const fm of (fundManagers ?? []) as { user_id: string }[]) {
+      await notifyUser(
+        fm.user_id,
+        "savings_contribution_change",
+        "Monthly savings contribution changed",
+        `${employeeName} changed their monthly savings contribution from GH₵${Number(
+          (savings as any).monthly_contribution
+        ).toFixed(2)} to GH₵${newMonthlyContribution.toFixed(2)}.`,
+        savingsId
+      );
+    }
+  } catch (notifyErr) {
+    console.warn("[update-contribution] fund-manager notification failed (non-fatal):", notifyErr);
   }
 
   await (admin.from("audit_logs") as any).insert({

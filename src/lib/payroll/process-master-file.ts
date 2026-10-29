@@ -334,25 +334,29 @@ export async function exportPayrollMasterFile(): Promise<string> {
 
   const [savingsRes, loansRes] = await Promise.all([
     empIds.length > 0
-      ? adminClient.from("savings").select("employee_id, balance").in("employee_id", empIds).eq("status", "active")
+      ? adminClient.from("savings").select("employee_id, balance, monthly_contribution").in("employee_id", empIds).eq("status", "active")
       : Promise.resolve({ data: [] }),
     empIds.length > 0
       ? adminClient
           .from("loans")
-          .select("employee_id, outstanding_balance, status")
+          .select("employee_id, outstanding_balance, monthly_repayment, status")
           .in("employee_id", empIds)
       : Promise.resolve({ data: [] }),
   ]);
 
-  const savingsByEmp: Record<string, number> = {};
+  const savingsByEmp: Record<string, { balance: number; monthly: number }> = {};
   for (const s of (savingsRes.data ?? []) as any[]) {
-    savingsByEmp[s.employee_id] = (savingsByEmp[s.employee_id] ?? 0) + Number(s.balance);
+    if (!savingsByEmp[s.employee_id]) savingsByEmp[s.employee_id] = { balance: 0, monthly: 0 };
+    savingsByEmp[s.employee_id].balance += Number(s.balance);
+    savingsByEmp[s.employee_id].monthly += Number(s.monthly_contribution ?? 0);
   }
 
-  const loansByEmp: Record<string, number> = {};
+  const loansByEmp: Record<string, { balance: number; monthly: number }> = {};
   for (const l of (loansRes.data ?? []) as any[]) {
     if (!["active", "disbursed", "repaying"].includes(l.status)) continue;
-    loansByEmp[l.employee_id] = (loansByEmp[l.employee_id] ?? 0) + Number(l.outstanding_balance);
+    if (!loansByEmp[l.employee_id]) loansByEmp[l.employee_id] = { balance: 0, monthly: 0 };
+    loansByEmp[l.employee_id].balance += Number(l.outstanding_balance);
+    loansByEmp[l.employee_id].monthly += Math.max(0, Number(l.monthly_repayment ?? 0));
   }
 
   const headers = [
@@ -371,10 +375,10 @@ export async function exportPayrollMasterFile(): Promise<string> {
       escapeCsv(emp.employee_no),
       escapeCsv(name),
       escapeCsv(emp.department ?? ""),
-      (savingsByEmp[emp.id] ?? 0).toFixed(2),
-      (loansByEmp[emp.id] ?? 0).toFixed(2),
-      "0.00",
-      "0.00",
+      (savingsByEmp[emp.id]?.balance ?? 0).toFixed(2),
+      (loansByEmp[emp.id]?.balance ?? 0).toFixed(2),
+      (savingsByEmp[emp.id]?.monthly ?? 0).toFixed(2),
+      (loansByEmp[emp.id]?.monthly ?? 0).toFixed(2),
     ].join(",");
   });
 
