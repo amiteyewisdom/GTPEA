@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     for (const fm of (fundManagers ?? []) as { user_id: string }[]) {
       await notifyUser(
         fm.user_id,
-        "savings_contribution_change",
+        "system",
         "Monthly savings contribution changed",
         `${employeeName} changed their monthly savings contribution from GH₵${Number(
           (savings as any).monthly_contribution

@@ -36,11 +36,27 @@ export async function POST(request: Request) {
 
     // Try to find in employees table — ilike keeps "P0770" and "0770" as
     // distinct accounts while still accepting lowercase input ("p0770").
-    const employeeResult = await admin
+    let employeeResult = await admin
       .from("employees")
       .select("id, employee_no, phone_number, password_changed_at, email")
       .ilike("employee_no", loginId)
       .single();
+
+    // Sep26 staff IDs are prefixed by company (T/P). Keep old-format logins
+    // working: "6397" tries T6397/P6397; "T6397" also tries the bare "6397".
+    if (employeeResult.error || !employeeResult.data) {
+      const altIds: string[] = [];
+      if (/^\d+$/.test(loginId)) altIds.push(`T${loginId}`, `P${loginId}`);
+      else if (/^[A-Za-z]\d+$/.test(loginId)) altIds.push(loginId.slice(1));
+      if (altIds.length) {
+        employeeResult = await admin
+          .from("employees")
+          .select("id, employee_no, phone_number, password_changed_at, email")
+          .in("employee_no", altIds)
+          .limit(1)
+          .maybeSingle();
+      }
+    }
 
     employee = employeeResult.data;
     employeeError = employeeResult.error;
