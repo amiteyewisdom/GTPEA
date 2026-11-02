@@ -1,10 +1,66 @@
 import { parseCsv } from "@/lib/csv";
 import type { AppSupabase } from "@/lib/supabase/types";
 import { GL, LOAN_PRODUCT_CODES, memberAccountCode } from "@/lib/reports/gl-accounts";
+import { notifyUser } from "@/lib/notifications";
 
 export type ImportType = "employees" | "savings" | "loans" | "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands" | "master_excel_upload";
 
 const VALID_DEPARTMENTS = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit", "retail", "marketing", "supply chain", "wholesale"] as const;
+
+function isSavingsLockPeriod(): boolean {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  // Lock from Aug 8 to Dec 31 (inclusive)
+  if (month > 8 || month < 1) return true; // Sep-Dec
+  if (month === 8 && day >= 8) return true; // Aug 8 onwards
+  return false;
+}
+
+async function checkAndNotifyExcessBalance(
+  supabase: AppSupabase,
+  employeeId: string,
+  staffId: string,
+  newBalance: number,
+  performedByUserId: string
+): Promise<boolean> {
+  // Get current balance and monthly contribution
+  const { data: savings } = await supabase
+    .from("savings")
+    .select("balance, monthly_contribution")
+    .eq("employee_id", employeeId)
+    .eq("status", "active")
+    .single();
+
+  if (!savings) return false;
+
+  const currentBalance = Number(savings.balance) || 0;
+  const monthlyContribution = Number(savings.monthly_contribution) || 0;
+
+  // Check if the new balance increase exceeds monthly contribution
+  const balanceIncrease = newBalance - currentBalance;
+  if (balanceIncrease <= monthlyContribution) return false; // No violation
+
+  // Violation detected - notify chairpersons and admins
+  const { data: admins } = await supabase
+    .from("profiles")
+    .select("user_id, role")
+    .in("role", ["super_admin", "administrator", "chairperson"]);
+
+  const message = `⚠️ Import Violation: Savings balance for ${staffId} increased by GH₵${balanceIncrease.toFixed(2)}, which exceeds their monthly contribution of GH₵${monthlyContribution.toFixed(2)}. Current balance: GH₵${currentBalance.toFixed(2)} → New balance: GH₵${newBalance.toFixed(2)}. This import was blocked.`;
+
+  for (const admin of (admins ?? [])) {
+    await notifyUser(
+      admin.user_id,
+      "security_alert",
+      "Savings Import Blocked - Balance Exceeds Monthly Contribution",
+      message,
+      null
+    );
+  }
+
+  return true; // Violation found and reported
+}
 
 type Department = (typeof VALID_DEPARTMENTS)[number];
 
@@ -281,6 +337,30 @@ async function importGTPEASavings(
       continue;
     }
 
+    // Check for balance increase violation during lock period
+    if (isSavingsLockPeriod()) {
+      const { data: existingSavings } = await supabase
+        .from("savings")
+        .select("balance, monthly_contribution")
+        .eq("employee_id", employee.id)
+        .eq("account_code", GL.membersSavings)
+        .single();
+
+      if (existingSavings) {
+        const currentBalance = Number(existingSavings.balance) || 0;
+        const monthlyContribution = Number(existingSavings.monthly_contribution) || 0;
+        const balanceIncrease = balance - currentBalance;
+
+        if (balanceIncrease > monthlyContribution) {
+          // Block and notify
+          await checkAndNotifyExcessBalance(supabase, employee.id, staffId, balance, userId);
+          skipped++;
+          errors.push(`Row ${rowNo}: Import blocked. Balance increase (GH₵${balanceIncrease.toFixed(2)}) exceeds monthly contribution (GH₵${monthlyContribution.toFixed(2)}) during lock period (Aug 8–Dec 31).`);
+          continue;
+        }
+      }
+    }
+
     const { error } = await supabase.from("savings").upsert(
       {
         employee_id: employee.id,
@@ -357,6 +437,30 @@ async function importGTPEAQuickCash(
       skipped++;
       errors.push(`Row ${rowNo}: employee ${staffId} was not found.`);
       continue;
+    }
+
+    // Check for balance increase violation during lock period
+    if (isSavingsLockPeriod()) {
+      const { data: existingSavings } = await supabase
+        .from("savings")
+        .select("balance, monthly_contribution")
+        .eq("employee_id", employee.id)
+        .eq("account_code", LOAN_PRODUCT_CODES["Quick Cash"])
+        .single();
+
+      if (existingSavings) {
+        const currentBalance = Number(existingSavings.balance) || 0;
+        const monthlyContribution = Number(existingSavings.monthly_contribution) || 0;
+        const balanceIncrease = balance - currentBalance;
+
+        if (balanceIncrease > monthlyContribution) {
+          // Block and notify
+          await checkAndNotifyExcessBalance(supabase, employee.id, staffId, balance, userId);
+          skipped++;
+          errors.push(`Row ${rowNo}: Import blocked. Balance increase (GH₵${balanceIncrease.toFixed(2)}) exceeds monthly contribution (GH₵${monthlyContribution.toFixed(2)}) during lock period (Aug 8–Dec 31).`);
+          continue;
+        }
+      }
     }
 
     const { error } = await supabase.from("savings").upsert(

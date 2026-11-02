@@ -4,8 +4,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyUser } from "@/lib/notifications";
 
 function isSavingsLockPeriod(): boolean {
-  const month = new Date().getMonth() + 1;
-  return month >= 1 && month <= 4;
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  // Lock from Aug 8 to Dec 31 (inclusive)
+  // Month 8 = August, Month 12 = December
+  if (month > 8 || month < 1) return true; // Sep-Dec
+  if (month === 8 && day >= 8) return true; // Aug 8 onwards
+  return false;
 }
 
 export async function POST(request: Request) {
@@ -25,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Savings contribution changes are locked from January to April. You may change your contribution amount from May onwards.",
+          "Savings contribution changes are locked from August 8 to December 31. You may change your contribution amount from January 1 to August 7.",
         locked: true,
       },
       { status: 403 }

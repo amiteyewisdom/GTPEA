@@ -29,6 +29,16 @@ const PRODUCT_BY_FACILITY = {
 };
 const SAVINGS_FACILITY = { "Savings": { type: "regular", code: "63101001" }, "Quick-Cash": { type: "special", code: "62131001" } };
 
+function isSavingsLockPeriod() {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  // Lock from Aug 8 to Dec 31 (inclusive)
+  if (month > 8 || month < 1) return true; // Sep-Dec
+  if (month === 8 && day >= 8) return true; // Aug 8 onwards
+  return false;
+}
+
 // Orange-highlighted renumbers: newId -> old employee_no in DB
 const RENUMBER = {
   P1361: "P0770", P1362: "P0774", P1363: "P0811", P1365: "P0821",
@@ -37,6 +47,40 @@ const RENUMBER = {
 
 const norm = (n) => String(n ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 const num = (v) => { const n = Number(String(v ?? "").replace(/,/g, "")); return Number.isFinite(n) ? n : 0; };
+
+async function notifyBlockedImports(blockedImports) {
+  if (blockedImports.length === 0) return;
+
+  // Fetch chairpersons and admins
+  const { data: admins } = await db
+    .from("profiles")
+    .select("user_id, role")
+    .in("role", ["super_admin", "administrator", "chairperson"]);
+
+  if (!admins || admins.length === 0) {
+    console.warn("No admins/chairpersons found to notify about blocked imports");
+    return;
+  }
+
+  const message = `⚠️ Savings Import Violations Detected (${blockedImports.length} blocked):\n\n` +
+    blockedImports.map(b =>
+      `- ${b.staffId} (${b.name}): ${b.facility} balance increase GH₵${b.increase.toFixed(2)} exceeds monthly contribution GH₵${b.monthlyContribution.toFixed(2)}\n` +
+      `  Current: GH₵${b.currentBalance.toFixed(2)} → New: GH₵${b.newBalance.toFixed(2)}`
+    ).join("\n\n") +
+    "\n\nThese imports were blocked during the Aug 8–Dec 31 lock period.";
+
+  for (const admin of admins) {
+    await db.from("notifications").insert({
+      user_id: admin.user_id,
+      type: "security_alert",
+      title: "Savings Imports Blocked - Balance Exceeds Monthly Contribution",
+      message,
+      is_read: false,
+    });
+  }
+
+  console.log(`Notified ${admins.length} chairpersons/admins about ${blockedImports.length} blocked imports`);
+}
 
 async function fetchAll(table, cols) {
   let out = [], from = 0;
@@ -196,6 +240,7 @@ function empFor(newId, p) {
 
 // 4c. balances
 const ACTIVE = ["active", "approved", "disbursed", "repaying"];
+const blockedImports = []; // Track blocked imports for reporting
 for (const [newId, p] of people) {
   const emp = empFor(newId, p);
   if (!emp) continue;
@@ -208,6 +253,25 @@ for (const [newId, p] of people) {
           ?? (savingsByEmp.get(emp.id) ?? []).find((s) => s.type === type && s.status === "active");
         const oldBal = acct ? Number(acct.balance) : 0;
         const delta = f.amount - oldBal;
+
+        // Check for balance increase violation during lock period
+        if (isSavingsLockPeriod() && acct && delta > 0) {
+          const monthlyContribution = Number(acct.monthly_contribution) || 0;
+          if (delta > monthlyContribution) {
+            blockedImports.push({
+              staffId: newId,
+              name: p.name,
+              facility,
+              currentBalance: oldBal,
+              newBalance: f.amount,
+              increase: delta,
+              monthlyContribution,
+            });
+            console.log(`BLOCKED: ${newId} ${facility} - increase ${delta.toFixed(2)} exceeds monthly contribution ${monthlyContribution.toFixed(2)}`);
+            continue; // Skip this import
+          }
+        }
+
         if (acct) {
           if (!DRY) await up("savings", { balance: f.amount, monthly_contribution: f.monthly }, "id", acct.id);
           stats.savingsUpd++;
@@ -305,12 +369,28 @@ if (!DRY) {
     table_name: "employees,savings,loans",
     record_id: crypto.randomUUID(),
     performed_by: userId,
-    new_values: { stats, errors: errors.slice(0, 50) },
+    new_values: { stats, errors: errors.slice(0, 50), blockedImports },
   });
+
+  // Notify chairpersons and admins about blocked imports
+  await notifyBlockedImports(blockedImports);
 }
 
 console.log("\n=== RESULTS ===");
 console.log(JSON.stringify(stats, null, 2));
 console.log(`Errors: ${errors.length}`);
 errors.slice(0, 60).forEach((e) => console.log("  ", e));
+
+if (blockedImports.length > 0) {
+  console.log("\n=== BLOCKED IMPORTS (Aug 8–Dec 31 Lock Period) ===");
+  console.log(`Total blocked: ${blockedImports.length}`);
+  blockedImports.forEach((b) => {
+    console.log(`  ${b.staffId} (${b.name}) - ${b.facility}:`);
+    console.log(`    Current: GH₵${b.currentBalance.toFixed(2)} → New: GH₵${b.newBalance.toFixed(2)} (increase: GH₵${b.increase.toFixed(2)})`);
+    console.log(`    Monthly contribution: GH₵${b.monthlyContribution.toFixed(2)}`);
+    console.log(`    Violation: Increase exceeds monthly contribution by GH₵${(b.increase - b.monthlyContribution).toFixed(2)}`);
+  });
+  console.log("\n⚠️ These imports were blocked. Chairpersons and admins have been notified.");
+}
+
 if (DRY) console.log("\n(dry run — nothing written)");

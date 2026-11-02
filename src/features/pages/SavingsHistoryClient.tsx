@@ -8,8 +8,17 @@ import SearchableList from "@/components/data/SearchableList";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { PiggyBank, Plus, Wallet, Pencil, X, Lock } from "lucide-react";
 
-const LOCK_MONTHS = [1, 2, 3, 4];
-const isLockPeriod = LOCK_MONTHS.includes(new Date().getMonth() + 1);
+const isLockPeriod = (() => {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  // Lock from Aug 8 to Dec 31 (inclusive)
+  if (month > 8 || month < 1) return true; // Sep-Dec
+  if (month === 8 && day >= 8) return true; // Aug 8 onwards
+  return false;
+})();
+
+const currentMonthName = new Date().toLocaleString('default', { month: 'long' });
 
 export function SavingsHistoryClient({
   totalSavings,
@@ -74,8 +83,9 @@ export function SavingsHistoryClient({
                 <div className="rounded-lg bg-brand-card-bg p-3 text-brand-accent">
                   <Plus className="h-5 w-5" />
                 </div>
-                <span className="text-sm text-brand-text-secondary">This Month</span>
+                <span className="text-sm text-brand-text-secondary">Current Month</span>
               </div>
+              <p className="text-lg font-medium text-brand-text-secondary capitalize">{currentMonthName}</p>
               <p className="text-2xl font-bold text-brand-text">{formatCurrency(thisMonth)}</p>
             </GlassCard>
             <GlassCard className="p-6">
@@ -99,7 +109,7 @@ export function SavingsHistoryClient({
               <p className="text-2xl font-bold text-brand-text">{formatCurrency(monthlyContribution ?? 0)}</p>
               {isLockPeriod && (
                 <p className="mt-1 flex items-center gap-1 text-xs text-brand-text-secondary">
-                  <Lock className="h-3 w-3" /> Changes locked Jan–Apr
+                  <Lock className="h-3 w-3" /> Changes locked Aug 8–Dec 31
                 </p>
               )}
             </GlassCard>

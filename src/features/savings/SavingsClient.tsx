@@ -31,9 +31,15 @@ interface SavingsClientProps {
   totalBalance: number;
 }
 
-const LOCK_MONTHS = [1, 2, 3, 4];
-const currentMonth = new Date().getMonth() + 1;
-const isLockPeriod = LOCK_MONTHS.includes(currentMonth);
+const isLockPeriod = (() => {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  // Lock from Aug 8 to Dec 31 (inclusive)
+  if (month > 8 || month < 1) return true; // Sep-Dec
+  if (month === 8 && day >= 8) return true; // Aug 8 onwards
+  return false;
+})();
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export function SavingsClient({ savings, total, totalBalance }: SavingsClientProps) {
@@ -376,7 +382,7 @@ export function SavingsClient({ savings, total, totalBalance }: SavingsClientPro
               <div className="flex items-start gap-2 p-3 mb-4 bg-orange-50 border border-orange-200 rounded-lg">
                 <Lock className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-orange-700">
-                  <span className="font-semibold">Contribution changes are locked</span> during January–April (payroll processing period). Changes will be accepted from May onwards.
+                  <span className="font-semibold">Contribution changes are locked</span> during August 8–December 31. Changes will be accepted from January 1 to August 7.
                 </p>
               </div>
             )}
