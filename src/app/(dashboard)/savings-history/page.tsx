@@ -6,5 +6,5 @@ export const metadata: Metadata = { title: "Savings History" };
 
 export default async function SavingsHistoryPage() {
   const data = await fetchSavingsHistoryData();
-  return <SavingsHistoryClient {...data} />;
+  return <SavingsHistoryClient {...data} monthlyBreakdown={data.monthlyBreakdown || []} />;
 }

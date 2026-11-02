@@ -231,7 +231,25 @@ export async function fetchSavingsHistoryData() {
   const contributionsTotal = contributions.reduce((s: number, c: any) => s + (Number(c.amount) || 0), 0);
   const totalSavings = savingsBalance > 0 ? savingsBalance : contributionsTotal;
 
-  console.log("[fetchSavingsHistoryData] Returning:", { totalSavings, thisMonth, contributionsCount: contributions.length });
+  // Group contributions by month for monthly breakdown
+  const monthlySavings = contributions.reduce((acc: Record<string, { year: number; month: number; total: number; count: number }>, c) => {
+    const key = `${c.period_year}-${c.period_month}`;
+    if (!acc[key]) {
+      acc[key] = { year: c.period_year, month: c.period_month, total: 0, count: 0 };
+    }
+    acc[key].total += Number(c.amount) || 0;
+    acc[key].count += 1;
+    return acc;
+  }, {});
+
+  // Convert to array and sort by date (most recent first)
+  const monthlyBreakdown = Object.values(monthlySavings)
+    .sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.month - a.month;
+    });
+
+  console.log("[fetchSavingsHistoryData] Returning:", { totalSavings, thisMonth, contributionsCount: contributions.length, monthlyBreakdown });
 
   const activeAccount = ((savingsRes.data ?? []) as any[]).find((s) => s.status === "active");
 
@@ -239,6 +257,7 @@ export async function fetchSavingsHistoryData() {
     totalSavings,
     thisMonth,
     contributions,
+    monthlyBreakdown,
     savingsAccountId: activeAccount?.id ?? null,
     monthlyContribution: Number(activeAccount?.monthly_contribution ?? 0),
   };

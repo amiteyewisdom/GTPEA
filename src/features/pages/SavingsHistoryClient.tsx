@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import GlassCard from "@/components/ui/GlassCard";
 import SearchableList from "@/components/data/SearchableList";
-import { formatCurrency, formatDate } from "@/utils/formatters";
-import { PiggyBank, Plus, Wallet, Pencil, X, Lock } from "lucide-react";
+import { formatCurrency } from "@/utils/formatters";
+import { PiggyBank, Plus, Wallet, Pencil, X, Lock, Calendar } from "lucide-react";
 
 const isLockPeriod = (() => {
   const now = new Date();
@@ -24,12 +24,14 @@ export function SavingsHistoryClient({
   totalSavings,
   thisMonth,
   contributions,
+  monthlyBreakdown,
   savingsAccountId,
   monthlyContribution,
 }: {
   totalSavings: number;
   thisMonth: number;
   contributions: any[];
+  monthlyBreakdown: { year: number; month: number; total: number; count: number }[];
   savingsAccountId?: string | null;
   monthlyContribution?: number;
 }) {
@@ -37,6 +39,7 @@ export function SavingsHistoryClient({
   const [editOpen, setEditOpen] = useState(false);
   const [newAmount, setNewAmount] = useState("");
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<"monthly" | "transactions">("monthly");
 
   const handleUpdate = async () => {
     if (!savingsAccountId) return;
@@ -62,76 +65,140 @@ export function SavingsHistoryClient({
 
   return (
     <>
-      <SearchableList
-        title="Savings History"
-        subtitle="View your savings contributions"
-        searchPlaceholder="Search transactions..."
-        emptyMessage="No savings contributions found."
-        stats={
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <GlassCard className="p-6">
-              <div className="mb-2 flex items-center gap-3">
-                <div className="rounded-lg bg-brand-card-bg p-3 text-brand-success">
-                  <PiggyBank className="h-5 w-5" />
-                </div>
-                <span className="text-sm text-brand-text-secondary">Total Savings</span>
+      <div className="space-y-6">
+        <div>
+          <h1 className="mb-2 text-2xl font-bold text-brand-text md:text-3xl">Savings History</h1>
+          <p className="text-sm text-brand-text-secondary md:text-base">
+            View your savings contributions
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <GlassCard className="p-6">
+            <div className="mb-2 flex items-center gap-3">
+              <div className="rounded-lg bg-brand-card-bg p-3 text-brand-success">
+                <PiggyBank className="h-5 w-5" />
               </div>
-              <p className="text-2xl font-bold text-brand-text">{formatCurrency(totalSavings)}</p>
-            </GlassCard>
-            <GlassCard className="p-6">
-              <div className="mb-2 flex items-center gap-3">
-                <div className="rounded-lg bg-brand-card-bg p-3 text-brand-accent">
-                  <Plus className="h-5 w-5" />
-                </div>
-                <span className="text-sm text-brand-text-secondary">Current Month</span>
-              </div>
-              <p className="text-lg font-medium text-brand-text-secondary capitalize">{currentMonthName}</p>
-              <p className="text-2xl font-bold text-brand-text">{formatCurrency(thisMonth)}</p>
-            </GlassCard>
-            <GlassCard className="p-6">
-              <div className="mb-2 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-brand-card-bg p-3 text-brand-green">
-                    <Wallet className="h-5 w-5" />
-                  </div>
-                  <span className="text-sm text-brand-text-secondary">Monthly Contribution</span>
-                </div>
-                {savingsAccountId && !isLockPeriod && (
-                  <button
-                    onClick={() => { setNewAmount(String(monthlyContribution ?? 0)); setEditOpen(true); }}
-                    className="flex items-center gap-1 text-xs font-medium text-brand-accent hover:text-brand-accent/80 transition-all"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Change
-                  </button>
-                )}
-              </div>
-              <p className="text-2xl font-bold text-brand-text">{formatCurrency(monthlyContribution ?? 0)}</p>
-              {isLockPeriod && (
-                <p className="mt-1 flex items-center gap-1 text-xs text-brand-text-secondary">
-                  <Lock className="h-3 w-3" /> Changes locked Aug 8–Dec 31
-                </p>
-              )}
-            </GlassCard>
-          </div>
-        }
-        items={contributions.map((item) => ({
-          id: item.id,
-          searchText: `${item.reference} ${item.contribution_type} ${item.narration ?? ""}`,
-          content: (
-            <div className="flex items-center gap-4 rounded-lg bg-brand-card-bg p-4">
-              <PiggyBank className="h-5 w-5 text-brand-success" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-brand-text">{formatCurrency(item.amount)}</p>
-                <p className="text-xs capitalize text-brand-text-secondary">
-                  {item.contribution_type} · {item.reference}
-                </p>
-              </div>
-              <p className="text-xs text-brand-text-secondary">{formatDate(item.created_at)}</p>
+              <span className="text-sm text-brand-text-secondary">Total Savings</span>
             </div>
-          ),
-        }))}
-      />
+            <p className="text-2xl font-bold text-brand-text">{formatCurrency(totalSavings)}</p>
+          </GlassCard>
+          <GlassCard className="p-6">
+            <div className="mb-2 flex items-center gap-3">
+              <div className="rounded-lg bg-brand-card-bg p-3 text-brand-accent">
+                <Plus className="h-5 w-5" />
+              </div>
+              <span className="text-sm text-brand-text-secondary">Current Month</span>
+            </div>
+            <p className="text-lg font-medium text-brand-text-secondary capitalize">{currentMonthName}</p>
+            <p className="text-2xl font-bold text-brand-text">{formatCurrency(thisMonth)}</p>
+          </GlassCard>
+          <GlassCard className="p-6">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-brand-card-bg p-3 text-brand-green">
+                  <Wallet className="h-5 w-5" />
+                </div>
+                <span className="text-sm text-brand-text-secondary">Monthly Contribution</span>
+              </div>
+              {savingsAccountId && !isLockPeriod && (
+                <button
+                  onClick={() => { setNewAmount(String(monthlyContribution ?? 0)); setEditOpen(true); }}
+                  className="flex items-center gap-1 text-xs font-medium text-brand-accent hover:text-brand-accent/80 transition-all"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Change
+                </button>
+              )}
+            </div>
+            <p className="text-2xl font-bold text-brand-text">{formatCurrency(monthlyContribution ?? 0)}</p>
+            {isLockPeriod && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-brand-text-secondary">
+                <Lock className="h-3 w-3" /> Changes locked Aug 8–Dec 31
+              </p>
+            )}
+          </GlassCard>
+        </div>
+
+        <GlassCard className="p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-brand-text">Monthly Savings Breakdown</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode("monthly")}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                  viewMode === "monthly"
+                    ? "bg-brand-accent text-white"
+                    : "bg-brand-card-bg text-brand-text-secondary hover:bg-brand-hover"
+                }`}
+              >
+                By Month
+              </button>
+              <button
+                onClick={() => setViewMode("transactions")}
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                  viewMode === "transactions"
+                    ? "bg-brand-accent text-white"
+                    : "bg-brand-card-bg text-brand-text-secondary hover:bg-brand-hover"
+                }`}
+              >
+                Transactions
+              </button>
+            </div>
+          </div>
+
+          {viewMode === "monthly" ? (
+            monthlyBreakdown.length === 0 ? (
+              <div className="py-8 text-center text-brand-text-secondary">
+                <Calendar className="mx-auto mb-3 h-12 w-12 text-brand-text-secondary/50" />
+                <p>No monthly savings data found</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {monthlyBreakdown.map((item) => {
+                  const monthName = new Date(item.year, item.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+                  return (
+                    <div key={`${item.year}-${item.month}`} className="flex items-center justify-between rounded-lg bg-brand-card-bg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-lg bg-brand-card-bg p-2 text-brand-accent">
+                          <Calendar className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-brand-text capitalize">{monthName}</p>
+                          <p className="text-xs text-brand-text-secondary">{item.count} transaction{item.count !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                      <p className="text-lg font-semibold text-brand-text">{formatCurrency(item.total)}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          ) : (
+            <div className="space-y-3">
+              {contributions.length === 0 ? (
+                <div className="py-8 text-center text-brand-text-secondary">
+                  <PiggyBank className="mx-auto mb-3 h-12 w-12 text-brand-text-secondary/50" />
+                  <p>No savings contributions found</p>
+                </div>
+              ) : (
+                contributions.map((item) => (
+                  <div key={item.id} className="flex items-center gap-4 rounded-lg bg-brand-card-bg p-4">
+                    <PiggyBank className="h-5 w-5 text-brand-success" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-brand-text">{formatCurrency(item.amount)}</p>
+                      <p className="text-xs capitalize text-brand-text-secondary">
+                        {item.contribution_type} · {item.reference}
+                      </p>
+                    </div>
+                    <p className="text-xs text-brand-text-secondary">{new Date(item.created_at).toLocaleDateString()}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </GlassCard>
+      </div>
 
       {editOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
