@@ -328,24 +328,44 @@ async function processGTPEASavings(supabase: any, csv: string, userId: string) {
         continue;
       }
 
-      const { error } = await supabase.from("savings").upsert(
+      const { data: savingsData, error: savingsError } = await supabase.from("savings").upsert(
         {
           employee_id: employee.id,
           account_number: memberAccountCode(GL.membersSavings, staffId) || staffSavingAccountNumber || `SAV-${staffId}`,
           account_code: GL.membersSavings,
           balance: balance,
-          type: "regular", // Use valid enum value instead of 'savings'
+          type: "regular",
           notes: reference || "Savings",
         },
         { onConflict: "account_number" }
-      );
+      ).select("id").single();
 
-      if (error) {
+      if (savingsError) {
         skipped++;
-        errors.push(`Row ${rowNo}: ${error.message}`);
-      } else {
-        imported++;
+        errors.push(`Row ${rowNo}: ${savingsError.message}`);
+        continue;
       }
+
+      // Create a savings contribution record for the imported balance
+      const now = new Date();
+      const contributionReference = `IMP-SAV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-${staffId}`;
+      const { error: contributionError } = await supabase.from("savings_contributions").insert({
+        savings_id: savingsData.id,
+        employee_id: employee.id,
+        amount: balance,
+        contribution_type: "adjustment",
+        period_year: now.getFullYear(),
+        period_month: now.getMonth() + 1,
+        reference: contributionReference,
+        recorded_by: userId,
+        narration: "Master file savings import",
+      });
+
+      if (contributionError) {
+        console.warn(`Failed to create contribution record for ${staffId}:`, contributionError.message);
+      }
+
+      imported++;
     } catch (error) {
       skipped++;
       errors.push(`Row ${rowNo}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -404,24 +424,44 @@ async function processGTPEAQuickCash(supabase: any, csv: string, userId: string)
         continue;
       }
 
-      const { error } = await supabase.from("savings").upsert(
+      const { data: savingsData, error: savingsError } = await supabase.from("savings").upsert(
         {
           employee_id: employee.id,
           account_number: memberAccountCode(LOAN_PRODUCT_CODES["Quick Cash"], staffId) || staffQuickCashAccountNumber || `QC-${staffId}`,
           account_code: LOAN_PRODUCT_CODES["Quick Cash"],
           balance: balance,
-          type: "special", // Use valid enum value instead of 'quick_cash'
+          type: "special",
           notes: reference || "Quick-Cash",
         },
         { onConflict: "account_number" }
-      );
+      ).select("id").single();
 
-      if (error) {
+      if (savingsError) {
         skipped++;
-        errors.push(`Row ${rowNo}: ${error.message}`);
-      } else {
-        imported++;
+        errors.push(`Row ${rowNo}: ${savingsError.message}`);
+        continue;
       }
+
+      // Create a savings contribution record for the imported balance
+      const now = new Date();
+      const contributionReference = `IMP-QC-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-${staffId}`;
+      const { error: contributionError } = await supabase.from("savings_contributions").insert({
+        savings_id: savingsData.id,
+        employee_id: employee.id,
+        amount: balance,
+        contribution_type: "adjustment",
+        period_year: now.getFullYear(),
+        period_month: now.getMonth() + 1,
+        reference: contributionReference,
+        recorded_by: userId,
+        narration: "Master file Quick Cash import",
+      });
+
+      if (contributionError) {
+        console.warn(`Failed to create contribution record for Quick Cash ${staffId}:`, contributionError.message);
+      }
+
+      imported++;
     } catch (error) {
       skipped++;
       errors.push(`Row ${rowNo}: ${error instanceof Error ? error.message : 'Unknown error'}`);

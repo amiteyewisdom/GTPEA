@@ -270,7 +270,7 @@ async function importGTPEASavings(
       }
     }
 
-    const { error } = await supabase.from("savings").upsert(
+    const { data: savingsData, error: savingsError } = await supabase.from("savings").upsert(
       {
         employee_id: employee.id,
         account_number: memberAccountCode(GL.membersSavings, staffId) || staffSavingAccountNumber || `SAV-${staffId}`,
@@ -284,14 +284,36 @@ async function importGTPEASavings(
         notes: reference || "Savings",
       },
       { onConflict: "account_number" }
-    );
+    ).select("id").single();
 
-    if (error) {
+    if (savingsError) {
       skipped++;
-      errors.push(`Row ${rowNo}: ${error.message}`);
-    } else {
-      imported++;
+      errors.push(`Row ${rowNo}: ${savingsError.message}`);
+      continue;
     }
+
+    // Create a savings contribution record for the imported balance
+    // Use the current date as the period for imported savings
+    const now = new Date();
+    const contributionReference = `IMP-SAV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-${staffId}`;
+    const { error: contributionError } = await supabase.from("savings_contributions").insert({
+      savings_id: savingsData.id,
+      employee_id: employee.id,
+      amount: balance,
+      contribution_type: "adjustment",
+      period_year: now.getFullYear(),
+      period_month: now.getMonth() + 1,
+      reference: contributionReference,
+      recorded_by: userId,
+      narration: "Initial savings import",
+    });
+
+    if (contributionError) {
+      // Log error but don't fail the import - the balance is still set
+      console.warn(`Failed to create contribution record for ${staffId}:`, contributionError.message);
+    }
+
+    imported++;
   }
 
   return { imported, skipped, errors };
@@ -372,7 +394,7 @@ async function importGTPEAQuickCash(
       }
     }
 
-    const { error } = await supabase.from("savings").upsert(
+    const { data: savingsData, error: savingsError } = await supabase.from("savings").upsert(
       {
         employee_id: employee.id,
         account_number: memberAccountCode(LOAN_PRODUCT_CODES["Quick Cash"], staffId) || staffQuickCashAccountNumber || `QC-${staffId}`,
@@ -386,14 +408,34 @@ async function importGTPEAQuickCash(
         notes: reference || "Quick-Cash",
       },
       { onConflict: "account_number" }
-    );
+    ).select("id").single();
 
-    if (error) {
+    if (savingsError) {
       skipped++;
-      errors.push(`Row ${rowNo}: ${error.message}`);
-    } else {
-      imported++;
+      errors.push(`Row ${rowNo}: ${savingsError.message}`);
+      continue;
     }
+
+    // Create a savings contribution record for the imported balance
+    const now = new Date();
+    const contributionReference = `IMP-QC-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}-${staffId}`;
+    const { error: contributionError } = await supabase.from("savings_contributions").insert({
+      savings_id: savingsData.id,
+      employee_id: employee.id,
+      amount: balance,
+      contribution_type: "adjustment",
+      period_year: now.getFullYear(),
+      period_month: now.getMonth() + 1,
+      reference: contributionReference,
+      recorded_by: userId,
+      narration: "Quick Cash import",
+    });
+
+    if (contributionError) {
+      console.warn(`Failed to create contribution record for Quick Cash ${staffId}:`, contributionError.message);
+    }
+
+    imported++;
   }
 
   return { imported, skipped, errors };
