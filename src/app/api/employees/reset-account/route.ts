@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canManageUsers, getStaffUser } from "@/lib/api/staff-auth";
-import { DEFAULT_USER_PASSWORD } from "@/lib/imports/process-users";
+import { DEFAULT_USER_PASSWORD } from "@/lib/imports/constants";
 
 export async function POST(request: Request) {
   const { user, role } = await getStaffUser();

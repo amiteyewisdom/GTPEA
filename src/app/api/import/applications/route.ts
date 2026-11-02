@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { canImport, getStaffUser } from "@/lib/api/staff-auth";
 import { parseCsv } from "@/lib/csv";
 import { logImportRun } from "@/lib/imports/log-import";
-import { normalizeLoanProductName } from "@/lib/imports/process-import";
+import { normalizeLoanProductName } from "@/lib/imports/utils";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {

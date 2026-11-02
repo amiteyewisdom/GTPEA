@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { canImport, getStaffUser } from "@/lib/api/staff-auth";
-import { getImportTemplate, type ImportType } from "@/lib/imports/process-import";
+import { getImportTemplate } from "@/lib/imports/templates";
+import type { ImportType } from "@/lib/imports/types";
 
 const IMPORT_TYPES = ["employees", "savings", "loans", "gtpea-employees", "gtpea-savings", "gtpea-quick-cash", "gtpea-hire-purchase", "gtpea-normal-loans", "gtpea-lands", "master_excel_upload"] as const;
 

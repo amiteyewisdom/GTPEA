@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { canImport, getStaffUser } from "@/lib/api/staff-auth";
 import { logImportRun } from "@/lib/imports/log-import";
-import { processImport, type ImportType } from "@/lib/imports/process-import";
+import { processImport } from "@/lib/imports/process-import";
+import type { ImportType } from "@/lib/imports/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from 'xlsx';
 

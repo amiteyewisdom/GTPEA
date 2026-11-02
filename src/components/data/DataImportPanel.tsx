@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import GlassCard from "@/components/ui/GlassCard";
 import { AlertCircle, CheckCircle, Download, FileSpreadsheet, Upload } from "lucide-react";
 import { useDownload } from "@/hooks/use-download";
-import type { ImportType } from "@/lib/imports/process-import";
+import type { ImportType } from "@/lib/imports/types";
 
 type ImportResult = {
   imported: number;

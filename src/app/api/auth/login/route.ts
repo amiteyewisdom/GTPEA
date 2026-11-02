@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DEFAULT_USER_PASSWORD } from "@/lib/imports/process-users";
+import { DEFAULT_USER_PASSWORD } from "@/lib/imports/constants";
 import { getSystemFlags } from "@/lib/api/system-settings";
 
 

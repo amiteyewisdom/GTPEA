@@ -4,7 +4,7 @@ import { logImportRun } from "@/lib/imports/log-import";
 import { createAdminClient } from "@/lib/supabase/admin";
 import * as XLSX from 'xlsx';
 import { GL, LOAN_PRODUCT_CODES, memberAccountCode } from "@/lib/reports/gl-accounts";
-import { normalizeDepartment } from "@/lib/imports/process-import";
+import { normalizeDepartment } from "@/lib/imports/utils";
 import { parseCsv } from "@/lib/csv";
 
 export async function POST(request: Request) {

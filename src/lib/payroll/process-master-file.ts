@@ -1,7 +1,7 @@
 import { parseCsv } from "@/lib/csv";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppSupabase } from "@/lib/supabase/types";
-import { resolveEmployeeNo, resolveEmployeeName } from "@/lib/imports/process-import";
+import { resolveEmployeeNo, resolveEmployeeName } from "@/lib/imports/utils";
 
 export type PayrollMasterRow = {
   employeeNo: string;

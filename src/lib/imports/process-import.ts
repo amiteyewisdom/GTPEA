@@ -2,10 +2,14 @@ import { parseCsv } from "@/lib/csv";
 import type { AppSupabase } from "@/lib/supabase/types";
 import { GL, LOAN_PRODUCT_CODES, memberAccountCode } from "@/lib/reports/gl-accounts";
 import { notifyUser } from "@/lib/notifications";
+import type { ImportType } from "./types";
+import { normalizeDepartment, resolveEmployeeNo, resolveEmployeeName, normalizeLoanProductName } from "./utils";
 
-export type ImportType = "employees" | "savings" | "loans" | "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands" | "master_excel_upload";
-
-const VALID_DEPARTMENTS = ["management", "finance", "operations", "hr", "it", "sales", "legal", "audit", "retail", "marketing", "supply chain", "wholesale"] as const;
+export type ImportResult = {
+  imported: number;
+  skipped: number;
+  errors: string[];
+};
 
 function isSavingsLockPeriod(): boolean {
   const now = new Date();
@@ -60,101 +64,6 @@ async function checkAndNotifyExcessBalance(
   }
 
   return true; // Violation found and reported
-}
-
-type Department = (typeof VALID_DEPARTMENTS)[number];
-
-export function normalizeDepartment(input: string): Department {
-  const raw = input.trim().toLowerCase().replace(/[&\/_-]/g, " ");
-
-  const aliases: Record<string, string[]> = {
-    management: ["management", "mgt", "mgr", "managerial"],
-    finance: ["finance", "fin", "account", "accounts", "accounting", "bac"],
-    operations: [
-      "operations",
-      "ops",
-      "operational",
-      "procurement",
-      "warehouse",
-      "logistics",
-      "admin",
-      "administration",
-      "support",
-      "user support",
-      "customer support",
-      "general services",
-      "gs",
-      "planning",
-      "data kitchen",
-      "color kitchen",
-      "kitchen",
-    ],
-    hr: ["hr", "human resources", "human resource", "personnel"],
-    it: ["it", "information technology", "information tech", "tech", "technology", "engineering"],
-    sales: ["sales", "marketing", "business development", "biz dev"],
-    legal: ["legal", "compliance"],
-    audit: ["audit", "internal audit"],
-    retail: ["retail", "retail sales"],
-    marketing: ["marketing", "market", "promotions"],
-    "supply chain": ["supply chain", "supply", "logistics", "procurement"],
-    wholesale: ["wholesale", "wholesale sales"],
-  };
-
-  if (VALID_DEPARTMENTS.includes(raw as Department)) return raw as Department;
-
-  for (const [department, departmentAliases] of Object.entries(aliases)) {
-    if (departmentAliases.includes(raw)) return department as Department;
-  }
-
-  return "operations";
-}
-
-export type ImportResult = {
-  imported: number;
-  skipped: number;
-  errors: string[];
-};
-
-export function resolveEmployeeNo(row: Record<string, string>): string {
-  const numberValue = String(row["no."] ?? row["no"] ?? row["num"] ?? row["number"] ?? "").trim();
-  const coyValue = String(row["coy"] ?? row["cop"] ?? row["company"] ?? "").trim().toUpperCase();
-  if (coyValue && numberValue) return `${coyValue}${numberValue}`;
-  const unoValue = String(row["uno"] ?? row["union no"] ?? row["union number"] ?? "").trim();
-  if (unoValue) return unoValue;
-  return String(
-    row["employee no"] ??
-    row["employee id"] ??
-    row["staff id"] ??
-    row["emp numb"] ??
-    row["emp number"] ??
-    row["employee number"] ??
-    ""
-  ).trim();
-}
-
-export function resolveEmployeeName(row: Record<string, string>): { firstName: string; lastName: string } {
-  const fullName = String(
-    row["payee name"] ||
-    row["hr name"] ||
-    row["staff name"] ||
-    row["surname & othernames"] ||
-    (row["first name"] ? `${row["first name"]} ${row["last name"] ?? ""}`.trim() : "") ||
-    row.name ||
-    ""
-  ).trim();
-  const parts = fullName.split(/\s+/).filter(Boolean);
-  const firstName = parts.shift() ?? "";
-  const lastName = parts.join(" ");
-  return { firstName, lastName };
-}
-
-export function normalizeLoanProductName(name: string): string {
-  const normalized = name.trim().toLowerCase().replace(/\s+/g, " ");
-  const aliases: Record<string, string> = {
-    "regular loan": "normal loan",
-  };
-
-  return aliases[normalized] ?? normalized;
 }
 
 function parseImportDate(value: string): Date | null {
@@ -766,51 +675,4 @@ async function importGTPEALands(
   }
 
   return { imported, skipped, errors };
-}
-
-export function getImportTemplate(type: ImportType): string {
-  const templates: Record<string, string[][]> = {
-    employees: [
-      ["Employee No", "First Name", "Last Name", "Email", "Department", "Position", "Join Date", "Salary", "Phone"],
-      ["EMP-001", "John", "Smith", "john.smith@example.com", "operations", "Analyst", "2024-01-15", "5000", "0240000000"],
-    ],
-    savings: [
-      ["Employee No", "Amount", "Date (YYYY-MM-DD or DD/MM/YYYY)", "Type", "Account Number"],
-      ["EMP-001", "500", "01/06/2024", "monthly", ""],
-    ],
-    loans: [
-      ["Reference", "Employee No", "Product", "Amount Requested", "Interest Rate", "Term Months", "Monthly Repayment", "Status", "Purpose"],
-      ["LN-001", "EMP-001", "Normal Loan", "10000", "0.02", "12", "850", "pending", "Emergency"],
-    ],
-    "gtpea-employees": [
-      ["StaffID", "FullName", "Department", "StaffAccountNumber", "PhoneNumber"],
-      ["P0770", "Sarah Yaa Agyeiwaa Abodi-Klenn", "Retail", "P0770", "0240000000"],
-    ],
-    "gtpea-savings": [
-      ["StaffID", "FullName", "StaffSavingAccountNumber", "FacilityAccountNumber", "Balance", "Reference"],
-      ["P0770", "Sarah Yaa Agyeiwaa Abodi-Klenn", "63101001P0770", "63101001", "21100", "Savings"],
-    ],
-    "gtpea-quick-cash": [
-      ["StaffID", "FullName", "StaffQuickCashAccountNumber", "FacilityAccountNumber", "Balance", "Reference"],
-      ["P0821", "Benjamin Kissi", "62131001P0821", "62131001", "510", "Quick-Cash"],
-    ],
-    "gtpea-hire-purchase": [
-      ["StaffID", "FullName", "SavingsAccountNumber", "FacilityAccountNumber", "Balance", "Reference", "Item Description"],
-      ["0767", "Franklina Ohene-Mensah", "621210010767", "62121001", "2967.25", "Hire Purchase", "SAMSUNG A56+HEAD - 128GB"],
-    ],
-    "gtpea-normal-loans": [
-      ["StaffID", "FullName", "NLAccountNumber", "FacilityAccountNumber", "Balance", "Reference"],
-      ["P0774", "ANSAH ESINAM PHYLLIS", "62101001P0774", "62101001", "11343.14", "Normal Loan"],
-    ],
-    "gtpea-lands": [
-      ["StaffID", "FullName", "SavingsAccountNumber", "FacilityAccountNumber", "Balance", "Reference", "Item"],
-      ["P0770", "Sarah Yaa Agyeiwaa Abodi-Klenn", "62141001P0770", "62141001", "31642.96", "Lands", "Kopodor Land"],
-    ],
-    "master_excel_upload": [
-      ["Note", "Use the GTPEA Final Template New.xlsx file for master upload"],
-      ["This", "contains all sheets: EmployeeRecordNew, SavingsNew, QuickCashNew, HP New, Normal Loans New, Lands New"],
-    ],
-  };
-
-  return templates[type].map((row: string[]) => row.join(",")).join("\n");
 }

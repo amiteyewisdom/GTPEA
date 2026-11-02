@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import GlassCard from "@/components/ui/GlassCard";
-import { exportUsersToCsv } from "@/lib/imports/process-users";
+import { exportUsersToCsv } from "@/lib/csv-utils";
 import { useDownload } from "@/hooks/use-download";
 import {
   AlertCircle,

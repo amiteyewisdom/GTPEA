@@ -1,5 +1,8 @@
 import type { AppSupabase } from "@/lib/supabase/types";
-import type { ImportResult, ImportType } from "./process-import";
+import type { ImportResult } from "./process-import";
+import type { ImportType } from "./types";
+
+export type { ImportResult } from "./process-import";
 
 export async function logImportRun(
   supabase: AppSupabase,

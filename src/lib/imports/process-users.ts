@@ -1,11 +1,7 @@
 import { parseCsv } from "@/lib/csv";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveEmployeeNo, resolveEmployeeName } from "@/lib/imports/process-import";
-
-// Org-wide default password assigned to newly created accounts.
-// Every account created with this password has must_change_password = true,
-// forcing the user to set their own password on first login.
-export const DEFAULT_USER_PASSWORD = process.env.DEFAULT_USER_PASSWORD || "Gtpea@2026";
+import { resolveEmployeeNo, resolveEmployeeName } from "@/lib/imports/utils";
+import { DEFAULT_USER_PASSWORD } from "@/lib/imports/constants";
 
 export type UserImportResult = {
   imported: number;
@@ -187,35 +183,4 @@ export function getUserImportTemplate(): string {
     "yes",
   ];
   return [headers.join(","), sample.join(",")].join("\n");
-}
-
-export type ExportableUser = {
-  name: string;
-  email?: string;
-  role: string;
-  employeeId: string;
-  status: string;
-  joined: string;
-};
-
-function escapeCsv(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-export function exportUsersToCsv(users: ExportableUser[]): string {
-  const headers = ["Name", "Email", "Role", "Employee ID", "Status", "Joined"];
-  const rows = users.map((user) =>
-    [
-      escapeCsv(user.name),
-      escapeCsv(user.email || ""),
-      escapeCsv(user.role),
-      escapeCsv(user.employeeId),
-      escapeCsv(user.status),
-      escapeCsv(user.joined),
-    ].join(",")
-  );
-  return [headers.join(","), ...rows].join("\n");
 }

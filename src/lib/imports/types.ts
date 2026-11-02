@@ -1,0 +1,1 @@
+export type ImportType = "employees" | "savings" | "loans" | "gtpea-employees" | "gtpea-savings" | "gtpea-quick-cash" | "gtpea-hire-purchase" | "gtpea-normal-loans" | "gtpea-lands" | "master_excel_upload";
