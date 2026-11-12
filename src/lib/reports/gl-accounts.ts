@@ -43,6 +43,7 @@ export const LOAN_ACCOUNT_NAMES: Record<string, string> = {
 export const SAVINGS_ACCOUNT_NAMES: Record<string, string> = {
   "63101001": "Members Savings",
   "62131001": "Quick Cash Accounts",
+  "63101004": "Rice Savings Accounts",
 };
 
 /** Loan statuses that carry an outstanding balance owed to the fund. */

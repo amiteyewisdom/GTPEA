@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import GlassCard from "@/components/ui/GlassCard";
-import { buildPayrollMasterTemplate } from "@/lib/payroll/process-master-file";
 import { useDownload } from "@/hooks/use-download";
 import { AlertCircle, CheckCircle, Download, FileSpreadsheet, Upload, X } from "lucide-react";
 
@@ -14,7 +13,12 @@ export function PayrollMasterFilePanel({ onComplete }: { onComplete?: () => void
   const [dragging, setDragging] = useState(false);
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [result, setResult] = useState<{ processed: number; errors?: string[] } | null>(null);
+  const [result, setResult] = useState<{
+    processed: number;
+    errors?: string[];
+    riceAccountsCreated?: number;
+    interestRecorded?: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const currentMonthLabel = useMemo(() => {
@@ -53,7 +57,12 @@ export function PayrollMasterFilePanel({ onComplete }: { onComplete?: () => void
         throw new Error(data.error ?? "Upload failed.");
       }
 
-      setResult({ processed: data.processed, errors: data.errors });
+      setResult({
+        processed: data.processed,
+        errors: data.errors,
+        riceAccountsCreated: data.riceAccountsCreated,
+        interestRecorded: data.interestRecorded,
+      });
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
       onComplete?.();
@@ -65,16 +74,9 @@ export function PayrollMasterFilePanel({ onComplete }: { onComplete?: () => void
   }
 
   function downloadTemplate() {
-    const csv = buildPayrollMasterTemplate();
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "gtpea_payroll_master_template.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadFile("/api/payroll/master-file?template=xlsx", "gtpea_payroll_deductions_template.xlsx").catch((e) =>
+      setError(e instanceof Error ? e.message : "Template download failed.")
+    );
   }
 
   return (
@@ -82,7 +84,7 @@ export function PayrollMasterFilePanel({ onComplete }: { onComplete?: () => void
       <div className="mb-4">
         <h3 className="text-xl font-semibold text-brand-text">Monthly Payroll Master File</h3>
         <p className="text-sm text-brand-text-secondary">
-          Upload savings contributions and loan recovery rows. Unrelated payroll allowances are ignored.
+          Upload the monthly payroll deductions workbook (.xlsx) or a CSV master file. GTPEA SAVINGS, QUICK-CASH, RICE, SCHOOL FEES, LAND and loan-interest columns are posted automatically.
         </p>
       </div>
 
@@ -129,14 +131,14 @@ export function PayrollMasterFilePanel({ onComplete }: { onComplete?: () => void
         }}
       >
         <FileSpreadsheet className="mx-auto mb-3 h-10 w-10 text-brand-accent" />
-        <p className="mb-1 font-medium text-brand-text">{file ? file.name : "Drop a payroll CSV or text report here"}</p>
+        <p className="mb-1 font-medium text-brand-text">{file ? file.name : "Drop a payroll .xlsx or CSV file here"}</p>
         <p className="mb-3 text-sm text-brand-text-secondary">or browse from your computer</p>
         <label className="inline-block cursor-pointer rounded-lg bg-brand-accent px-5 py-2 text-sm font-medium text-brand-primary transition-all hover:bg-brand-accent/80">
           Browse Files
           <input
             ref={inputRef}
             type="file"
-            accept=".csv,.txt"
+            accept=".csv,.txt,.xlsx,.xls"
             className="hidden"
             onChange={(event) => pickFile(event.target.files?.[0] ?? null)}
           />
@@ -166,7 +168,7 @@ export function PayrollMasterFilePanel({ onComplete }: { onComplete?: () => void
         onClick={downloadTemplate}
         className="mt-3 text-sm text-brand-accent underline hover:text-brand-accent/80"
       >
-        Download empty template
+        Download monthly Excel template
       </button>
 
       {error && (
@@ -182,6 +184,8 @@ export function PayrollMasterFilePanel({ onComplete }: { onComplete?: () => void
             <CheckCircle className="h-4 w-4" />
             <span>
               Processed {result.processed} staff record{result.processed === 1 ? "" : "s"} for {currentMonthLabel}.
+              {result.riceAccountsCreated ? ` Created ${result.riceAccountsCreated} Rice savings account(s).` : ""}
+              {result.interestRecorded ? ` Recorded ${result.interestRecorded} interest recovery(ies).` : ""}
             </span>
           </div>
           {result.errors && result.errors.length > 0 && (
